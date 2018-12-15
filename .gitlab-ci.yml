@@ -1,0 +1,16 @@
+stages:
+  - test
+  - deploy
+
+test:
+  tags:
+    - docker
+  image: node:9
+  stage: test
+  script:
+    - npm i --silent
+    - npm run coverage
+    - mv coverage/ public/
+  artifacts:
+    paths:
+      - public/
