@@ -10,13 +10,13 @@ module.exports = {
             gasPrice: 1
         },
         production: {
-            provider: new PrivateKeyProvider(process.env.PK, 'https://mainnet.infura.io'),
+            provider: () => new PrivateKeyProvider(process.env.PK, 'https://mainnet.infura.io'),
             network_id: 1,
             gasPrice: 10000000000,
             gas: 4000000
         },
         ropsten: {
-            provider: new PrivateKeyProvider(process.env.PK, 'https://ropsten.infura.io'),
+            provider: () => new PrivateKeyProvider(process.env.PK, 'https://ropsten.infura.io'),
             network_id: 3,
             gasPrice: 10000000000
         },
