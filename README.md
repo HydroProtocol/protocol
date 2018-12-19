@@ -10,18 +10,6 @@
 
 Hydro is designed for developers looking to build decentralized exchanges without having to deal with the complexity and expense of designing, deploying, and securing their own smart contracts.
 
-
-## Installation
-
-```bash
-npm install
-```
-To build json ABI files:
-
-```bash
-npm run compile
-```
-
 ## Features
 
 Hydro 1.0 contains a single exchange contract called `HybridExchange.sol` with the following attributes:
@@ -35,6 +23,17 @@ Hydro 1.0 contains a single exchange contract called `HybridExchange.sol` with t
   * Wallet to wallet mode
   * Contract-deposit mode (supports ETH)
 * Highly optimized gas usage
+
+## Installation
+
+```bash
+npm install
+```
+To build json ABI files:
+
+```bash
+npm run compile
+```
 
 ## Tests
 
