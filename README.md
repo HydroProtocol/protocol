@@ -1,42 +1,61 @@
-
-<h1>
-  <img src="./images/hydro.jpg" alt="Logo" height="50" />
-  Hydro Protocol
-</h1>
+## Hydro Protocol
 
 [![CircleCI](https://circleci.com/gh/HydroProtocol/protocol/tree/master.svg?style=svg)](https://circleci.com/gh/HydroProtocol/protocol/tree/master)
 [![codecov](https://codecov.io/gh/HydroProtocol/protocol/branch/master/graph/badge.svg)](https://codecov.io/gh/HydroProtocol/protocol)
 
-Hydro Protocol is an open-source framework for building decentralized exchanges. The apex of this framework is a set of Ethereum smart contracts which perform ERC20 token atomic swaps. It is inspired by our experience using the 0x Protocol.
 
-The Hydro Smart Contracts are designed to serve developers looking to build decentralized exchanges without having to deal with the complexity and expense of designing, deploying, and securing their own smart contracts.
+> Hydro Protocol is an open-source framework for building decentralized exchanges on Ethereum.
 
-When compared to 0x protocol, there are several main advantages of Hydro Protocol:
-1. No 3rd party fee token
-We believe that a fee token, such as the current implementation of ZRX, creates needless friction and is a barrier to adoption.
+![](./images/hydro_small.jpg)
 
-2. Liquidity focused structuring
-Smart contract level support for asymmetric fees and discounting yields an average of 2.5x more profit for liquidity Providers. This promotes more liquid markets, which is better for all users.
+Hydro is designed for developers looking to build decentralized exchanges without having to deal with the complexity and expense of designing, deploying, and securing their own smart contracts.
 
-3. Flexibility: Market Orders, No Order Collision, Free Cancellation
-By prioritizing order matching on a smart contract level, market orders are seamlessly integrated into existing liquidity, there is no order collision whatsoever, and order cancellation is always free.
+## Features
 
-### Install dependencies
+Hydro 1.0 contains a single exchange contract called `HybridExchange.sol` with the following attributes:
+
+* No order collision
+* No possibility of front-running
+* Accurate market orders
+* Ability to collect fees as a percentage of the traded assets
+* Allows asymmetrical maker/taker fee structure, rebates, discounts
+* Multiple settlement models:
+  * Wallet to wallet mode
+  * Contract-deposit mode (supports ETH)
+* Highly optimized gas usage
+
+## Installation
 
 ```bash
 npm install
 ```
-
-### Build
-
-To build out json ABI files:
+To build json ABI files:
 
 ```bash
 npm run compile
 ```
 
-### Test
+## Tests
 
 ```bash
 npm run coverage
 ```
+
+## Acknowledgments
+
+Hydro is inspired by the [0x project](https://github.com/0xProject).
+
+In addition, projects such as [IDEX](https://github.com/AuroraDAO/idex) and [Paradex](https://github.com/ParadexRelayer) motivated the decision to focus on first order support for **off-chain matching**.
+
+
+## Contributing
+
+1. Fork it (<https://github.com/hydroprotocol/protocol/fork>)
+2. Create your feature branch (`git checkout -b feature/fooBar`)
+3. Commit your changes (`git commit -am 'Add some fooBar'`)
+4. Push to the branch (`git push origin feature/fooBar`)
+5. Create a new Pull Request
+
+## License
+
+This project is licensed under the Apache-2.0 License - see the [LICENSE.txt](LICENSE.txt) file for details
