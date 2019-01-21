@@ -27,19 +27,10 @@ contract LibExchangeErrors {
     // Signature validation failed
     string constant INVALID_ORDER_SIGNATURE = "INVALID_ORDER_SIGNATURE";
     // Taker order is not valid
-    string constant INVALID_TAKER_ORDER = "INVALID_TAKER_ORDER";
     string constant ORDER_IS_NOT_FILLABLE = "ORDER_IS_NOT_FILLABLE";
     string constant MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER = "MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER";
-    string constant COMPLETE_MATCH_FAILED = "COMPLETE_MATCH_FAILED";
-    // Taker sells more than expected base tokens
-    string constant TAKER_SELL_BASE_EXCEEDED = "TAKER_SELL_BASE_EXCEEDED";
-    // Taker used more than expected quote tokens in market buy
-    string constant TAKER_MARKET_BUY_QUOTE_EXCEEDED = "TAKER_MARKET_BUY_QUOTE_EXCEEDED";
-    // Taker buys more than expected base tokens
-    string constant TAKER_LIMIT_BUY_BASE_EXCEEDED = "TAKER_LIMIT_BUY_BASE_EXCEEDED";
     string constant TRANSFER_FROM_FAILED = "TRANSFER_FROM_FAILED";
-    string constant RECORD_ADDRESSES_ERROR = "RECORD_ADDRESSES_ERROR";
-    string constant PERIOD_NOT_COMPLETED_ERROR = "PERIOD_NOT_COMPLETED_ERROR";
-    string constant CLAIM_HOT_TOKEN_ERROR = "CLAIM_HOT_TOKEN_ERROR";
-    string constant INVALID_PERIOD = "INVALID_PERIOD";
+
+    string constant MAKER_ORDER_OVER_MATCH = "MAKER_ORDER_OVER_MATCH";
+    string constant TAKER_ORDER_OVER_MATCH = "TAKER_ORDER_OVER_MATCH";
 }

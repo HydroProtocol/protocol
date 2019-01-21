@@ -11,6 +11,27 @@ const toWei = x => {
     return new BigNumber(x).times(weis).toString();
 };
 
+const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => {
+    a = new BigNumber(a);
+    b = new BigNumber(b);
+
+    if (allowPrecisionError) {
+        if (a.toString() === b.toString()) {
+            assert.equal(a.toString(), b.toString());
+        } else {
+            assert(
+                a
+                    .minus(b)
+                    .div(b)
+                    .lt('0.00000000001'),
+                `${message} ${a} ${b}`
+            );
+        }
+    } else {
+        assert.equal(a.toString(), b.toString(), message);
+    }
+};
+
 const infinity = '999999999999999999999999999999999999999999';
 
 contract('Match', async accounts => {
@@ -59,9 +80,15 @@ contract('Match', async accounts => {
                 symbol: 'ETH'
             };
         } else {
-            token = await newContract(TestToken, tokenConfig.name, tokenConfig.symbol, tokenConfig.decimals, {
-                from: relayer
-            });
+            token = await newContract(
+                TestToken,
+                tokenConfig.name,
+                tokenConfig.symbol,
+                tokenConfig.decimals,
+                {
+                    from: relayer
+                }
+            );
             token.symbol = tokenConfig.symbol;
         }
 
@@ -131,6 +158,8 @@ contract('Match', async accounts => {
             takerOrderParam,
             makerOrdersParams,
             assertDiffs,
+            baseTokenFilledAmounts,
+            allowPrecisionError,
             assertFilled
         } = config;
 
@@ -150,14 +179,26 @@ contract('Match', async accounts => {
         const baseTokenAddress = baseToken._address;
         const quoteTokenAddress = quoteToken._address;
 
-        const takerOrder = await buildOrder(takerOrderParam, exchange, baseTokenAddress, quoteTokenAddress);
+        const takerOrder = await buildOrder(
+            takerOrderParam,
+            exchange,
+            baseTokenAddress,
+            quoteTokenAddress
+        );
         const makerOrders = [];
         for (let i = 0; i < makerOrdersParams.length; i++) {
-            makerOrders.push(await buildOrder(makerOrdersParams[i], exchange, baseTokenAddress, quoteTokenAddress));
+            makerOrders.push(
+                await buildOrder(
+                    makerOrdersParams[i],
+                    exchange,
+                    baseTokenAddress,
+                    quoteTokenAddress
+                )
+            );
         }
 
         const res = await exchange.methods
-            .matchOrders(takerOrder, makerOrders, {
+            .matchOrders(takerOrder, makerOrders, baseTokenFilledAmounts, {
                 baseToken: baseTokenAddress,
                 quoteToken: quoteTokenAddress,
                 relayer
@@ -176,9 +217,16 @@ contract('Match', async accounts => {
                 const userKey = Object.keys(assertDiffs[tokenSymbol])[j];
                 const expectedDiff = assertDiffs[tokenSymbol][userKey];
                 const balanceKey = `${tokenSymbol}-${userKey}`;
-                const actualDiff = new BigNumber(balancesAfterMatch[balanceKey]).minus(balancesBeforeMatch[balanceKey]);
+                const actualDiff = new BigNumber(balancesAfterMatch[balanceKey]).minus(
+                    balancesBeforeMatch[balanceKey]
+                );
 
-                assert.equal(actualDiff.toString(), expectedDiff, `${balanceKey}`);
+                assertEqual(
+                    actualDiff.toString(),
+                    expectedDiff,
+                    allowPrecisionError,
+                    `${balanceKey}`
+                );
             }
         }
 
@@ -186,16 +234,28 @@ contract('Match', async accounts => {
             const { limitTaker, marketTaker, makers } = assertFilled;
 
             if (limitTaker && takerOrderParam.type == 'limit') {
-                assert.equal(await exchange.methods.filled(takerOrder.orderHash).call(), limitTaker);
+                assertEqual(
+                    await exchange.methods.filled(takerOrder.orderHash).call(),
+                    limitTaker,
+                    allowPrecisionError
+                );
             }
 
             if (marketTaker && takerOrderParam.type == 'market') {
-                assert.equal(await exchange.methods.filled(takerOrder.orderHash).call(), marketTaker);
+                assertEqual(
+                    await exchange.methods.filled(takerOrder.orderHash).call(),
+                    marketTaker,
+                    allowPrecisionError
+                );
             }
 
             if (makers) {
                 for (let i = 0; i < makers.length; i++) {
-                    assert.equal(await exchange.methods.filled(makerOrders[i].orderHash).call(), makers[i]);
+                    assertEqual(
+                        await exchange.methods.filled(makerOrders[i].orderHash).call(),
+                        makers[i],
+                        allowPrecisionError
+                    );
                 }
             }
         }
@@ -234,6 +294,7 @@ contract('Match', async accounts => {
     // ╚═════════╧═════╧════════╧═══════════════════════════════════════════════╝
     it('taker sell(limit & market), taker full match', async () => {
         const testConfig = {
+            baseTokenFilledAmounts: [toWei('10'), toWei('10')],
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
@@ -334,6 +395,7 @@ contract('Match', async accounts => {
     it('taker sell(limit & market), maker full match', async () => {
         await limitAndMarketTestMatch({
             users: { u1, u2, u3, relayer },
+            baseTokenFilledAmounts: [toWei('1952')],
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
@@ -417,6 +479,7 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════════════════════════╝
     it('taker buy(limit), taker full match', async () => {
         await matchTest({
+            baseTokenFilledAmounts: [toWei('1952'), toWei('6472.22')],
             assertFilled: {
                 limitTaker: toWei('8424.22'),
                 makers: [toWei('1952'), toWei('6472.22')]
@@ -502,19 +565,23 @@ contract('Match', async accounts => {
     // User3 sell      314159 TT (0.03780   price) PatialFill Maker
     //
     // FUND CHANGES
-    // ╔═════════╤══════════════════════════╤═══════════════╤═════════════════════════════════════════════════════╗
-    // ║         │  TT                      │ WETH          │                                                     ║
-    // ╠═════════╪══════════════════════════╪═══════════════╪═════════════════════════════════════════════════════╣
-    // ║ u1      │ 8477.004396825396825396  │ -334.54574611 │ -318.5197582 * 1.05 - 0.1                           ║
-    // ╟─────────┼──────────────────────────┼───────────────┼─────────────────────────────────────────────────────╢
-    // ║ u2      │ -1952                    │ 71.05584608   │ 0.036821 * 1952 * 0.99 - 0.1                        ║
-    // ╟─────────┼──────────────────────────┼───────────────┼─────────────────────────────────────────────────────╢
-    // ║ u3      │ -6525.004396825396825396 │ 244.078714538 │ (318.5197582 - 0.036821 * 1952) * 0.99 - 0.1        ║
-    // ╟─────────┼──────────────────────────┼───────────────┼─────────────────────────────────────────────────────╢
-    // ║ relayer │ 0                        │ 19.411185492  │ 318.5197582 * 0.06 + 0.3                            ║
-    // ╚═════════╧══════════════════════════╧═══════════════╧═════════════════════════════════════════════════════╝
+    // ╔═════════╤══════════════════════════╤════════════════════════╤═════════════════════════════════════════════════════╗
+    // ║         │  TT                      │ WETH                   │                                                     ║
+    // ╠═════════╪══════════════════════════╪════════════════════════╪═════════════════════════════════════════════════════╣
+    // ║ u1      │ 8477.004396825396825396  │ -334.54574611          │ -318.5197582 * 1.05 - 0.1                           ║
+    // ╟─────────┼──────────────────────────┼────────────────────────┼─────────────────────────────────────────────────────╢
+    // ║ u2      │ -1952                    │ 71.05584608            │ 0.036821 * 1952 * 0.99 - 0.1                        ║
+    // ╟─────────┼──────────────────────────┼────────────────────────┼─────────────────────────────────────────────────────╢
+    // ║ u3      │ -6525.004396825396825396 │ 244.078714538          │ (6525.004396825396825396 * 0.03780) * 0.99 - 0.1    ║
+    // ╟─────────┼──────────────────────────┼────────────────────────┼─────────────────────────────────────────────────────╢
+    // ║ relayer │ 0                        │ 19.411185492           │ 318.5197582 * 0.06 + 0.3                            ║
+    // ╚═════════╧══════════════════════════╧════════════════════════╧═════════════════════════════════════════════════════╝
+    //
+    //
     it('taker buy(market), taker full match', async () => {
         await matchTest({
+            allowPrecisionError: true,
+            baseTokenFilledAmounts: [toWei('1952'), toWei('6525.004396825396825396')],
             assertDiffs: {
                 TT: {
                     u1: toWei('8477.004396825396825396'),
@@ -611,6 +678,7 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════╝
     it('taker buy(limit), maker full match', async () => {
         await matchTest({
+            baseTokenFilledAmounts: [toWei('1952')],
             assertFilled: {
                 limitTaker: toWei('1952'),
                 marketTaker: toWei('71.874592'),
@@ -692,6 +760,7 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════╝
     it('taker buy(market), maker full match', async () => {
         await matchTest({
+            baseTokenFilledAmounts: [toWei('1952')],
             assertFilled: {
                 marketTaker: toWei('71.874592'),
                 makers: [toWei('1952')]
@@ -774,6 +843,7 @@ contract('Match', async accounts => {
     it('HOT discount', async () => {
         await setHotAmount(hot, u1, toWei(10000));
         await matchTest({
+            baseTokenFilledAmounts: [toWei('1952')],
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
@@ -852,6 +922,7 @@ contract('Match', async accounts => {
     it('eth, taker market order sell, taker full match, maker fee discount', async () => {
         await setHotAmount(hot, u2, toWei(10000));
         await matchTest({
+            baseTokenFilledAmounts: [toWei('102')],
             users: { u1, u2, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
@@ -929,6 +1000,7 @@ contract('Match', async accounts => {
     it('Maker Rebate Rate < Maker fee Rate', async () => {
         await limitAndMarketTestMatch({
             users: { u1, u2, u3, relayer },
+            baseTokenFilledAmounts: [toWei('1952')],
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
@@ -1009,6 +1081,7 @@ contract('Match', async accounts => {
     it('Maker Rebate Rate == Maker Fee Rate', async () => {
         await limitAndMarketTestMatch({
             users: { u1, u2, u3, relayer },
+            baseTokenFilledAmounts: [toWei('1952'), toWei('6472.22')],
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
@@ -1103,6 +1176,7 @@ contract('Match', async accounts => {
     // ╚═════════╧═════╧════════╧═══════════════════════════════════════════════╝
     it('Maker Rebate Rate > Maker Fee Rate & rebate < taker fee', async () => {
         const testConfig = {
+            baseTokenFilledAmounts: [toWei('10'), toWei('10')],
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
@@ -1200,6 +1274,7 @@ contract('Match', async accounts => {
     // ╚═════════╧═════╧════════╧═══════════════════════════════════════════════╝
     it('Maker Rebate Rate > Maker Fee Rate & rebate > taker fee', async () => {
         const testConfig = {
+            baseTokenFilledAmounts: [toWei('10'), toWei('10')],
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
@@ -1282,6 +1357,7 @@ contract('Match', async accounts => {
     // invalid taker order
     it('Invalid taker order will revert', async () => {
         const testConfig = {
+            baseTokenFilledAmounts: [toWei('1')],
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
@@ -1342,6 +1418,7 @@ contract('Match', async accounts => {
     // invalid maker order
     it('Invalid taker order will revert', async () => {
         const testConfig = {
+            baseTokenFilledAmounts: [toWei('1')],
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
@@ -1402,6 +1479,7 @@ contract('Match', async accounts => {
     it('match without fees', async () => {
         const testConfig = {
             users: { u1, u2, relayer },
+            baseTokenFilledAmounts: [toWei('1')],
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',

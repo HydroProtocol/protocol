@@ -64,11 +64,6 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         uint256 takerGasFee
     );
 
-    struct TotalMatchResult {
-        uint256 baseTokenFilledAmount;
-        uint256 quoteTokenFilledAmount;
-    }
-
     struct MatchResult {
         address maker;
         address taker;
@@ -132,6 +127,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
     function matchOrders(
         OrderParam memory takerOrderParam,
         OrderParam[] memory makerOrderParams,
+        uint256[] memory baseTokenFilledAmounts,
         OrderAddressSet memory orderAddressSet
     ) public {
         require(canMatchOrdersFrom(orderAddressSet.relayer), INVALID_SENDER);
@@ -142,7 +138,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
 
         // Calculate which orders match for settlement.
         MatchResult[] memory results = new MatchResult[](makerOrderParams.length);
-        TotalMatchResult memory totalMatch;
+
         for (uint256 i = 0; i < makerOrderParams.length; i++) {
             require(!isMarketOrder(makerOrderParams[i].data), MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER);
             require(isSell(takerOrderParam.data) != isSell(makerOrderParams[i].data), INVALID_SIDE);
@@ -155,25 +151,15 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
                 takerOrderInfo,
                 makerOrderParams[i],
                 makerOrderInfo,
+                baseTokenFilledAmounts[i],
                 takerFeeRate,
                 isParticipantRelayer
             );
 
-            // Update TotalMatchResult with new fill amounts
-            totalMatch.baseTokenFilledAmount = totalMatch.baseTokenFilledAmount.add(
-                results[i].baseTokenFilledAmount
-            );
-            totalMatch.quoteTokenFilledAmount = totalMatch.quoteTokenFilledAmount.add(
-                results[i].quoteTokenFilledAmount
-            );
-
             // Update amount filled for this maker order.
-            filled[makerOrderInfo.orderHash] = makerOrderInfo.filledAmount.add(
-                results[i].baseTokenFilledAmount
-            );
+            filled[makerOrderInfo.orderHash] = makerOrderInfo.filledAmount;
         }
 
-        validateMatchResult(takerOrderParam, totalMatch);
         settleResults(results, takerOrderParam, orderAddressSet);
 
         // Update amount filled for this taker order.
@@ -312,6 +298,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         OrderInfo memory takerOrderInfo,
         OrderParam memory makerOrderParam,
         OrderInfo memory makerOrderInfo,
+        uint256 baseTokenFilledAmount,
         uint256 takerFeeRate,
         bool isParticipantRelayer
     )
@@ -319,35 +306,8 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         view
         returns (MatchResult memory result)
     {
-        // This will represent the amount we will be filling in this match. In most cases this will
-        // be represented in base token units, but in the market buy case this will be quote token
-        // units.
-        uint256 filledAmount;
-
-        // Determine the amount of token that will be filled by this match, in both base and quote
-        // token units. This is done by checking which order has the least amount of token available
-        // to fill or be filled and using that as the base fill amount.
-        if(!isMarketBuy(takerOrderParam.data)) {
-            filledAmount = min(
-                takerOrderParam.baseTokenAmount.sub(takerOrderInfo.filledAmount),
-                makerOrderParam.baseTokenAmount.sub(makerOrderInfo.filledAmount)
-            );
-            result.quoteTokenFilledAmount = convertBaseToQuote(makerOrderParam, filledAmount);
-            result.baseTokenFilledAmount = filledAmount;
-        } else {
-            // In the market buy order case, we have to compare the amount of quote token left in
-            // the taker order with the amount of base token left in the maker order. In order to do
-            // that we convert from base to quote units in our comparison.
-            filledAmount = min(
-                takerOrderParam.quoteTokenAmount.sub(takerOrderInfo.filledAmount),
-                convertBaseToQuote(
-                    makerOrderParam,
-                    makerOrderParam.baseTokenAmount.sub(makerOrderInfo.filledAmount)
-                )
-            );
-            result.baseTokenFilledAmount = convertQuoteToBase(makerOrderParam, filledAmount);
-            result.quoteTokenFilledAmount = filledAmount;
-        }
+        result.baseTokenFilledAmount = baseTokenFilledAmount;
+        result.quoteTokenFilledAmount = convertBaseToQuote(makerOrderParam, baseTokenFilledAmount);
 
         // Each order only pays gas once, so only pay gas when nothing has been filled yet.
         if (takerOrderInfo.filledAmount == 0) {
@@ -358,9 +318,16 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
             result.makerGasFee = makerOrderParam.gasTokenAmount;
         }
 
-        // Update filled amount. The filledAmount variable will always be in the correct base or
-        // quote unit.
-        takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(filledAmount);
+        if(!isMarketBuy(takerOrderParam.data)) {
+            takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.baseTokenAmount, TAKER_ORDER_OVER_MATCH);
+        } else {
+            takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.quoteTokenFilledAmount);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteTokenAmount, TAKER_ORDER_OVER_MATCH);
+        }
+
+        makerOrderInfo.filledAmount = makerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
+        require(makerOrderInfo.filledAmount <= makerOrderParam.baseTokenAmount, MAKER_ORDER_OVER_MATCH);
 
         result.maker = makerOrderParam.trader;
         result.taker = takerOrderParam.trader;
@@ -475,43 +442,6 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
             orderParam.quoteTokenAmount,
             amount
         );
-    }
-
-    /**
-     * Validates sanity of match results.
-     *
-     * This function will revert the transaction if the results cannot be validated.
-     *
-     * @param takerOrderParam The OrderParam object representing the taker's order data
-     * @param totalMatch Accumlated match result data representing how much token will be filled
-     */
-    function validateMatchResult(OrderParam memory takerOrderParam, TotalMatchResult memory totalMatch)
-        internal
-        pure
-    {
-        if (isSell(takerOrderParam.data)) {
-            // Ensure we don't attempt to sell more tokens than the taker wished to sell
-            require(
-                totalMatch.baseTokenFilledAmount <= takerOrderParam.baseTokenAmount,
-                TAKER_SELL_BASE_EXCEEDED
-            );
-        } else {
-            // Ensure we don't attempt to buy more tokens than the taker wished to buy
-            require(
-                totalMatch.quoteTokenFilledAmount <= takerOrderParam.quoteTokenAmount,
-                TAKER_MARKET_BUY_QUOTE_EXCEEDED
-            );
-
-            // If this isn't a market order, there may be maker orders with a better price. Ensure
-            // we use exactly the taker's price in this case (as it is a limit order) by validating
-            // that the amount of base token filled also matches.
-            if (!isMarketOrder(takerOrderParam.data)) {
-                require(
-                    totalMatch.baseTokenFilledAmount <= takerOrderParam.baseTokenAmount,
-                    TAKER_LIMIT_BUY_BASE_EXCEEDED
-                );
-            }
-        }
     }
 
     /**
