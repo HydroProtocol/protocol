@@ -23,6 +23,9 @@ import "./EIP712.sol";
 import "./LibSignature.sol";
 
 contract LibOrder is EIP712, LibSignature {
+
+    uint256 public constant REBATE_RATE_BASE = 100;
+
     struct Order {
         address trader;
         address relayer;
@@ -43,7 +46,7 @@ contract LibOrder is EIP712, LibSignature {
          * ║ expiredAt          │ 5               order expiration time in seconds          ║
          * ║ asMakerFeeRate     │ 2               maker fee rate (base 100,000)             ║
          * ║ asTakerFeeRate     │ 2               taker fee rate (base 100,000)             ║
-         * ║ makerRebateRate    │ 2               rebate rate for maker (base 100,000)      ║
+         * ║ makerRebateRate    │ 2               rebate rate for maker (base 100)          ║
          * ║ salt               │ 8               salt                                      ║
          * ║                    │ 10              reserved                                  ║
          * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
@@ -121,6 +124,10 @@ contract LibOrder is EIP712, LibSignature {
 
     /* Functions to extract info from data bytes in Order struct */
 
+    function getOrderVersion(bytes32 data) internal pure returns (uint256) {
+        return uint256(byte(data));
+    }
+
     function getExpiredAtFromOrderData(bytes32 data) internal pure returns (uint256) {
         return uint256(bytes5(data << (8*3)));
     }
@@ -146,6 +153,9 @@ contract LibOrder is EIP712, LibSignature {
     }
 
     function getMakerRebateRateFromOrderData(bytes32 data) internal pure returns (uint256) {
-        return uint256(bytes2(data << (8*12)));
+        uint256 makerRebate = uint256(bytes2(data << (8*12)));
+
+        // make sure makerRebate will never be larger than 100
+        return makerRebate > REBATE_RATE_BASE ? REBATE_RATE_BASE : makerRebate;
     }
 }
