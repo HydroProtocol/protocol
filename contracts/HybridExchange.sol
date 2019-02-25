@@ -49,32 +49,6 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
     mapping (bytes32 => bool) public cancelled;
 
     event Cancel(bytes32 indexed orderHash);
-    event Match(
-        address baseToken,
-        address quoteToken,
-        address relayer,
-        address maker,
-        address taker,
-        uint256 baseTokenAmount,
-        uint256 quoteTokenAmount,
-        uint256 makerFee,
-        uint256 takerFee,
-        uint256 makerGasFee,
-        uint256 makerRebate,
-        uint256 takerGasFee
-    );
-
-    struct MatchResult {
-        address maker;
-        address taker;
-        uint256 makerFee;
-        uint256 makerRebate;
-        uint256 takerFee;
-        uint256 makerGasFee;
-        uint256 takerGasFee;
-        uint256 baseTokenFilledAmount;
-        uint256 quoteTokenFilledAmount;
-    }
 
     /**
      * When orders are being matched, they will always contain the exact same base token,
@@ -93,12 +67,6 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         OrderSignature signature;
     }
 
-    struct OrderAddressSet {
-        address baseToken;
-        address quoteToken;
-        address relayer;
-    }
-
     /**
      * Calculated data about an order object.
      * Generally the filledAmount is specified in base token units, however in the case of a market
@@ -108,6 +76,31 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         bytes32 orderHash;
         uint256 filledAmount;
     }
+
+    struct OrderAddressSet {
+        address baseToken;
+        address quoteToken;
+        address relayer;
+    }
+
+    struct MatchResult {
+        address maker;
+        address taker;
+        address buyer;
+        uint256 makerFee;
+        uint256 makerRebate;
+        uint256 takerFee;
+        uint256 makerGasFee;
+        uint256 takerGasFee;
+        uint256 baseTokenFilledAmount;
+        uint256 quoteTokenFilledAmount;
+    }
+
+
+    event Match(
+        OrderAddressSet addressSet,
+        MatchResult result
+    );
 
     constructor(address _proxyAddress, address hotTokenAddress)
         LibDiscount(hotTokenAddress)
@@ -331,6 +324,12 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
 
         result.maker = makerOrderParam.trader;
         result.taker = takerOrderParam.trader;
+
+        if(isSell(takerOrderParam.data)) {
+            result.buyer = result.maker;
+        } else {
+            result.buyer = result.taker;
+        }
 
         // rebateRate uses the same base as fee rates, so can be directly compared
         uint256 rebateRate = getMakerRebateRateFromOrderData(makerOrderParam.data);
@@ -666,18 +665,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
 
     function emitMatchEvent(MatchResult memory result, OrderAddressSet memory orderAddressSet) internal {
         emit Match(
-            orderAddressSet.baseToken,
-            orderAddressSet.quoteToken,
-            orderAddressSet.relayer,
-            result.maker,
-            result.taker,
-            result.baseTokenFilledAmount,
-            result.quoteTokenFilledAmount,
-            result.makerFee,
-            result.takerFee,
-            result.makerGasFee,
-            result.makerRebate,
-            result.takerGasFee
+            orderAddressSet, result
         );
     }
 }
