@@ -115,8 +115,9 @@ contract('Order', accounts => {
         let res = await contract.methods.getMakerRebateRateFromOrderDataPublic(data).call();
         assert.equal(0, res);
 
+        // Any maker Rebate Rate larger than 100 will be reduced to 100.
         data = generateOrderData(0, 0, 0, 0, 0, 0, 10000, 0);
         res = await contract.methods.getMakerRebateRateFromOrderDataPublic(data).call();
-        assert.equal(10000, res);
+        assert.equal(100, res);
     });
 });

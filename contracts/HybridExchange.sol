@@ -212,6 +212,8 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         view
         returns (OrderInfo memory orderInfo)
     {
+        // Order v2 data is uncompatible with v1. This contract can only handle v2 order.
+        require(getOrderVersion(orderParam.data) == 2, ORDER_VERSION_NOT_SUPPORTED);
         Order memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
         orderInfo.orderHash = getOrderHash(order);
         orderInfo.filledAmount = filled[orderInfo.orderHash];
@@ -365,34 +367,30 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         result.maker = makerOrderParam.trader;
         result.taker = takerOrderParam.trader;
 
-        // rebateRate uses the same base as fee rates, so can be directly compared
         uint256 rebateRate = getMakerRebateRateFromOrderData(makerOrderParam.data);
         uint256 makerRawFeeRate = getAsMakerFeeRateFromOrderData(makerOrderParam.data);
 
-        if (rebateRate > makerRawFeeRate) {
-            // Cap the rebate so it will never exceed the fees paid by the taker.
-            uint256 makerRebateRate = min(
-                // Don't want to apply discounts to the rebase, so simply multiply by
-                // DISCOUNT_RATE_BASE to get it to the correct units.
-                rebateRate.sub(makerRawFeeRate).mul(DISCOUNT_RATE_BASE),
-                takerFeeRate
-            );
-            result.makerRebate = result.quoteTokenFilledAmount.mul(makerRebateRate).div(
-                FEE_RATE_BASE.mul(DISCOUNT_RATE_BASE)
-            );
-            // If the rebate rate is higher, maker pays no fees.
+        if (rebateRate > 0) {
+            // If the rebate rate is not zero, maker pays no fees.
             result.makerFee = 0;
+
+            // RebateRate will never exceed REBATE_RATE_BASE, so rebateFee will never exceed the fees paid by the taker.
+            result.makerRebate = result.quoteTokenFilledAmount.mul(takerFeeRate).mul(rebateRate).div(
+                FEE_RATE_BASE.mul(DISCOUNT_RATE_BASE).mul(REBATE_RATE_BASE)
+            );
         } else {
+            result.makerRebate = 0;
+
             // maker fee will be reduced, but still >= 0
             uint256 makerFeeRate = getFinalFeeRate(
                 makerOrderParam.trader,
                 makerRawFeeRate.sub(rebateRate),
                 isParticipantRelayer
             );
+
             result.makerFee = result.quoteTokenFilledAmount.mul(makerFeeRate).div(
                 FEE_RATE_BASE.mul(DISCOUNT_RATE_BASE)
             );
-            result.makerRebate = 0;
         }
 
         result.takerFee = result.quoteTokenFilledAmount.mul(takerFeeRate).div(

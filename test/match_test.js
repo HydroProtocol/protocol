@@ -59,9 +59,15 @@ contract('Match', async accounts => {
                 symbol: 'ETH'
             };
         } else {
-            token = await newContract(TestToken, tokenConfig.name, tokenConfig.symbol, tokenConfig.decimals, {
-                from: relayer
-            });
+            token = await newContract(
+                TestToken,
+                tokenConfig.name,
+                tokenConfig.symbol,
+                tokenConfig.decimals,
+                {
+                    from: relayer
+                }
+            );
             token.symbol = tokenConfig.symbol;
         }
 
@@ -150,10 +156,22 @@ contract('Match', async accounts => {
         const baseTokenAddress = baseToken._address;
         const quoteTokenAddress = quoteToken._address;
 
-        const takerOrder = await buildOrder(takerOrderParam, exchange, baseTokenAddress, quoteTokenAddress);
+        const takerOrder = await buildOrder(
+            takerOrderParam,
+            exchange,
+            baseTokenAddress,
+            quoteTokenAddress
+        );
         const makerOrders = [];
         for (let i = 0; i < makerOrdersParams.length; i++) {
-            makerOrders.push(await buildOrder(makerOrdersParams[i], exchange, baseTokenAddress, quoteTokenAddress));
+            makerOrders.push(
+                await buildOrder(
+                    makerOrdersParams[i],
+                    exchange,
+                    baseTokenAddress,
+                    quoteTokenAddress
+                )
+            );
         }
 
         const res = await exchange.methods
@@ -176,7 +194,9 @@ contract('Match', async accounts => {
                 const userKey = Object.keys(assertDiffs[tokenSymbol])[j];
                 const expectedDiff = assertDiffs[tokenSymbol][userKey];
                 const balanceKey = `${tokenSymbol}-${userKey}`;
-                const actualDiff = new BigNumber(balancesAfterMatch[balanceKey]).minus(balancesBeforeMatch[balanceKey]);
+                const actualDiff = new BigNumber(balancesAfterMatch[balanceKey]).minus(
+                    balancesBeforeMatch[balanceKey]
+                );
 
                 assert.equal(actualDiff.toString(), expectedDiff, `${balanceKey}`);
             }
@@ -186,16 +206,25 @@ contract('Match', async accounts => {
             const { limitTaker, marketTaker, makers } = assertFilled;
 
             if (limitTaker && takerOrderParam.type == 'limit') {
-                assert.equal(await exchange.methods.filled(takerOrder.orderHash).call(), limitTaker);
+                assert.equal(
+                    await exchange.methods.filled(takerOrder.orderHash).call(),
+                    limitTaker
+                );
             }
 
             if (marketTaker && takerOrderParam.type == 'market') {
-                assert.equal(await exchange.methods.filled(takerOrder.orderHash).call(), marketTaker);
+                assert.equal(
+                    await exchange.methods.filled(takerOrder.orderHash).call(),
+                    marketTaker
+                );
             }
 
             if (makers) {
                 for (let i = 0; i < makers.length; i++) {
-                    assert.equal(await exchange.methods.filled(makerOrders[i].orderHash).call(), makers[i]);
+                    assert.equal(
+                        await exchange.methods.filled(makerOrders[i].orderHash).call(),
+                        makers[i]
+                    );
                 }
             }
         }
@@ -255,7 +284,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -269,7 +298,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -282,7 +311,7 @@ contract('Match', async accounts => {
                 {
                     trader: u3,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -353,7 +382,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -367,7 +396,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -442,7 +471,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'buy',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -456,7 +485,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -469,7 +498,7 @@ contract('Match', async accounts => {
                 {
                     trader: u3,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -554,7 +583,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'buy',
                 type: 'market',
                 expiredAtSeconds: 3500000000,
@@ -568,7 +597,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -581,7 +610,7 @@ contract('Match', async accounts => {
                 {
                     trader: u3,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -636,7 +665,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'buy',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -650,7 +679,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -716,7 +745,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'buy',
                 type: 'market',
                 expiredAtSeconds: 3500000000,
@@ -730,7 +759,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -794,7 +823,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'buy',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -808,7 +837,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -872,7 +901,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'market',
                 expiredAtSeconds: 3500000000,
@@ -886,7 +915,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -914,19 +943,19 @@ contract('Match', async accounts => {
 
     //
     // User1 buy  8424.22  TT (0.03781   price) Taker
-    // User2 sell    1952  TT (0.036821  price) Maker Rebate 0.5%
+    // User2 sell    1952  TT (0.036821  price) Maker Rebate 50%
     //
     // FUND CHANGES
-    // ╔═════════╤══════════╤═══════════════╤═════════════════════════════════╗
-    // ║         │  TT      │ WETH          │                                 ║
-    // ╠═════════╪══════════╪═══════════════╪═════════════════════════════════╣
-    // ║ u1      │  1952    │ -75.5683216   │ -(0.036821 * 1952) * 1.05 - 0.1 ║
-    // ╟─────────┼──────────┼───────────────┼─────────────────────────────────╢
-    // ║ u2      │ -1952    │ 71.41521904   │ 0.036821 * 1952 * 0.995 - 0.1   ║
-    // ╟─────────┼──────────┼───────────────┼─────────────────────────────────╢
-    // ║ relayer │ 0        │  4.15310256   │ (0.036821 * 1952) * 0.055 + 0.2 ║
-    // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════╝
-    it('Maker Rebate Rate < Maker fee Rate', async () => {
+    // ╔═════════╤══════════╤═══════════════╤════════════════════════════════════════════╗
+    // ║         │  TT      │ WETH          │                                            ║
+    // ╠═════════╪══════════╪═══════════════╪════════════════════════════════════════════╣
+    // ║ u1      │  1952    │ -75.5683216   │ -(0.036821 * 1952) * 1.05 - 0.1            ║
+    // ╟─────────┼──────────┼───────────────┼────────────────────────────────────────────╢
+    // ║ u2      │ -1952    │ 73.5714568    │ (0.036821 * 1952) * (1 + 0.05 * 0.5) - 0.1 ║
+    // ╟─────────┼──────────┼───────────────┼────────────────────────────────────────────╢
+    // ║ relayer │ 0        │  1.9968648    │ (0.036821 * 1952) * (0.05 * 0.5) + 0.2     ║
+    // ╚═════════╧══════════╧═══════════════╧════════════════════════════════════════════╝
+    it('Maker Rebate 50%', async () => {
         await limitAndMarketTestMatch({
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
@@ -948,7 +977,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'buy',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -962,13 +991,13 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
-                    asMakerFeeRate: 1000,
+                    asMakerFeeRate: 1000, // It will have no effect
                     asTakerFeeRate: 5000,
-                    makerRebateRate: 500,
+                    makerRebateRate: 50,
                     baseTokenAmount: toWei('1952'),
                     quoteTokenAmount: toWei('71.874592'),
                     gasTokenAmount: toWei('0.1')
@@ -982,126 +1011,30 @@ contract('Match', async accounts => {
                 },
                 WETH: {
                     u1: toWei('-75.5683216'),
-                    u2: toWei('71.41521904'),
-                    relayer: toWei('4.15310256')
-                }
-            }
-        });
-    });
-
-    //
-    // User1 buy  8424.22  TT (0.03781   price)            Taker
-    // User2 sell    1952  TT (0.036821  price)            Maker rebate 1%
-    // User3 sell  314159  TT (0.03780   price) PatialFill Maker
-    //
-    // FUND CHANGES
-    // ╔═════════╤══════════╤═══════════════╤════════════════════════════════════════════════════════════╗
-    // ║         │  TT      │ WETH          │                                                            ║
-    // ╠═════════╪══════════╪═══════════════╪════════════════════════════════════════════════════════════╣
-    // ║ u1      │ 8424.22  │ -332.4507334  │ -(0.036821 * 1952 + 0.03780 * 6472.22) * 1.05 - 0.1        ║
-    // ╟─────────┼──────────┼───────────────┼────────────────────────────────────────────────────────────╢
-    // ║ u2      │ -1952    │ 71.774592     │ 0.036821 * 1952 - 0.1                                      ║
-    // ╟─────────┼──────────┼───────────────┼────────────────────────────────────────────────────────────╢
-    // ║ u3      │ -6472.22 │ 242.10341684  │ 0.03780 * 6472.22 * 0.99 - 0.1                             ║
-    // ╟─────────┼──────────┼───────────────┼────────────────────────────────────────────────────────────╢
-    // ║ relayer │ 0        │ 18.57272456   │ 0.036821 * 1952 * 0.05 + (0.03780 * 6472.22) * 0.06 + 0.3  ║
-    // ╚═════════╧══════════╧═══════════════╧════════════════════════════════════════════════════════════╝
-    it('Maker Rebate Rate == Maker Fee Rate', async () => {
-        await limitAndMarketTestMatch({
-            users: { u1, u2, u3, relayer },
-            baseTokenConfig: {
-                name: 'TestToken',
-                symbol: 'TT',
-                decimals: 18,
-                initBalances: {
-                    u2: toWei(10000),
-                    u3: toWei(10000)
-                }
-            },
-            quoteTokenConfig: {
-                name: 'Wrapped Ethereum',
-                symbol: 'WETH',
-                decimals: 18,
-                initBalances: {
-                    u1: toWei(5000)
-                }
-            },
-            takerOrderParam: {
-                trader: u1,
-                relayer,
-                version: 1,
-                side: 'buy',
-                type: 'limit',
-                expiredAtSeconds: 3500000000,
-                asMakerFeeRate: 1000,
-                asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('8424.22'),
-                quoteTokenAmount: toWei('318.5197582'),
-                gasTokenAmount: toWei('0.1')
-            },
-            makerOrdersParams: [
-                {
-                    trader: u2,
-                    relayer,
-                    version: 1,
-                    side: 'sell',
-                    type: 'limit',
-                    expiredAtSeconds: 3500000000,
-                    asMakerFeeRate: 1000,
-                    asTakerFeeRate: 5000,
-                    makerRebateRate: 1000,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('71.874592'),
-                    gasTokenAmount: toWei('0.1')
-                },
-                {
-                    trader: u3,
-                    relayer,
-                    version: 1,
-                    side: 'sell',
-                    type: 'limit',
-                    expiredAtSeconds: 3500000000,
-                    asMakerFeeRate: 1000,
-                    asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('6472.22'),
-                    quoteTokenAmount: toWei('244.649916'),
-                    gasTokenAmount: toWei('0.1')
-                }
-            ],
-            assertDiffs: {
-                TT: {
-                    u1: toWei('8424.22'),
-                    u2: toWei('-1952'),
-                    u3: toWei('-6472.22'),
-                    relayer: toWei('0')
-                },
-                WETH: {
-                    u1: toWei('-332.4507334'),
-                    u2: toWei('71.774592'),
-                    u3: toWei('242.10341684'),
-                    relayer: toWei('18.57272456')
+                    u2: toWei('73.5714568'),
+                    relayer: toWei('1.9968648')
                 }
             }
         });
     });
 
     // User1 sell  20  TT (0.18 price)            Taker
-    // User2  buy  10  TT (0.19 price)            Maker  Rebate 2%
+    // User2  buy  10  TT (0.19 price)            Maker  Rebate 100%
     // User3  buy  20  TT (0.18 price) PatialFill Maker
     //
     // Fund changes
-    // ╔═════════╤═════╤════════╤═══════════════════════════════════════════════╗
-    // ║         │  TT │ ETH    │                                               ║
-    // ╠═════════╪═════╪════════╪═══════════════════════════════════════════════╣
-    // ║ u1      │ -20 │ 3.415  │ (0.19 * 10 + 0.18 * 10) * 0.95 - 0.1          ║
-    // ╟─────────┼─────┼────────┼───────────────────────────────────────────────╢
-    // ║ u2      │ 10  │ -1.981 │ -0.19 * 10 * (1 + 0.01 - 0.02) - 0.1          ║
-    // ╟─────────┼─────┼────────┼───────────────────────────────────────────────╢
-    // ║ u3      │ 10  │ -1.918 │ -0.18 * 10 * 1.01 - 0.1                       ║
-    // ╟─────────┼─────┼────────┼───────────────────────────────────────────────╢
-    // ║ relayer │ 0   │ 0.484  │ 0.18 * 10 * 0.06 + 0.19 * 10 * 0.04 + 0.3     ║
-    // ╚═════════╧═════╧════════╧═══════════════════════════════════════════════╝
-    it('Maker Rebate Rate > Maker Fee Rate & rebate < taker fee', async () => {
+    // ╔═════════╤═════╤═════════╤═══════════════════════════════════════════════╗
+    // ║         │  TT │ ETH     │                                               ║
+    // ╠═════════╪═════╪═════════╪═══════════════════════════════════════════════╣
+    // ║ u1      │ -20 │ 3.415   │ (0.19 * 10 + 0.18 * 10) * 0.95 - 0.1          ║
+    // ╟─────────┼─────┼─────────┼───────────────────────────────────────────────╢
+    // ║ u2      │ 10  │ -1.905  │ -0.19 * 10 * (1 - 0.05) - 0.1                 ║
+    // ╟─────────┼─────┼─────────┼───────────────────────────────────────────────╢
+    // ║ u3      │ 10  │ -1.918  │ -0.18 * 10 * 1.01 - 0.1                       ║
+    // ╟─────────┼─────┼─────────┼───────────────────────────────────────────────╢
+    // ║ relayer │ 0   │ 0.408   │ 0.18 * 10 * 0.06 + 0.3                        ║
+    // ╚═════════╧═════╧═════════╧═══════════════════════════════════════════════╝
+    it('Maker Rebate Rate is 100%', async () => {
         const testConfig = {
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
@@ -1124,7 +1057,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -1138,11 +1071,11 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
-                    makerRebateRate: 2000,
+                    makerRebateRate: 100,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
                     quoteTokenAmount: toWei('1.9'),
@@ -1152,7 +1085,7 @@ contract('Match', async accounts => {
                 {
                     trader: u3,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -1172,9 +1105,9 @@ contract('Match', async accounts => {
                 },
                 WETH: {
                     u1: toWei('3.415'),
-                    u2: toWei('-1.981'),
+                    u2: toWei('-1.905'),
                     u3: toWei('-1.918'),
-                    relayer: toWei('0.484')
+                    relayer: toWei('0.408')
                 }
             }
         };
@@ -1183,22 +1116,22 @@ contract('Match', async accounts => {
     });
 
     // User1 sell  20  TT (0.18 price)            Taker
-    // User2  buy  10  TT (0.19 price)            Maker  Rebate 10%
+    // User2  buy  10  TT (0.19 price)            Maker  Rebate 200%
     // User3  buy  20  TT (0.18 price) PatialFill Maker
     //
     // Fund changes
-    // ╔═════════╤═════╤════════╤═══════════════════════════════════════════════╗
-    // ║         │  TT │ ETH    │                                               ║
-    // ╠═════════╪═════╪════════╪═══════════════════════════════════════════════╣
-    // ║ u1      │ -20 │ 3.415  │ (0.19 * 10 + 0.18 * 10) * 0.95 - 0.1          ║
-    // ╟─────────┼─────┼────────┼───────────────────────────────────────────────╢
-    // ║ u2      │ 10  │ -1.905 │ -0.19 * 10 * 0.95 - 0.1                       ║
-    // ╟─────────┼─────┼────────┼───────────────────────────────────────────────╢
-    // ║ u3      │ 10  │ -1.918 │ -0.18 * 10 * 1.01 - 0.1                       ║
-    // ╟─────────┼─────┼────────┼───────────────────────────────────────────────╢
-    // ║ relayer │ 0   │ 0.408  │ 0.18 * 10 * 0.06 + 0.3                        ║
-    // ╚═════════╧═════╧════════╧═══════════════════════════════════════════════╝
-    it('Maker Rebate Rate > Maker Fee Rate & rebate > taker fee', async () => {
+    // ╔═════════╤═════╤═════════╤═══════════════════════════════════════════════╗
+    // ║         │  TT │ ETH     │                                               ║
+    // ╠═════════╪═════╪═════════╪═══════════════════════════════════════════════╣
+    // ║ u1      │ -20 │ 3.415   │ (0.19 * 10 + 0.18 * 10) * 0.95 - 0.1          ║
+    // ╟─────────┼─────┼─────────┼───────────────────────────────────────────────╢
+    // ║ u2      │ 10  │ -1.905  │ -0.19 * 10 * (1 - 0.05) - 0.1                 ║
+    // ╟─────────┼─────┼─────────┼───────────────────────────────────────────────╢
+    // ║ u3      │ 10  │ -1.918  │ -0.18 * 10 * 1.01 - 0.1                       ║
+    // ╟─────────┼─────┼─────────┼───────────────────────────────────────────────╢
+    // ║ relayer │ 0   │ 0.408   │ 0.18 * 10 * 0.06 + 0.3                        ║
+    // ╚═════════╧═════╧═════════╧═══════════════════════════════════════════════╝
+    it('Maker Rebate Rate large than 100%(will be calculated as 100%)', async () => {
         const testConfig = {
             users: { u1, u2, u3, relayer },
             baseTokenConfig: {
@@ -1221,7 +1154,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -1235,11 +1168,11 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
-                    makerRebateRate: 6553,
+                    makerRebateRate: 200, // should be used as 100% in contract
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
                     quoteTokenAmount: toWei('1.9'),
@@ -1249,7 +1182,7 @@ contract('Match', async accounts => {
                 {
                     trader: u3,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -1303,7 +1236,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -1317,7 +1250,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -1363,7 +1296,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -1377,7 +1310,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
@@ -1421,7 +1354,7 @@ contract('Match', async accounts => {
             takerOrderParam: {
                 trader: u1,
                 relayer,
-                version: 1,
+                version: 2,
                 side: 'sell',
                 type: 'limit',
                 expiredAtSeconds: 3500000000,
@@ -1435,7 +1368,7 @@ contract('Match', async accounts => {
                 {
                     trader: u2,
                     relayer,
-                    version: 1,
+                    version: 2,
                     side: 'buy',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,

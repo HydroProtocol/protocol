@@ -42,4 +42,6 @@ contract LibExchangeErrors {
     string constant PERIOD_NOT_COMPLETED_ERROR = "PERIOD_NOT_COMPLETED_ERROR";
     string constant CLAIM_HOT_TOKEN_ERROR = "CLAIM_HOT_TOKEN_ERROR";
     string constant INVALID_PERIOD = "INVALID_PERIOD";
+
+    string constant ORDER_VERSION_NOT_SUPPORTED = "ORDER_VERSION_NOT_SUPPORTED";
 }
