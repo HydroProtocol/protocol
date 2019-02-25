@@ -20,7 +20,12 @@ const isValidSignature = (account, signature, message) => {
     const v = parseInt(signature.config.slice(2, 4), 16);
     const method = parseInt(signature.config.slice(4, 6), 16);
     if (method === 0) {
-        pubkey = ecrecover(hashPersonalMessage(toBuffer(message)), v, toBuffer(signature.r), toBuffer(signature.s));
+        pubkey = ecrecover(
+            hashPersonalMessage(toBuffer(message)),
+            v,
+            toBuffer(signature.r),
+            toBuffer(signature.s)
+        );
     } else if (method === 1) {
         pubkey = ecrecover(toBuffer(message), v, toBuffer(signature.r), toBuffer(signature.s));
     } else {
@@ -54,29 +59,23 @@ const generateOrderData = (
     return addTailingZero(res, 66);
 };
 
-const EIP712_DOMAIN_TYPEHASH = sha3ToHex('EIP712Domain(string name,string version,address verifyingContract)');
+const EIP712_DOMAIN_TYPEHASH = sha3ToHex('EIP712Domain(string name)');
 const EIP712_ORDER_TYPE = sha3ToHex(
     'Order(address trader,address relayer,address baseToken,address quoteToken,uint256 baseTokenAmount,uint256 quoteTokenAmount,uint256 gasTokenAmount,bytes32 data)'
 );
 
-const getDomainSeparator = hydroAddress => {
-    return sha3ToHex(
-        EIP712_DOMAIN_TYPEHASH +
-            sha3ToHex('Hydro Protocol').slice(2) +
-            sha3ToHex('1').slice(2) +
-            addLeadingZero(hydroAddress.slice(2), 64)
-    );
+const getDomainSeparator = () => {
+    return sha3ToHex(EIP712_DOMAIN_TYPEHASH + sha3ToHex('Hydro Protocol').slice(2));
 };
 
-const getEIP712MessageHash = (hydroAddress, message) => {
-    return sha3ToHex('0x1901' + getDomainSeparator(hydroAddress).slice(2) + message.slice(2), {
+const getEIP712MessageHash = message => {
+    return sha3ToHex('0x1901' + getDomainSeparator().slice(2) + message.slice(2), {
         encoding: 'hex'
     });
 };
 
-const getOrderHash = (hydroAddress, order) => {
+const getOrderHash = order => {
     return getEIP712MessageHash(
-        hydroAddress,
         sha3ToHex(
             EIP712_ORDER_TYPE +
                 addLeadingZero(order.trader.slice(2), 64) +
