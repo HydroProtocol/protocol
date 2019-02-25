@@ -55,7 +55,7 @@ contract('Match', async accounts => {
         copyedOrder.baseToken = baseToken;
         copyedOrder.quoteToken = quoteToken;
 
-        const orderHash = getOrderHash(exchange._address, copyedOrder);
+        const orderHash = getOrderHash(copyedOrder);
         const newWeb3 = getWeb3();
 
         // This depends on the client, ganache-cli/testrpc auto prefix the message header to message

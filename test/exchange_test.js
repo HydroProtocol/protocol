@@ -21,7 +21,7 @@ contract('CancelOrder', accounts => {
             gasTokenAmount: 0
         };
 
-        const hash = getOrderHash(exchange._address, order);
+        const hash = getOrderHash(order);
         let cancelled = await exchange.methods.cancelled(hash).call();
         assert.equal(false, cancelled);
 
@@ -42,7 +42,7 @@ contract('CancelOrder', accounts => {
             gasTokenAmount: 0
         };
 
-        const hash = getOrderHash(exchange._address, order);
+        const hash = getOrderHash(order);
         let cancelled = await exchange.methods.cancelled(hash).call();
         assert.equal(false, cancelled);
 

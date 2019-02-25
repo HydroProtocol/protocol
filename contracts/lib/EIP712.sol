@@ -23,13 +23,12 @@ pragma solidity ^0.4.24;
  */
 contract EIP712 {
     string internal constant DOMAIN_NAME = "Hydro Protocol";
-    string internal constant DOMAIN_VERSION = "1";
 
     /**
      * Hash of the EIP712 Domain Separator Schema
      */
     bytes32 public constant EIP712_DOMAIN_TYPEHASH = keccak256(
-        abi.encodePacked("EIP712Domain(string name,string version,address verifyingContract)")
+        abi.encodePacked("EIP712Domain(string name)")
     );
 
     bytes32 public DOMAIN_SEPARATOR;
@@ -38,9 +37,7 @@ contract EIP712 {
         DOMAIN_SEPARATOR = keccak256(
             abi.encodePacked(
                 EIP712_DOMAIN_TYPEHASH,
-                keccak256(bytes(DOMAIN_NAME)),
-                keccak256(bytes(DOMAIN_VERSION)),
-                bytes32(address(this))
+                keccak256(bytes(DOMAIN_NAME))
             )
         );
     }

@@ -1,8 +1,8 @@
 const assert = require('assert');
 const { getContracts } = require('./utils');
-const { EIP712_DOMAIN_TYPEHASH, EIP712_ORDER_TYPE, getDomainSeparator, getEIP712MessageHash } = require('../sdk/sdk');
+const { EIP712_DOMAIN_TYPEHASH, EIP712_ORDER_TYPE, getDomainSeparator } = require('../sdk/sdk');
 
-contract('Order', accounts => {
+contract('Order', () => {
     let exchange;
 
     before(async () => {
@@ -16,7 +16,7 @@ contract('Order', accounts => {
     });
 
     it('domain separator', async () => {
-        const computedDomainSeparator = getDomainSeparator(exchange._address);
+        const computedDomainSeparator = getDomainSeparator();
         const domainSeparator = await exchange.methods.DOMAIN_SEPARATOR().call();
         assert.equal(computedDomainSeparator, domainSeparator);
     });
