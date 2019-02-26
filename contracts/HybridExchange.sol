@@ -492,7 +492,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleTakerSell(MatchResult[] memory results, OrderAddressSet memory orderAddressSet) internal {
-        uint256 totalTakerBaseTokenFilledAmount = 0;
+        uint256 totalTakerQuoteTokenFilledAmount = 0;
 
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
@@ -512,7 +512,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
                     sub(results[i].makerRebate)
             );
 
-            totalTakerBaseTokenFilledAmount = totalTakerBaseTokenFilledAmount.add(
+            totalTakerQuoteTokenFilledAmount = totalTakerQuoteTokenFilledAmount.add(
                 results[i].quoteTokenFilledAmount.sub(results[i].takerFee)
             );
 
@@ -523,7 +523,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
             orderAddressSet.quoteToken,
             orderAddressSet.relayer,
             results[0].taker,
-            totalTakerBaseTokenFilledAmount.sub(results[0].takerGasFee)
+            totalTakerQuoteTokenFilledAmount.sub(results[0].takerGasFee)
         );
     }
 
