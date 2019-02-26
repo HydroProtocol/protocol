@@ -27,7 +27,7 @@ import "./lib/LibRelayer.sol";
 import "./lib/LibDiscount.sol";
 import "./lib/LibExchangeErrors.sol";
 
-contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchangeErrors {
+contract HybridExchange is LibMath, LibOrder, LibRelayer, LibDiscount, LibExchangeErrors {
     using SafeMath for uint256;
 
     uint256 public constant FEE_RATE_BASE = 100000;

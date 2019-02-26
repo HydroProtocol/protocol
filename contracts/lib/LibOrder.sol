@@ -21,8 +21,9 @@ pragma experimental ABIEncoderV2;
 
 import "./EIP712.sol";
 import "./LibSignature.sol";
+import "./LibMath.sol";
 
-contract LibOrder is EIP712, LibSignature {
+contract LibOrder is EIP712, LibSignature, LibMath {
 
     uint256 public constant REBATE_RATE_BASE = 100;
 
@@ -155,7 +156,7 @@ contract LibOrder is EIP712, LibSignature {
     function getMakerRebateRateFromOrderData(bytes32 data) internal pure returns (uint256) {
         uint256 makerRebate = uint256(bytes2(data << (8*12)));
 
-        // make sure makerRebate will never be larger than 100
-        return makerRebate > REBATE_RATE_BASE ? REBATE_RATE_BASE : makerRebate;
+        // make sure makerRebate will never be larger than REBATE_RATE_BASE, which is 100
+        return min(makerRebate, REBATE_RATE_BASE);
     }
 }
