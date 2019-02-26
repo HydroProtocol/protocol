@@ -337,7 +337,6 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         }
 
         uint256 rebateRate = getMakerRebateRateFromOrderData(makerOrderParam.data);
-        uint256 makerRawFeeRate = getAsMakerFeeRateFromOrderData(makerOrderParam.data);
 
         if (rebateRate > 0) {
             // If the rebate rate is not zero, maker pays no fees.
@@ -348,6 +347,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
                 FEE_RATE_BASE.mul(DISCOUNT_RATE_BASE).mul(REBATE_RATE_BASE)
             );
         } else {
+            uint256 makerRawFeeRate = getAsMakerFeeRateFromOrderData(makerOrderParam.data);
             result.makerRebate = 0;
 
             // maker fee will be reduced, but still >= 0
