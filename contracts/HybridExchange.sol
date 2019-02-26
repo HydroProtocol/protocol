@@ -353,7 +353,7 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
             // maker fee will be reduced, but still >= 0
             uint256 makerFeeRate = getFinalFeeRate(
                 makerOrderParam.trader,
-                makerRawFeeRate.sub(rebateRate),
+                makerRawFeeRate,
                 isParticipantRelayer
             );
 
