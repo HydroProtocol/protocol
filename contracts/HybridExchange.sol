@@ -32,6 +32,9 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
 
     uint256 public constant FEE_RATE_BASE = 100000;
 
+    /* Order v2 data is uncompatible with v1. This contract can only handle v2 order. */
+    uint256 public constant SUPPORTED_ORDER_VERSION = 2;
+
     /**
      * Address of the proxy responsible for asset transfer.
      */
@@ -191,8 +194,8 @@ contract HybridExchange is LibOrder, LibMath, LibRelayer, LibDiscount, LibExchan
         view
         returns (OrderInfo memory orderInfo)
     {
-        // Order v2 data is uncompatible with v1. This contract can only handle v2 order.
-        require(getOrderVersion(orderParam.data) == 2, ORDER_VERSION_NOT_SUPPORTED);
+        require(getOrderVersion(orderParam.data) == SUPPORTED_ORDER_VERSION, ORDER_VERSION_NOT_SUPPORTED);
+
         Order memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
         orderInfo.orderHash = getOrderHash(order);
         orderInfo.filledAmount = filled[orderInfo.orderHash];
