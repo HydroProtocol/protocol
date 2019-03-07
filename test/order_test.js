@@ -30,7 +30,8 @@ contract('Order', accounts => {
             makerFeeRate,
             takerFeeRate,
             makerRebateRate,
-            salt
+            salt,
+            true
         );
 
         // version            hex                         01
@@ -41,7 +42,8 @@ contract('Order', accounts => {
         // 50000              hex                      c3 50
         // makerRebateRate    hex                      00 00
         // 488701836          hex    00 00 00 00 1d 20 ff 8c
-        assert.equal('0x010100005bbf0d4e2710c3500000000000001d20ff8c00000000000000000000', data);
+        // isMakerOnly        hex                         01
+        assert.equal('0x010100005bbf0d4e2710c3500000000000001d20ff8c01000000000000000000', data);
     });
 
     it('should parse out expired at from data', async () => {
@@ -119,5 +121,11 @@ contract('Order', accounts => {
         data = generateOrderData(0, 0, 0, 0, 0, 0, 10000, 0);
         res = await contract.methods.getMakerRebateRateFromOrderDataPublic(data).call();
         assert.equal(100, res);
+    });
+
+    it('should parse isMakerOnly', async () => {
+        let data = generateOrderData(0, 0, 0, 0, 0, 0, 0, 0, true);
+        let res = await contract.methods.isMakerOnlyPublic(data).call();
+        assert.equal(true, res);
     });
 });

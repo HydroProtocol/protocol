@@ -44,7 +44,8 @@ const generateOrderData = (
     asMakerFeeRate,
     asTakerFeeRate,
     makerRebateRate,
-    salt
+    salt,
+    isMakerOnly
 ) => {
     let res = '0x';
     res += addLeadingZero(new BigNumber(version).toString(16), 2);
@@ -55,6 +56,7 @@ const generateOrderData = (
     res += addLeadingZero(new BigNumber(asTakerFeeRate).toString(16), 2 * 2);
     res += addLeadingZero(new BigNumber(makerRebateRate).toString(16), 2 * 2);
     res += addLeadingZero(new BigNumber(salt).toString(16), 8 * 2);
+    res += isMakerOnly ? '01' : '00';
 
     return addTailingZero(res, 66);
 };
