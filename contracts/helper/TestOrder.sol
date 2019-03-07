@@ -32,4 +32,8 @@ contract TestOrder is LibOrder {
     function getMakerRebateRateFromOrderDataPublic(bytes32 data) public pure returns (uint256) {
         return getMakerRebateRateFromOrderData(data);
     }
+
+    function isMakerOnlyPublic(bytes32 data) public pure returns (bool) {
+        return isMakerOnly(data);
+    }
 }

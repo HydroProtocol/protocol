@@ -127,6 +127,7 @@ contract HybridExchange is LibMath, LibOrder, LibRelayer, LibDiscount, LibExchan
         OrderAddressSet memory orderAddressSet
     ) public {
         require(canMatchOrdersFrom(orderAddressSet.relayer), INVALID_SENDER);
+        require(!isMakerOnly(takerOrderParam.data), MAKER_ONLY_ORDER_CANNOT_BE_TAKER);
 
         bool isParticipantRelayer = isParticipant(orderAddressSet.relayer);
         uint256 takerFeeRate = getTakerFeeRate(takerOrderParam, isParticipantRelayer);

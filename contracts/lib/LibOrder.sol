@@ -49,7 +49,8 @@ contract LibOrder is EIP712, LibSignature, LibMath {
          * ║ asTakerFeeRate     │ 2               taker fee rate (base 100,000)             ║
          * ║ makerRebateRate    │ 2               rebate rate for maker (base 100)          ║
          * ║ salt               │ 8               salt                                      ║
-         * ║                    │ 10              reserved                                  ║
+         * ║ isMakerOnly        │ 1               is maker only                             ║
+         * ║                    │ 9               reserved                                  ║
          * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
          */
         bytes32 data;
@@ -139,6 +140,10 @@ contract LibOrder is EIP712, LibSignature, LibMath {
 
     function isMarketOrder(bytes32 data) internal pure returns (bool) {
         return data[2] == 1;
+    }
+
+    function isMakerOnly(bytes32 data) internal pure returns (bool) {
+        return data[22] == 1;
     }
 
     function isMarketBuy(bytes32 data) internal pure returns (bool) {
