@@ -157,10 +157,10 @@ contract HybridExchange is LibMath, LibOrder, LibRelayer, LibDiscount, LibExchan
             filled[makerOrderInfo.orderHash] = makerOrderInfo.filledAmount;
         }
 
-        settleResults(results, takerOrderParam, orderAddressSet);
-
         // Update amount filled for this taker order.
         filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
+
+        settleResults(results, takerOrderParam, orderAddressSet);
     }
 
     /**
