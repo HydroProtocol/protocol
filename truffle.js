@@ -20,6 +20,11 @@ module.exports = {
             network_id: 3,
             gasPrice: 10000000000
         },
+        rinkeby: {
+            provider: () => new PrivateKeyProvider(process.env.PK, 'https://rinkeby.infura.io'),
+            network_id: 4,
+            gasPrice: 10000000000
+        },
         coverage: {
             host: 'localhost',
             network_id: '*',
