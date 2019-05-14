@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.8;
 
 import "./SafeMath.sol";
 import "./LibOwnable.sol";
@@ -26,7 +26,7 @@ import "./LibOwnable.sol";
  */
 contract LibDiscount is LibOwnable {
     using SafeMath for uint256;
-    
+
     // The base discounted rate is 100% of the current rate, or no discount.
     uint256 public constant DISCOUNT_RATE_BASE = 100;
 
@@ -50,7 +50,7 @@ contract LibDiscount is LibOwnable {
         /**
          * We construct calldata for the `balanceOf` ABI.
          * The layout of this calldata is in the table below.
-         * 
+         *
          * ╔════════╤════════╤════════╤═══════════════════╗
          * ║ Area   │ Offset │ Length │ Contents          ║
          * ╟────────┼────────┼────────┼───────────────────╢
@@ -68,10 +68,9 @@ contract LibDiscount is LibOwnable {
             mstore(4, owner)
 
             // No need to check the return value because hotToken is a trustworthy contract
-            result := call(
+            result := staticcall(
                 gas,      // Forward all gas
                 hotToken, // HOT token deployment address
-                0,        // Don't send any ETH
                 0,        // Pointer to start of calldata
                 36,       // Length of calldata
                 0,        // Overwrite calldata with output
@@ -145,24 +144,24 @@ contract LibDiscount is LibOwnable {
         }
 
         bytes32 config = discountConfig;
-        uint256 count = uint256(byte(config));
+        uint256 count = uint256(uint8(byte(config)));
         uint256 bar;
 
         // HOT Token has 18 decimals
         hotBalance = hotBalance.div(10**18);
 
         for (uint256 i = 0; i < count; i++) {
-            bar = uint256(bytes4(config << (2 + i * 5) * 8));
+            bar = uint256(uint32(bytes4(config << (2 + i * 5) * 8)));
 
             if (hotBalance < bar) {
-                result = uint256(byte(config << (2 + i * 5 + 4) * 8));
+                result = uint256(uint8(byte(config << (2 + i * 5 + 4) * 8)));
                 break;
             }
         }
 
         // If we haven't found a rate in the config yet, use the maximum rate.
         if (result == 0) {
-            result = uint256(config[1]);
+            result = uint256(uint8(config[1]));
         }
 
         // Make sure our discount algorithm never returns a higher rate than the base.

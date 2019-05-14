@@ -16,10 +16,10 @@
 
 */
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.8;
 
 /**
- * @title LibRelayer provides two distinct features for relayers. 
+ * @title LibRelayer provides two distinct features for relayers.
  *
  * First, Relayers can opt into or out of the Hydro liquidity incentive system.
  *

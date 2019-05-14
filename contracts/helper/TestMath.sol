@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
 import "../lib/LibMath.sol";
 
@@ -12,7 +12,7 @@ contract TestMath is LibMath {
     function getPartialAmountFloorPublic(uint256 a, uint256 b, uint256 c) public pure returns (uint256) {
         return getPartialAmountFloor(a, b, c);
     }
-    
+
     function minPublic(uint256 a, uint256 b) public pure returns (uint256) {
         return min(a, b);
     }

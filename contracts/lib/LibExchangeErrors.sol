@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
 contract LibExchangeErrors {
     string constant INVALID_TRADER = "INVALID_TRADER";

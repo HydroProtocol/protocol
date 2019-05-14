@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 contract LibSignature {
@@ -44,7 +44,7 @@ contract LibSignature {
         bytes32 r;
         bytes32 s;
     }
-    
+
     /**
      * Validate a signature given a hash calculated from the order data, the signer, and the
      * signature data passed in with the order.

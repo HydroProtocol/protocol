@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./EIP712.sol";
@@ -127,23 +127,23 @@ contract LibOrder is EIP712, LibSignature, LibMath {
     /* Functions to extract info from data bytes in Order struct */
 
     function getOrderVersion(bytes32 data) internal pure returns (uint256) {
-        return uint256(byte(data));
+        return uint256(uint8(byte(data)));
     }
 
     function getExpiredAtFromOrderData(bytes32 data) internal pure returns (uint256) {
-        return uint256(bytes5(data << (8*3)));
+        return uint256(uint40(bytes5(data << (8*3))));
     }
 
     function isSell(bytes32 data) internal pure returns (bool) {
-        return data[1] == 1;
+        return uint8(data[1]) == 1;
     }
 
     function isMarketOrder(bytes32 data) internal pure returns (bool) {
-        return data[2] == 1;
+        return uint8(data[2]) == 1;
     }
 
     function isMakerOnly(bytes32 data) internal pure returns (bool) {
-        return data[22] == 1;
+        return uint8(data[22]) == 1;
     }
 
     function isMarketBuy(bytes32 data) internal pure returns (bool) {
@@ -151,15 +151,15 @@ contract LibOrder is EIP712, LibSignature, LibMath {
     }
 
     function getAsMakerFeeRateFromOrderData(bytes32 data) internal pure returns (uint256) {
-        return uint256(bytes2(data << (8*8)));
+        return uint256(uint16(bytes2(data << (8*8))));
     }
 
     function getAsTakerFeeRateFromOrderData(bytes32 data) internal pure returns (uint256) {
-        return uint256(bytes2(data << (8*10)));
+        return uint256(uint16(bytes2(data << (8*10))));
     }
 
     function getMakerRebateRateFromOrderData(bytes32 data) internal pure returns (uint256) {
-        uint256 makerRebate = uint256(bytes2(data << (8*12)));
+        uint256 makerRebate = uint256(uint16(bytes2(data << (8*12))));
 
         // make sure makerRebate will never be larger than REBATE_RATE_BASE, which is 100
         return min(makerRebate, REBATE_RATE_BASE);

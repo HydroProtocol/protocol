@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.8;
 
 /// @dev Math operations with safety checks that revert on error
 library SafeMath {
