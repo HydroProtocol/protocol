@@ -1,7 +1,7 @@
 const assert = require('assert');
 const TestToken = artifacts.require('./helper/TestToken.sol');
 const BigNumber = require('bignumber.js');
-const { newContract, getWeb3, setHotAmount, getContracts, clone } = require('./utils');
+const { newContract, setHotAmount, getContracts, clone } = require('./utils');
 const { generateOrderData, isValidSignature, getOrderHash } = require('../sdk/sdk');
 const { fromRpcSig } = require('ethereumjs-util');
 
@@ -56,11 +56,10 @@ contract('Match', async accounts => {
         copyedOrder.quoteToken = quoteToken;
 
         const orderHash = getOrderHash(copyedOrder);
-        const newWeb3 = getWeb3();
 
         // This depends on the client, ganache-cli/testrpc auto prefix the message header to message
         // So we have to set the method ID to 0 even through we use web3.eth.sign
-        const signature = fromRpcSig(await newWeb3.eth.sign(orderHash, order.trader));
+        const signature = fromRpcSig(await web3.eth.sign(orderHash, order.trader));
         signature.config = `0x${signature.v.toString(16)}00` + '0'.repeat(60);
         const isValid = isValidSignature(order.trader, signature, orderHash);
 

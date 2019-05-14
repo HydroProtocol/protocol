@@ -20,7 +20,9 @@ contract('Discount', accounts => {
         const exchange = contracts.exchange;
 
         await exchange.methods
-            .changeDiscountConfig('0x040a000027106400004e205a000075305000009c404600000000000000000000')
+            .changeDiscountConfig(
+                '0x040a000027106400004e205a000075305000009c404600000000000000000000'
+            )
             .send({ from: accounts[0] });
 
         // hot contract is deployed by accounts 0, so this account has many tokens.
@@ -34,7 +36,9 @@ contract('Discount', accounts => {
 
         try {
             await exchange.methods
-                .changeDiscountConfig('0x040a000027106400004e205a000075305000009c404600000000000000000000')
+                .changeDiscountConfig(
+                    '0x040a000027106400004e205a000075305000009c404600000000000000000000'
+                )
                 .send({ from: accounts[1] });
         } catch (e) {
             assert.ok(e.message.match(/revert/));
