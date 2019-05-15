@@ -18,8 +18,8 @@
 
 pragma solidity ^0.5.8;
 
-import "./SafeMath.sol";
-import "./LibOwnable.sol";
+import "../lib/SafeMath.sol";
+import "../lib/LibOwnable.sol";
 
 /**
  * Library to handle fee discount calculation

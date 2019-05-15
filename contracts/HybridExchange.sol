@@ -20,14 +20,15 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./lib/SafeMath.sol";
-import "./lib/LibOrder.sol";
 import "./lib/LibMath.sol";
 import "./lib/LibSignature.sol";
 import "./lib/LibRelayer.sol";
-import "./lib/LibDiscount.sol";
-import "./lib/LibExchangeErrors.sol";
 
-contract HybridExchange is LibMath, LibOrder, LibRelayer, LibDiscount, LibExchangeErrors {
+import "./exchange/Orders.sol";
+import "./exchange/Discount.sol";
+import "./exchange/Errors.sol";
+
+contract HybridExchange is LibMath, Orders, LibRelayer, Discount, Errors {
     using SafeMath for uint256;
 
     uint256 public constant FEE_RATE_BASE = 100000;
@@ -106,7 +107,7 @@ contract HybridExchange is LibMath, LibOrder, LibRelayer, LibDiscount, LibExchan
     );
 
     constructor(address _proxyAddress, address hotTokenAddress)
-        LibDiscount(hotTokenAddress)
+        Discount(hotTokenAddress)
         public
     {
         proxyAddress = _proxyAddress;
