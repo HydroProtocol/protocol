@@ -21,13 +21,12 @@ pragma experimental ABIEncoderV2;
 import "../lib/EIP712.sol";
 
 contract Orders is EIP712 {
-    uint256 public constant INTEREST_RATE_BASE = 10000;
 
     struct Order {
         address owner;
         address relayer;
-        address loanToken;
-        uint256 LoanAmount;
+        address asset;
+        uint256 amount;
 
         /**
          * Data contains the following values packed into 32 bytes
@@ -47,7 +46,7 @@ contract Orders is EIP712 {
 
     bytes32 public constant EIP712_ORDER_TYPE = keccak256(
         abi.encodePacked(
-            "Order(address owner,address relayer,address loanToken,uint256 loanAmount,bytes32 data)"
+            "Order(address owner,address relayer,address asset,uint256 amount,bytes32 data)"
         )
     );
 
@@ -77,8 +76,8 @@ contract Orders is EIP712 {
          *         EIP712_ORDER_TYPE,
          *         bytes32(order.owner),
          *         bytes32(order.relayer),
-         *         bytes32(order.loanToken),
-         *         bytes32(order.loanAmount),
+         *         bytes32(order.asset),
+         *         bytes32(order.amount),
          *         order.data
          *     )
          * );
@@ -109,7 +108,7 @@ contract Orders is EIP712 {
         return uint256(uint8(byte(data)));
     }
 
-    function isLoan(bytes32 data) internal pure returns (bool) {
+    function isLenderOrder(bytes32 data) internal pure returns (bool) {
         return uint8(data[1]) == 0;
     }
 

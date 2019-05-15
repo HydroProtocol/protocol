@@ -21,8 +21,10 @@ pragma experimental ABIEncoderV2;
 
 import "./funding/Assets.sol";
 import "./funding/Orders.sol";
+import "./funding/Loans.sol";
 
-contract Funding is Assets, Orders {
+contract Funding is Assets, Orders, Loans {
+
     constructor() public {
     }
 }
