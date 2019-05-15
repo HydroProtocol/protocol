@@ -18,31 +18,38 @@ contract DepositProxy is LibWhitelist, LibSafeERC20Transfer {
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
     // deposit token need approve first.
-    function depositToken(address token, uint256 amount) public {
-        balances[token][msg.sender] = balances[token][msg.sender].add(amount);
-        safeTransferFrom(token, msg.sender, address(this), amount);
-        emit Deposit(token, msg.sender, amount, balances[token][msg.sender]);
+    function deposit(address token, uint256 amount) public {
+        depositFor(token, msg.sender, amount);
     }
 
-    function deposit() public payable {
-        balances[address(0)][msg.sender] = balances[address(0)][msg.sender].add(msg.value);
-        emit Deposit(address(0), msg.sender, msg.value, balances[address(0)][msg.sender]);
+    function depositFor(address token, address favoree, uint256 amount) public {
+        if (token != address(0)) {
+            safeTransferFrom(token, msg.sender, address(this), amount);
+        }
+
+        balances[token][favoree] = balances[token][favoree].add(amount);
+        emit Deposit(token, favoree, amount, balances[token][favoree]);
     }
 
-    function withdraw(address token, uint256 amount) public {
+    function withdraw(address token, uint256 amount) external {
+        withdrawTo(token, msg.sender, amount);
+    }
+
+    function withdrawTo(address token, address payable favoree, uint256 amount) public {
         require(balances[token][msg.sender] >= amount, "BALANCE_NOT_ENOUGH");
 
         balances[token][msg.sender] = balances[token][msg.sender].sub(amount);
+
         if (token == address(0)) {
-            msg.sender.transfer(amount);
+            favoree.transfer(amount);
         } else {
-            safeTransfer(token, msg.sender, amount);
+            safeTransfer(token, favoree, amount);
         }
         emit Withdraw(token, msg.sender, amount, balances[token][msg.sender]);
     }
 
     function () external payable {
-        deposit();
+        deposit(address(0), msg.value);
     }
 
     function balanceOf(address token, address account) public view returns (uint256) {
