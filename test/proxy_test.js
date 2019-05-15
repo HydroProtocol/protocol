@@ -1,6 +1,6 @@
 const assert = require('assert');
 const TestToken = artifacts.require('./helper/TestToken.sol');
-const { newContract, getContracts, getWeb3 } = require('./utils');
+const { newContract, getContracts } = require('./utils');
 const BigNumber = require('bignumber.js');
 
 contract('Proxy', accounts => {
@@ -15,7 +15,9 @@ contract('Proxy', accounts => {
     });
 
     it('should transfer 10000 token a to b', async () => {
-        const testToken = await newContract(TestToken, 'TestToken', 'TT', 18, { from: accounts[1] });
+        const testToken = await newContract(TestToken, 'TestToken', 'TT', 18, {
+            from: accounts[1]
+        });
 
         // give accounts 2 some tokens
         await testToken.methods.transfer(accounts[2], '30000').send({ from: accounts[1] });
@@ -23,7 +25,10 @@ contract('Proxy', accounts => {
 
         // accounts 2 approve
         await testToken.methods.approve(proxy._address, '10000').send({ from: accounts[2] });
-        assert.equal('10000', await testToken.methods.allowance(accounts[2], proxy._address).call());
+        assert.equal(
+            '10000',
+            await testToken.methods.allowance(accounts[2], proxy._address).call()
+        );
 
         // transfer from
         await proxy.methods
@@ -37,13 +42,12 @@ contract('Proxy', accounts => {
     it('deposit / withdraw', async () => {
         let balanceInContract;
 
-        const newWeb3 = getWeb3();
         balanceInContract = await proxy.methods.balances(accounts[7]).call();
         assert.equal(balanceInContract, '0');
 
         const balance = new BigNumber(2).times(10 ** 18).toString();
 
-        await newWeb3.eth.sendTransaction({
+        await web3.eth.sendTransaction({
             from: accounts[7],
             to: proxy._address,
             value: balance
@@ -59,7 +63,9 @@ contract('Proxy', accounts => {
     });
 
     it('revert when transferring token the account does not have', async () => {
-        const testToken = await newContract(TestToken, 'TestToken', 'TT', 18, { from: accounts[1] });
+        const testToken = await newContract(TestToken, 'TestToken', 'TT', 18, {
+            from: accounts[1]
+        });
 
         // give accounts 2 some tokens
         await testToken.methods.transfer(accounts[2], '30000').send({ from: accounts[1] });
@@ -67,7 +73,10 @@ contract('Proxy', accounts => {
 
         // accounts 2 approve more than owned
         await testToken.methods.approve(proxy._address, '100000').send({ from: accounts[2] });
-        assert.equal('100000', await testToken.methods.allowance(accounts[2], proxy._address).call());
+        assert.equal(
+            '100000',
+            await testToken.methods.allowance(accounts[2], proxy._address).call()
+        );
 
         // transfer more than account owns
         try {
@@ -85,13 +94,12 @@ contract('Proxy', accounts => {
     it('revert when withdrawing funds account does not have', async () => {
         let balanceInContract;
 
-        const newWeb3 = getWeb3();
         balanceInContract = await proxy.methods.balances(accounts[7]).call();
         assert.equal(balanceInContract, '0');
 
         const balance = new BigNumber(2).times(10 ** 18).toString();
 
-        await newWeb3.eth.sendTransaction({
+        await web3.eth.sendTransaction({
             from: accounts[7],
             to: proxy._address,
             value: balance
@@ -101,7 +109,9 @@ contract('Proxy', accounts => {
         assert.equal(balanceInContract, balance);
 
         try {
-            await proxy.methods.withdrawEther(new BigNumber(balance).times(2).toString()).send({ from: accounts[7] });
+            await proxy.methods
+                .withdrawEther(new BigNumber(balance).times(2).toString())
+                .send({ from: accounts[7] });
         } catch (e) {
             assert.ok(e.message.match(/revert/));
         }

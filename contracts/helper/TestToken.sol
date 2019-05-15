@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
 contract ERC20Basic {
     uint256 public totalSupply;
@@ -186,7 +186,7 @@ contract TestToken is StandardToken {
     uint8 public decimals = 18;
     uint public totalSupply = 1560000000 * 10**18;
 
-    constructor(string _name, string _symbol, uint8 _decimals) public {
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) public {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;

@@ -33,13 +33,19 @@ module.exports = {
             gasPrice: 0x01
         }
     },
-    solc: {
-        optimizer: {
-            enabled: true,
-            runs: 200
+    compilers: {
+        solc: {
+            version: '0.5.8',
+            settings: {
+                optimizer: {
+                    enabled: true,
+                    runs: 200
+                }
+            }
         }
     },
     mocha: {
-        enableTimeouts: false
+        enableTimeouts: false,
+        useColors: true
     }
 };

@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
 contract WethToken {
     string public name     = "Wrapped Ether";
@@ -13,7 +13,7 @@ contract WethToken {
     mapping (address => uint)                       public  balanceOf;
     mapping (address => mapping (address => uint))  public  allowance;
 
-    function() public payable {
+    function() external payable {
         deposit();
     }
     function deposit() public payable {
