@@ -25,6 +25,7 @@ import "../lib/SafeMath.sol";
 contract Loans is Consts {
     using SafeMath for uint256;
 
+    uint256 public loansCount;
     mapping(uint256 => Loan) public allLoans;
     mapping(address => uint256[]) public loansByBorrower;
 
@@ -33,6 +34,7 @@ contract Loans is Consts {
         bytes32 lenderOrderId;
         address lender;
         address borrower;
+        address relayer;
         address asset;
         uint256 amount;
 
@@ -44,7 +46,8 @@ contract Loans is Consts {
          * ║ interestRate       │ 2               interest rate (base 10,000)               ║
          * ║ startAt            │ 5               start timestamp                           ║
          * ║ duration           │ 5               loan duration seconds                     ║
-         * ║ feeRate            │ 2               fee rate (base 100,00)                    ║
+         * ║ relayerFeeRate     │ 2               fee rate (base 100,00)                    ║
+         * ║ gasPrice           │ 3               gasPrice in Gwei                          ║
          * ║                    │ rest            salt                                      ║
          * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
          */
@@ -63,20 +66,51 @@ contract Loans is Consts {
         return uint256(uint40(bytes5(data << 8*7)));
     }
 
-    function getLoanFeeRate(bytes32 data) internal pure returns (uint256) {
+    function getLoanRelayerFeeRate(bytes32 data) internal pure returns (uint256) {
         return uint256(uint16(bytes2(data << 8*12)));
     }
 
-    function isLoanExpired(uint256 loanId) public view returns (bool expired) {
-        Loan memory loan = allLoans[loanId];
-        return getLoanStartAt(loan.data) + getLoanDuration(loan.data) > block.timestamp;
+    function isLoanLiquidable(uint256 loanId) public view returns (bool expired) {
+        Loan memory loan = allLoans[loanId]; // TODO gas optimization
+        return getLoanStartAt(loan.data) + getLoanDuration(loan.data) < block.timestamp && loan.amount > 0;
     }
 
-    function calculateLoanInterest(uint256 loanId) public view returns (uint256 interest) {
+    function calculateLoanInterest(uint256 loanId) public view returns (uint256 totalInterest, uint256 relayerFee) {
         Loan memory loan = allLoans[loanId];
         uint256 timeDelta = block.timestamp - getLoanStartAt(loan.data);
-        interest = loan.amount.mul(getLoanInterestRate(loan.data)).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
-        return interest;
+        totalInterest = loan.amount.mul(getLoanInterestRate(loan.data)).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
+        relayerFee = totalInterest.mul(getLoanRelayerFeeRate(loan.data)).div(RELAYER_FEE_RATE_BASE);
+        return (totalInterest, relayerFee);
     }
 
+    function createLoan(Loan memory loan) internal {
+        uint256 id = loansCount++;
+        allLoans[id] = loan;
+        loansByBorrower[loan.borrower].push(id);
+
+        // emit Event
+    }
+
+    function reduceLoan(uint256 loanId, uint256 amount) internal {
+        Loan storage loan = allLoans[loanId];
+        loan.amount -= amount;
+
+        // partial close loan
+        if (loan.amount > 0){
+            return;
+        }
+
+        // only delete loan form loansByBorrower
+        // no need to delete loan from loansById
+        uint256[] storage borrowerLoanIDs = loansByBorrower[loan.borrower];
+
+        for (uint i = 0; i < borrowerLoanIDs.length; i++){
+            if (borrowerLoanIDs[i] == loanId){
+                borrowerLoanIDs[i] = borrowerLoanIDs[borrowerLoanIDs.length-1];
+                delete borrowerLoanIDs[borrowerLoanIDs.length - 1];
+                borrowerLoanIDs.length--;
+                break;
+            }
+        }
+    }
 }
