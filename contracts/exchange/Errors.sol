@@ -18,7 +18,7 @@
 
 pragma solidity 0.5.8;
 
-contract LibExchangeErrors {
+contract Errors {
     string constant INVALID_TRADER = "INVALID_TRADER";
     string constant INVALID_SENDER = "INVALID_SENDER";
     // Taker order and maker order can't be matched

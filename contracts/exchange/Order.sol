@@ -19,11 +19,11 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./EIP712.sol";
-import "./LibSignature.sol";
-import "./LibMath.sol";
+import "../lib/EIP712.sol";
+import "../lib/LibSignature.sol";
+import "../lib/LibMath.sol";
 
-contract LibOrder is EIP712, LibSignature, LibMath {
+contract Order is EIP712, LibSignature, LibMath {
 
     uint256 public constant REBATE_RATE_BASE = 100;
 
