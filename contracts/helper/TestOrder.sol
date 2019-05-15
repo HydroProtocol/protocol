@@ -1,10 +1,10 @@
 pragma solidity 0.5.8;
 
-import "../exchange/Order.sol";
+import "../exchange/Orders.sol";
 
 // Test wrapper
 
-contract TestOrder is Order {
+contract TestOrder is Orders {
     function getExpiredAtFromOrderDataPublic(bytes32 data) public pure returns (uint256) {
         return getExpiredAtFromOrderData(data);
     }

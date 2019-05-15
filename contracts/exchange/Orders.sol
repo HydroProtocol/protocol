@@ -23,7 +23,7 @@ import "../lib/EIP712.sol";
 import "../lib/LibSignature.sol";
 import "../lib/LibMath.sol";
 
-contract Order is EIP712, LibSignature, LibMath {
+contract Orders is EIP712, LibSignature, LibMath {
 
     uint256 public constant REBATE_RATE_BASE = 100;
 

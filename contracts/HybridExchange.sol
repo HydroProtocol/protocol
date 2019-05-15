@@ -24,11 +24,11 @@ import "./lib/LibMath.sol";
 import "./lib/LibSignature.sol";
 import "./lib/LibRelayer.sol";
 
-import "./exchange/Order.sol";
+import "./exchange/Orders.sol";
 import "./exchange/Discount.sol";
 import "./exchange/Errors.sol";
 
-contract HybridExchange is LibMath, Order, LibRelayer, Discount, Errors {
+contract HybridExchange is LibMath, Orders, LibRelayer, Discount, Errors {
     using SafeMath for uint256;
 
     uint256 public constant FEE_RATE_BASE = 100000;
