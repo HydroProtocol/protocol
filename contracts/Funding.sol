@@ -17,9 +17,11 @@
 */
 
 pragma solidity 0.5.8;
+pragma experimental ABIEncoderV2;
 
-contract Funding {
+import "./funding/Assets.sol";
+
+contract Funding is Assets {
     constructor() public {
-
     }
 }
