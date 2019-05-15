@@ -2,6 +2,8 @@ pragma solidity 0.5.8;
 
 contract LibSafeERC20Transfer {
     function safeTransfer(address token, address to, uint256 amount) internal {
+
+        // mute warning
         to;
         amount;
 
@@ -41,6 +43,8 @@ contract LibSafeERC20Transfer {
     }
 
     function safeTransferFrom(address token, address from, address to, uint256 amount) internal {
+
+        // mute warning
         from;
         to;
         amount;
