@@ -22,6 +22,7 @@ import "../lib/EIP712.sol";
 
 contract Orders is EIP712 {
     uint256 public constant INTEREST_RATE_BASE = 10000;
+    uint256 public constant FEE_RATE_BASE = 10000;
 
     struct Order {
         address owner;
@@ -38,7 +39,8 @@ contract Orders is EIP712 {
          * ║ type               │ 1               0: lend, 1: borrow                        ║
          * ║ expiredAt          │ 5               order expiration time in seconds          ║
          * ║ loanDuration       │ 5               loan duration in seconds                  ║
-         * ║ interestRate       │ 2               taker fee rate (base 10,000)              ║
+         * ║ interestRate       │ 2               interest rate (base 10,000)               ║
+         * ║ feeRate            │ 2               fee rate (base 100,00)                    ║
          * ║ salt               │ rest            salt                                      ║
          * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
          */
@@ -123,5 +125,9 @@ contract Orders is EIP712 {
 
     function getInterestRate(bytes32 data) internal pure returns (uint256) {
         return uint256(uint16(bytes2(data << (8*12))));
+    }
+
+    function getFeeRate(bytes32 data) internal pure returns (uint256) {
+        return uint256(uint16(bytes2(data << (8*14))));
     }
 }
