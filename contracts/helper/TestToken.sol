@@ -13,7 +13,7 @@ library SafeMath {
             return 0;
         }
         uint256 c = a * b;
-        assert(c / a == b);
+        require(c / a == b, "DIV ERROR IN SAFE MATH");
         return c;
     }
 
@@ -25,13 +25,13 @@ library SafeMath {
     }
 
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        assert(b <= a);
+        require(b <= a, "SUB ERROR IN SAFE MATH");
         return a - b;
     }
 
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
-        assert(c >= a);
+        require(c >= a, "ADD ERROR IN SAFE MATH");
         return c;
     }
 }
@@ -51,8 +51,8 @@ contract BasicToken is ERC20Basic {
     * @param _value The amount to be transferred.
     */
     function transfer(address _to, uint256 _value) public returns (bool) {
-        require(_to != address(0));
-        require(_value <= balances[msg.sender]);
+        require(_to != address(0), "TO address is empty");
+        require(_value <= balances[msg.sender], "balance is not enough");
 
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -104,9 +104,9 @@ contract StandardToken is ERC20, BasicToken {
     * @param _value uint256 the amount of tokens to be transferred
     */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-        require(_to != address(0));
-        require(_value <= balances[_from]);
-        require(_value <= allowed[_from][msg.sender]);
+        require(_to != address(0), "to address is empty");
+        require(_value <= balances[_from], "balance is not enough");
+        require(_value <= allowed[_from][msg.sender], "allowance is not enough");
 
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);

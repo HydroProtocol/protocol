@@ -84,7 +84,7 @@ contract('Proxy', accounts => {
                 .transferFrom(testToken._address, accounts[2], accounts[3], '40000')
                 .send({ from: accounts[1] });
         } catch (e) {
-            assert.ok(e.message.match(/out of gas/));
+            assert.ok(e.message.match(/TOKEN_TRANSFER_FROM_ERROR/));
             return;
         }
 

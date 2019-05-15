@@ -45,7 +45,7 @@ contract Discount is LibOwnable {
     function getHotBalance(address owner) internal view returns (uint256 result) {
         address hotToken = hotTokenAddress;
 
-        // IERC20(hotTokenAddress).balanceOf(owner)
+        // EIP20Interface(hotTokenAddress).balanceOf(owner)
 
         /**
          * We construct calldata for the `balanceOf` ABI.

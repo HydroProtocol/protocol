@@ -20,8 +20,9 @@ pragma solidity 0.5.8;
 
 import "./lib/SafeMath.sol";
 import "./lib/LibWhitelist.sol";
+import "./lib/LibSafeERC20Transfer.sol";
 
-contract Proxy is LibWhitelist {
+contract Proxy is LibWhitelist, LibSafeERC20Transfer {
     using SafeMath for uint256;
 
     mapping( address => uint256 ) public balances;
@@ -57,7 +58,7 @@ contract Proxy is LibWhitelist {
         if (token == address(0)) {
             transferEther(from, to, value);
         } else {
-            transferToken(token, from, to, value);
+            safeTransferFrom(token, from, to, value);
         }
     }
 
@@ -69,42 +70,5 @@ contract Proxy is LibWhitelist {
         balances[to] = balances[to].add(value);
 
         emit Transfer(from, to, value);
-    }
-
-    /// @dev Calls into ERC20 Token contract, invoking transferFrom.
-    /// @param token Address of token to transfer.
-    /// @param from Address to transfer token from.
-    /// @param to Address to transfer token to.
-    /// @param value Amount of token to transfer.
-    function transferToken(address token, address from, address to, uint256 value)
-        internal
-        onlyAddressInWhitelist
-    {
-        assembly {
-
-            // keccak256('transferFrom(address,address,uint256)') & 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            mstore(0, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-
-            // calldatacopy(t, f, s) copy s bytes from calldata at position f to mem at position t
-            // copy from, to, value from calldata to memory
-            calldatacopy(4, 36, 96)
-
-            // call ERC20 Token contract transferFrom function
-            let result := call(gas, token, 0, 0, 100, 0, 32)
-
-            // Some ERC20 Token contract doesn't return any value when calling the transferFrom function successfully.
-            // So we consider the transferFrom call is successful in either case below.
-            //   1. call successfully and nothing return.
-            //   2. call successfully, return value is 32 bytes long and the value isn't equal to zero.
-            switch eq(result, 1)
-            case 1 {
-                switch or(eq(returndatasize, 0), and(eq(returndatasize, 32), gt(mload(0), 0)))
-                case 1 {
-                    return(0, 0)
-                }
-            }
-        }
-
-        revert("TOKEN_TRANSFER_FROM_ERROR");
     }
 }
