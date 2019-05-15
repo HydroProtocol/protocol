@@ -21,9 +21,6 @@ pragma experimental ABIEncoderV2;
 import "../lib/EIP712.sol";
 
 contract Orders is EIP712 {
-    uint256 public constant INTEREST_RATE_BASE = 10000;
-    uint256 public constant FEE_RATE_BASE = 10000;
-
     struct Order {
         address owner;
         address relayer;
@@ -37,8 +34,8 @@ contract Orders is EIP712 {
          * ╟────────────────────┼───────────────────────────────────────────────────────────╢
          * ║ version            │ 1               order version                             ║
          * ║ type               │ 1               0: lend, 1: borrow                        ║
-         * ║ expiredAt          │ 5               order expiration time in seconds          ║
-         * ║ loanDuration       │ 5               loan duration in seconds                  ║
+         * ║ expiredAt          │ 5               order expiration timestamp                ║
+         * ║ loanDuration       │ 5               loan duration timestamp                   ║
          * ║ interestRate       │ 2               interest rate (base 10,000)               ║
          * ║ feeRate            │ 2               fee rate (base 100,00)                    ║
          * ║ salt               │ rest            salt                                      ║
@@ -115,19 +112,19 @@ contract Orders is EIP712 {
         return uint8(data[1]) == 0;
     }
 
-    function getExpiredAt(bytes32 data) internal pure returns (uint256) {
+    function getOrderExpiredAt(bytes32 data) internal pure returns (uint256) {
         return uint256(uint40(bytes5(data << (8*2))));
     }
 
-    function getLoanDuration(bytes32 data) internal pure returns (uint256) {
+    function getOrderLoanDuration(bytes32 data) internal pure returns (uint256) {
         return uint256(uint40(bytes5(data << (8*7))));
     }
 
-    function getInterestRate(bytes32 data) internal pure returns (uint256) {
+    function getOrderInterestRate(bytes32 data) internal pure returns (uint256) {
         return uint256(uint16(bytes2(data << (8*12))));
     }
 
-    function getFeeRate(bytes32 data) internal pure returns (uint256) {
+    function getOrderFeeRate(bytes32 data) internal pure returns (uint256) {
         return uint256(uint16(bytes2(data << (8*14))));
     }
 }

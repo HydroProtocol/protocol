@@ -19,41 +19,63 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-contract Loans {
+import "./Consts.sol";
+import "../lib/SafeMath.sol";
 
-    uint256 public constant INTEREST_RATE_BASE = 10000;
-    uint256 public constant SECONDS_OF_YEAR = 31536000;
+contract Loans is Consts {
+    using SafeMath for uint256;
 
-    mapping(bytes32 => Loan) public loansById;
-    mapping(address => Loan[]) public loansByBorrower;
+    mapping(uint256 => Loan) public allLoans;
+    mapping(address => uint256[]) public loansByBorrower;
 
     struct Loan {
+        uint256 id;
         bytes32 lenderOrderId;
         address lender;
         address borrower;
         address asset;
         uint256 amount;
-        uint256 interestRate;
-        uint256 startTime;
-        uint256 duration;
+
+        /**
+         * Data contains the following values packed into 32 bytes
+         * ╔════════════════════╤═══════════════════════════════════════════════════════════╗
+         * ║                    │ length(bytes)   desc                                      ║
+         * ╟────────────────────┼───────────────────────────────────────────────────────────╢
+         * ║ interestRate       │ 2               interest rate (base 10,000)               ║
+         * ║ startAt            │ 5               start timestamp                           ║
+         * ║ duration           │ 5               loan duration seconds                     ║
+         * ║ feeRate            │ 2               fee rate (base 100,00)                    ║
+         * ║                    │ rest            salt                                      ║
+         * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
+         */
+        bytes32 data;
     }
 
-    function hashLoan(Loan memory loan) internal pure returns (bytes32 result) {
-        assembly {
-            result := keccak256(loan, 256)
-        }
-        return result;
+    function getLoanInterestRate(bytes32 data) internal pure returns (uint256) {
+        return uint256(uint16(bytes2(data)));
     }
 
-    function isLoanExpired(bytes32 loanId) public view returns (bool expired) {
-        Loan memory loan = loansById[loanId];
-        return loan.startTime+loan.duration>block.timestamp;
+    function getLoanStartAt(bytes32 data) internal pure returns (uint256) {
+        return uint256(uint40(bytes5(data << 8*2)));
     }
 
-    function calculateLoanInterest(bytes32 loanId) public view returns (uint256 interest) {
-        Loan memory loan = loansById[loanId];
-        uint256 timeDelta = block.timestamp - loan.startTime;
-        interest = loan.amount * loan.interestRate * timeDelta / INTEREST_RATE_BASE / SECONDS_OF_YEAR;
+    function getLoanDuration(bytes32 data) internal pure returns (uint256) {
+        return uint256(uint40(bytes5(data << 8*7)));
+    }
+
+    function getLoanFeeRate(bytes32 data) internal pure returns (uint256) {
+        return uint256(uint16(bytes2(data << 8*12)));
+    }
+
+    function isLoanExpired(uint256 loanId) public view returns (bool expired) {
+        Loan memory loan = allLoans[loanId];
+        return getLoanStartAt(loan.data) + getLoanDuration(loan.data) > block.timestamp;
+    }
+
+    function calculateLoanInterest(uint256 loanId) public view returns (uint256 interest) {
+        Loan memory loan = allLoans[loanId];
+        uint256 timeDelta = block.timestamp - getLoanStartAt(loan.data);
+        interest = loan.amount.mul(getLoanInterestRate(loan.data)).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
         return interest;
     }
 
