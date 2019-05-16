@@ -21,8 +21,9 @@ pragma experimental ABIEncoderV2;
 
 import "./Consts.sol";
 import "../lib/SafeMath.sol";
+import "./ProxyCaller.sol";
 
-contract Loans is Consts {
+contract Loans is Consts, ProxyCaller {
     using SafeMath for uint256;
 
     uint256 public loansCount;
@@ -70,17 +71,41 @@ contract Loans is Consts {
         return uint256(uint16(bytes2(data << 8*12)));
     }
 
-    function isLoanLiquidable(uint256 loanId) public view returns (bool expired) {
-        Loan memory loan = allLoans[loanId]; // TODO gas optimization
-        return getLoanStartAt(loan.data) + getLoanDuration(loan.data) < block.timestamp && loan.amount > 0;
+    function getLoanGasPrice(bytes32 data) internal pure returns (uint256) {
+        return uint256(uint24(bytes3(data << 8*14)));
     }
 
-    function calculateLoanInterest(uint256 loanId) public view returns (uint256 totalInterest, uint256 relayerFee) {
-        Loan memory loan = allLoans[loanId];
+    function isOverdueLoan(Loan memory loan) public view returns (bool expired) {
+        return getLoanStartAt(loan.data) + getLoanDuration(loan.data) < block.timestamp;
+    }
+
+    function calculateLoanInterest(Loan memory loan, uint256 amount) public view returns (uint256 totalInterest, uint256 relayerFee) {
         uint256 timeDelta = block.timestamp - getLoanStartAt(loan.data);
-        totalInterest = loan.amount.mul(getLoanInterestRate(loan.data)).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
+        totalInterest = amount.mul(getLoanInterestRate(loan.data)).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
         relayerFee = totalInterest.mul(getLoanRelayerFeeRate(loan.data)).div(RELAYER_FEE_RATE_BASE);
         return (totalInterest, relayerFee);
+    }
+
+    function getLoansByIDs(uint256[] memory ids) internal view returns (Loan[] memory loans) {
+        for( uint256 i = 0; i < ids.length; i++ ) {
+            loans[i] = allLoans[ids[i]];
+        }
+    }
+
+    function getBorrowerLoans(address user) public view returns (Loan[] memory) {
+        return getLoansByIDs(loansByBorrower[user]);
+    }
+
+    function getBorrowerOverdueLoans(address user) public view returns (Loan[] memory loans) {
+        uint256[] memory ids = loansByBorrower[user];
+        uint256 j = 0;
+
+        for( uint256 i = 0; i < ids.length; i++ ) {
+            Loan memory loan = allLoans[ids[i]];
+            if (isOverdueLoan(loan)) {
+                loans[j++] = loan;
+            }
+        }
     }
 
     function createLoan(Loan memory loan) internal {
@@ -91,8 +116,22 @@ contract Loans is Consts {
         // emit Event
     }
 
-    function reduceLoan(uint256 loanId, uint256 amount) internal {
-        Loan storage loan = allLoans[loanId];
+    // payer give lender all money and interest
+    function repayLoan(Loan memory loan, address payer, uint256 amount) internal {
+        (uint256 interest, uint256 relayerFee) = calculateLoanInterest(loan, amount);
+
+        // borrowed amount and pay interest
+        transferFrom(loan.asset, payer, loan.lender, amount.add(interest).sub(relayerFee));
+
+        // TODO getLoanGasPrice(loan).mul(SIMULIZED_GAS_COST)
+        uint256 gasCostInAsset = 0;
+        uint256 fee = relayerFee.add(gasCostInAsset);
+
+        // pay the fee
+        transferFrom(loan.asset, payer, loan.relayer, fee);
+    }
+
+    function reduceLoan(Loan storage loan, uint256 amount) internal {
         loan.amount -= amount;
 
         // partial close loan
@@ -105,7 +144,7 @@ contract Loans is Consts {
         uint256[] storage borrowerLoanIDs = loansByBorrower[loan.borrower];
 
         for (uint i = 0; i < borrowerLoanIDs.length; i++){
-            if (borrowerLoanIDs[i] == loanId){
+            if (borrowerLoanIDs[i] == loan.id) {
                 borrowerLoanIDs[i] = borrowerLoanIDs[borrowerLoanIDs.length-1];
                 delete borrowerLoanIDs[borrowerLoanIDs.length - 1];
                 borrowerLoanIDs.length--;

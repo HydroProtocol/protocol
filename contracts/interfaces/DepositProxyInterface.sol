@@ -15,4 +15,6 @@ contract DepositProxyInterface {
     function withdrawTo(address token, address from, address payable to, uint256 amount) public;
 
     function balanceOf(address token, address account) public view returns (uint256);
+
+    function transferFrom(address token, address from, address to, uint256 amount) external;
 }

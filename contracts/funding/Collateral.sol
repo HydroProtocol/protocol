@@ -21,17 +21,12 @@ pragma solidity ^0.5.8;
 import "../lib/SafeMath.sol";
 import "../interfaces/EIP20Interface.sol";
 import "../interfaces/DepositProxyInterface.sol";
+import "./ProxyCaller.sol";
 
-contract Collateral {
+contract Collateral is ProxyCaller {
     using SafeMath for uint256;
 
     mapping (address => mapping(address => uint256)) public colleterals;
-
-    address public proxyAddress;
-
-    constructor(address _proxyAddress) public {
-        proxyAddress = _proxyAddress;
-    }
 
     event DepositCollateral(address token, address user, uint256 amount);
     event WithdrawCollateral(address token, address user, uint256 amount);
