@@ -19,33 +19,35 @@ contract DepositProxy is LibWhitelist, LibSafeERC20Transfer {
 
     // deposit token need approve first.
     function deposit(address token, uint256 amount) public {
-        depositFor(token, msg.sender, amount);
+        depositFor(token, msg.sender, msg.sender, amount);
     }
 
-    function depositFor(address token, address favoree, uint256 amount) public {
+    function depositFor(address token, address from, address to, uint256 amount) public payable {
         if (token != address(0)) {
-            safeTransferFrom(token, msg.sender, address(this), amount);
+            safeTransferFrom(token, from, address(this), amount);
+        } else {
+            require(amount == msg.value, "Wrong amount");
         }
 
-        balances[token][favoree] = balances[token][favoree].add(amount);
-        emit Deposit(token, favoree, amount, balances[token][favoree]);
+        balances[token][to] = balances[token][to].add(amount);
+        emit Deposit(token, to, amount, balances[token][to]);
     }
 
     function withdraw(address token, uint256 amount) external {
-        withdrawTo(token, msg.sender, amount);
+        withdrawTo(token, msg.sender, msg.sender, amount);
     }
 
-    function withdrawTo(address token, address payable favoree, uint256 amount) public {
-        require(balances[token][msg.sender] >= amount, "BALANCE_NOT_ENOUGH");
+    function withdrawTo(address token, address from, address payable to, uint256 amount) public {
+        require(balances[token][from] >= amount, "BALANCE_NOT_ENOUGH");
 
-        balances[token][msg.sender] = balances[token][msg.sender].sub(amount);
+        balances[token][from] = balances[token][from].sub(amount);
 
         if (token == address(0)) {
-            favoree.transfer(amount);
+            to.transfer(amount);
         } else {
-            safeTransfer(token, favoree, amount);
+            safeTransfer(token, to, amount);
         }
-        emit Withdraw(token, msg.sender, amount, balances[token][msg.sender]);
+        emit Withdraw(token, from, amount, balances[token][from]);
     }
 
     function () external payable {
