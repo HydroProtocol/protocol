@@ -24,21 +24,21 @@ contract Assets is LibOwnable {
     struct Asset {
         address tokenAddress;
         uint256 collerateRate;
-        bool exist;
     }
 
-    Asset[] public allAssets ;
-    mapping(address => Asset) public allAssetsMap;
+    // assets order is very important, and we should not support any function to modify the order.
+    Asset[] public allAssets;
+    mapping(address => uint256) public allAssetsMap;
 
     event AssetCreated(Asset asset);
 
     modifier onlyAssetNotExist(address tokenAddress) {
-        require(!allAssetsMap[tokenAddress].exist, "ASSET_IS_ALREADY_EXIST");
+        require(allAssets[allAssetsMap[tokenAddress]].tokenAddress == address(0), "ASSET_IS_ALREADY_EXIST");
         _;
     }
 
     modifier onlyAssetExist(address tokenAddress) {
-        require(!allAssetsMap[tokenAddress].exist, "ASSET_IS_NOT_ALREADY_EXIST");
+        require(allAssets[allAssetsMap[tokenAddress]].tokenAddress != address(0), "ASSET_IS_NOT_ALREADY_EXIST");
         _;
     }
 
@@ -47,9 +47,9 @@ contract Assets is LibOwnable {
         onlyOwner
         onlyAssetNotExist(tokenAddress)
     {
-        Asset memory asset = Asset(tokenAddress, collerateRate, true);
-        allAssets.push(asset);
-        allAssetsMap[tokenAddress] = asset;
+        Asset memory asset = Asset(tokenAddress, collerateRate);
+        uint256 index = allAssets.push(asset);
+        allAssetsMap[tokenAddress] = index;
         emit AssetCreated(asset);
     }
 }

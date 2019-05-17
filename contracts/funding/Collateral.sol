@@ -44,22 +44,22 @@ contract Collateral is ProxyCaller {
         emit DepositCollateral(token, user, amount);
     }
 
-    function withdrawCollateralToProxy(address token, address user, uint256 amount) internal {
-        colleterals[token][user] = colleterals[token][user].sub(amount);
-        if (token == address(0)) {
-            DepositProxyInterface(proxyAddress).depositFor.value(amount)(token, address(this), user, amount);
-        } else {
-            if (EIP20Interface(token).allowance(address(this), proxyAddress) < amount) {
-                EIP20Interface(token).approve(proxyAddress, 0xf0000000000000000000000000000000000000000000000000000000000000);
-            }
-            DepositProxyInterface(proxyAddress).depositFor(token, address(this), user, amount);
-        }
+    // function withdrawCollateralToProxy(address token, address user, uint256 amount) internal {
+    //     colleterals[token][user] = colleterals[token][user].sub(amount);
+    //     if (token == address(0)) {
+    //         DepositProxyInterface(proxyAddress).depositFor.value(amount)(token, address(this), user, amount);
+    //     } else {
+    //         if (EIP20Interface(token).allowance(address(this), proxyAddress) < amount) {
+    //             EIP20Interface(token).approve(proxyAddress, 0xf0000000000000000000000000000000000000000000000000000000000000);
+    //         }
+    //         DepositProxyInterface(proxyAddress).depositFor(token, address(this), user, amount);
+    //     }
 
-        emit WithdrawCollateral(token, user, amount);
-    }
+    //     emit WithdrawCollateral(token, user, amount);
+    // }
 
-    function withdrawCollateral(address token, address payable user, uint256 amount) internal {
-        withdrawCollateralToProxy(token, user, amount);
-        DepositProxyInterface(proxyAddress).withdrawTo(token, user, user, amount);
-    }
+    // function withdrawCollateral(address token, address payable user, uint256 amount) internal {
+    //     withdrawCollateralToProxy(token, user, amount);
+    //     DepositProxyInterface(proxyAddress).withdrawTo(token, user, user, amount);
+    // }
 }

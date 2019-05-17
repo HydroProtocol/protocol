@@ -33,4 +33,12 @@ contract ProxyCaller {
     function transferFrom(address token, address from, address to, uint256 amount) internal {
         DepositProxyInterface(proxyAddress).transferFrom(token, from, to, amount);
     }
+
+    function depositEthFor(address to, uint256 amount) public payable {
+        DepositProxyInterface(proxyAddress).depositFor.value(amount)(address(0), address(this), to, amount);
+    }
+
+    function depositTokenFor(address token, address to, uint256 amount) public {
+        DepositProxyInterface(proxyAddress).depositFor(token, address(this), to, amount);
+    }
 }

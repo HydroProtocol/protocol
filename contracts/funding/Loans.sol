@@ -109,6 +109,8 @@ contract Loans is Consts, ProxyCaller {
     }
 
     function createLoan(Loan memory loan) internal {
+        // TODO a max loans count, otherwize it may be impossible to liquidate his all loans in a single block
+
         uint256 id = loansCount++;
         allLoans[id] = loan;
         loansByBorrower[loan.borrower].push(id);
@@ -129,9 +131,10 @@ contract Loans is Consts, ProxyCaller {
 
         // pay the fee
         transferFrom(loan.asset, payer, loan.relayer, fee);
+        reduceLoan(loan, amount);
     }
 
-    function reduceLoan(Loan storage loan, uint256 amount) internal {
+    function reduceLoan(Loan memory loan, uint256 amount) internal {
         loan.amount -= amount;
 
         // partial close loan

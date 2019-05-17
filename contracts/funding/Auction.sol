@@ -28,69 +28,91 @@ import "./Assets.sol";
 contract Auctions is Loans, Assets, Collateral {
     using SafeMath for uint256;
 
-    uint256 public auctionsCount;
+    uint256 public auctionsCount = 1;
     mapping(uint256 => Auction) public allAuctions;
-    mapping(address => uint256) public borrowerAuction;
+    mapping (address => uint256) public liquidatingAssets;
 
-    event UserLiquidated(address user, uint256 blockNumber);
+    event AuctionCreated(uint256 auctionID);
+    event AuctionClaimed(uint256 auctionID, uint256 AuctionClaimed);
+    event AuctionFinished(uint256 auctionID);
 
     struct Auction {
         uint256 id;
         uint256 startBlockNumber;
-        address borrower;
-        uint256[] loanIDs;
+        uint256 loanID;
+        uint256[] assetAmounts;
     }
 
-    modifier userHasNoAuction(address user) {
-        require(borrowerAuction[user] == 0, "User is ready have an auction");
-        _;
+    struct UserLoansState {
+        bool       liquidable;
+        uint256[]  userAssets;
+        Loan[]     loans;
+        uint256[]  loanValues;
+        uint256    loansValue;
+        uint256    colleteralsValue;
     }
 
-    function createAuction(uint256[] memory loanIDs, address borrower)
+    function createAuction(Loan memory loan, uint256 loanValue, uint256 loansValue, uint256[] memory assetAmounts)
         internal
-        userHasNoAuction(borrower)
     {
-        uint256 id = auctionsCount + 1; // id start from 1
-        auctionsCount++;
+        uint256 id = auctionsCount++;
+        uint256[] memory actuionAssetAmounts = new uint256[](assetAmounts.length);
+
+        for (uint256 i = 0; i < assetAmounts.length; i++ ) {
+            actuionAssetAmounts[i] = loanValue.mul(assetAmounts[i]).div(loansValue);
+        }
 
         Auction memory auction = Auction({
             id: id,
             startBlockNumber: block.number,
-            borrower: borrower,
-            loanIDs: loanIDs
+            loanID: loan.id,
+            assetAmounts: actuionAssetAmounts
         });
 
         allAuctions[id] = auction;
-        borrowerAuction[auction.borrower] = id;
 
-        emit UserLiquidated(borrower, block.number);
+        emit AuctionCreated(id);
     }
 
     function getAuctionRatio(Auction memory auction) internal view returns (uint256) {
-        return block.number - auction.startBlockNumber;
+        uint256 currentRatio = block.number - auction.startBlockNumber;
+        return currentRatio < 100 ? currentRatio : 100;
     }
 
-    function closeAuction(uint256 id) public {
+    function claimAuction(uint256 id) public {
         Auction memory auction = allAuctions[id];
-        Loan[] memory loans = getLoansByIDs(auction.loanIDs);
+        Loan memory loan = allLoans[auction.loanID];
+        claimAuctionWithAmount(id, loan.amount);
+    }
 
-        for (uint256 i = 0; i < loans.length; i++) {
-            Loan memory loan = loans[i];
-            repayLoan(loan, msg.sender, loan.amount); // to allow partial repayLoan
-        }
+    function claimAuctionWithAmount(uint256 id, uint256 repayAmount) public {
+        Auction memory auction = allAuctions[id];
+        Loan memory loan = allLoans[auction.loanID];
+
+        // pay debt
+        repayLoan(loan, msg.sender, repayAmount);
 
         uint256 ratio = getAuctionRatio(auction);
 
+        // receive assets
         for (uint256 i = 0; i < allAssets.length; i++) {
             Asset memory asset = allAssets[i];
-            uint256 amount = colleterals[asset.tokenAddress][auction.borrower].mul(ratio); // TODO base unit
-            withdrawCollateralToProxy(asset.tokenAddress, auction.borrower, amount);
-            transferFrom(asset.tokenAddress, auction.borrower, msg.sender, amount);
+            uint256 amount = auction.assetAmounts[i].mul(ratio).div(100);
+
+            if (asset.tokenAddress == address(0)) {
+                depositEthFor(msg.sender, amount);
+            } else {
+                depositTokenFor(asset.tokenAddress, msg.sender, amount);
+            }
         }
 
-        // TODO if all debt are paid
-        // delete allAutions[id]
-        // delete borrowAuction[id]
+        emit AuctionClaimed(id, repayAmount);
+
+        if (loan.amount == 0) {
+            delete allAuctions[id];
+
+            emit AuctionFinished(id);
+        }
     }
 
     function liquidateUsers(address[] memory users) public {
@@ -100,36 +122,56 @@ contract Auctions is Loans, Assets, Collateral {
     }
 
     function isUserLiquidable(address user) public view returns (bool) {
-        return getOrderLiquidableLoans(user).length > 0;
+        UserLoansState memory state = getUserLoansState(user);
+        return state.liquidable;
     }
 
-    function liquidateUser(address user) public {
-        Loan[] memory loans = getOrderLiquidableLoans(user);
+    function getUserLoansState(address user)
+        public view
+        returns ( UserLoansState memory state )
+    {
+        state.loans = getBorrowerLoans(user);
 
-        if (loans.length <= 0) {
-            return;
+        if (state.loans.length <= 0) {
+            return state;
         }
 
-        uint256[] memory ids = new uint256[](loans.length);
-
-        for (uint256 i = 0; i < loans.length; i++ ) {
-            ids[i] = loans[i].id;
+        for (uint256 i = 0; i < state.loans.length; i++) {
+            state.loanValues[i] = 0; // todo get loanValue
+            state.loansValue = state.loansValue.add(state.loanValues[i]);
         }
 
-        createAuction(ids, user);
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            Asset memory asset = allAssets[i];
+            uint256 amount = colleterals[asset.tokenAddress][user];
+            state.colleteralsValue = state.colleteralsValue.add(0); // todo get colleteralValue
+            state.userAssets[i] = amount;
+        }
+
+        state.liquidable = state.colleteralsValue < state.loansValue.mul(150).div(100);
     }
 
-    function getOrderLiquidableLoans(address user) internal view returns (Loan[] memory loans) {
-        if (loansByBorrower[user].length <= 0) {
-            return loans;
+    function liquidateUser(address user) public returns (bool) {
+        UserLoansState memory state = getUserLoansState(user);
+
+        if (!state.liquidable) {
+            return false;
         }
 
-        bool globalLiquidation = false; // TODO check global liquidation
+        // storage changes
 
-        if (globalLiquidation) {
-            return getBorrowerLoans(user);
+        for (uint256 i = 0; i < state.loans.length; i++ ) {
+            createAuction(state.loans[i], state.loanValues[i], state.loansValue, state.userAssets);
         }
 
-        return getBorrowerOverdueLoans(user);
+        // confiscate all colleterals
+        // transfer all user collateral to liquidatingAssets;
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            Asset memory asset = allAssets[i];
+            colleterals[asset.tokenAddress][user] = 0;
+            liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].add(state.userAssets[i]);
+        }
+
+        return true;
     }
 }
