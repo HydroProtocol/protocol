@@ -1,6 +1,10 @@
 const Proxy = artifacts.require('./Proxy.sol');
 const HybridExchange = artifacts.require('./HybridExchange.sol');
 const TestToken = artifacts.require('./helper/TestToken.sol');
+
+const DepositProxy = artifacts.require('./DepositProxy.sol');
+const Funding = artifacts.require('./Funding.sol');
+
 const BigNumber = require('bignumber.js');
 
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
@@ -28,7 +32,7 @@ const setHotAmount = async (hotContract, user, amount) => {
     }
 };
 
-const getContracts = async () => {
+const getExchangeContracts = async () => {
     const accounts = await web3.eth.getAccounts();
     const proxy = await newContract(Proxy);
     // console.log('Proxy address', web3.utils.toChecksumAddress(proxy._address));
@@ -48,12 +52,33 @@ const getContracts = async () => {
     };
 };
 
+const getFundingContracts = async () => {
+    const accounts = await web3.eth.getAccounts();
+
+    const proxy = await newContract(DepositProxy);
+    console.log('DepositProxy address', web3.utils.toChecksumAddress(proxy._address));
+
+    // const hot = await newContract(TestToken, 'HydroToken', 'Hot', 18);
+    // console.log('Hydro Token address', web3.utils.toChecksumAddress(hot._address));
+
+    const funding = await newContract(Funding, proxy._address);
+    console.log('Funding address', web3.utils.toChecksumAddress(funding._address));
+
+    await proxy.methods.addAddress(funding._address).send({ from: accounts[0] });
+
+    return {
+        proxy,
+        funding
+    };
+};
+
 const clone = x => JSON.parse(JSON.stringify(x));
 
 module.exports = {
     newContract,
     newContractAt,
-    getContracts,
+    getContracts: getExchangeContracts,
+    getFundingContracts,
     clone,
     setHotAmount
 };

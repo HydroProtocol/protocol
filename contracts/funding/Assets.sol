@@ -42,6 +42,10 @@ contract Assets is LibOwnable {
         _;
     }
 
+    function getAllAssetsCount() public view returns (uint256) {
+        return allAssets.length;
+    }
+
     function addAsset(address tokenAddress, uint256 collerateRate)
         public
         onlyOwner

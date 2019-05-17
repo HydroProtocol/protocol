@@ -1,6 +1,8 @@
 {
   "scripts": {
     "test": "truffle test",
+    "exchange_test": "truffle test test/exchange/*.js",
+    "funding_test": "truffle test test/funding/*.js",
     "compile": "truffle compile",
     "coverage": "solidity-coverage"
   },

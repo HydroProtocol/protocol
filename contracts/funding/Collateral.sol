@@ -17,6 +17,7 @@
 */
 
 pragma solidity ^0.5.8;
+pragma experimental ABIEncoderV2;
 
 import "../lib/SafeMath.sol";
 import "../interfaces/EIP20Interface.sol";
