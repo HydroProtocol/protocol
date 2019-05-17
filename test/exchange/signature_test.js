@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { isValidSignature } = require('../sdk/sdk');
-const { newContract } = require('./utils');
+const { isValidSignature } = require('../../sdk/sdk');
+const { newContract } = require('../utils');
 const TestSignature = artifacts.require('./helper/TestSignature.sol');
 
 const { hashPersonalMessage, ecsign, toBuffer, privateToAddress } = require('ethereumjs-util');

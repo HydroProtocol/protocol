@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { getContracts } = require('./utils');
-const { generateOrderData, getOrderHash } = require('../sdk/sdk');
+const { getContracts } = require('../utils');
+const { generateOrderData, getOrderHash } = require('../../sdk/sdk');
 contract('CancelOrder', accounts => {
     let exchange;
 

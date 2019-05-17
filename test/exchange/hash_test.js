@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { getContracts } = require('./utils');
-const { EIP712_DOMAIN_TYPEHASH, EIP712_ORDER_TYPE, getDomainSeparator } = require('../sdk/sdk');
+const { getContracts } = require('../utils');
+const { EIP712_DOMAIN_TYPEHASH, EIP712_ORDER_TYPE, getDomainSeparator } = require('../../sdk/sdk');
 
 contract('Order', () => {
     let exchange;

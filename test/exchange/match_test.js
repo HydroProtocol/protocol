@@ -1,8 +1,8 @@
 const assert = require('assert');
 const TestToken = artifacts.require('./helper/TestToken.sol');
 const BigNumber = require('bignumber.js');
-const { newContract, setHotAmount, getContracts, clone } = require('./utils');
-const { generateOrderData, isValidSignature, getOrderHash } = require('../sdk/sdk');
+const { newContract, setHotAmount, getContracts, clone } = require('../utils');
+const { generateOrderData, isValidSignature, getOrderHash } = require('../../sdk/sdk');
 const { fromRpcSig } = require('ethereumjs-util');
 
 const weis = new BigNumber('1000000000000000000');

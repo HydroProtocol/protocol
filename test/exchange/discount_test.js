@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { getContracts } = require('./utils');
+const { getContracts } = require('../utils');
 
 contract('Discount', accounts => {
     it('should have discount', async () => {

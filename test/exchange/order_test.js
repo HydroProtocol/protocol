@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { generateOrderData } = require('../sdk/sdk');
-const { newContract } = require('./utils');
+const { generateOrderData } = require('../../sdk/sdk');
+const { newContract } = require('../utils');
 const TestOrder = artifacts.require('./helper/TestOrder.sol');
 
 contract('Order', accounts => {
