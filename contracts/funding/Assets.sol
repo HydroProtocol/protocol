@@ -33,13 +33,18 @@ contract Assets is LibOwnable {
     event AssetCreated(Asset asset);
 
     modifier onlyAssetNotExist(address tokenAddress) {
-        require(allAssets[allAssetsMap[tokenAddress]].tokenAddress == address(0), "ASSET_IS_ALREADY_EXIST");
+        require(!isAssetExist(tokenAddress), "TOKEN_IS_ALREADY_EXIST");
         _;
     }
 
-    modifier onlyAssetExist(address tokenAddress) {
-        require(allAssets[allAssetsMap[tokenAddress]].tokenAddress != address(0), "ASSET_IS_NOT_ALREADY_EXIST");
-        _;
+    function isAssetExist(address tokenAddress) internal view returns (bool) {
+        for(uint256 i = 0; i < allAssets.length; i++) {
+            if (allAssets[i].tokenAddress == tokenAddress) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     function getAllAssetsCount() public view returns (uint256) {
