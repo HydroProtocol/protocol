@@ -32,18 +32,26 @@ contract Collateral is ProxyCaller {
     event DepositCollateral(address token, address user, uint256 amount);
     event WithdrawCollateral(address token, address user, uint256 amount);
 
-    function depositCollateral(address token, address user, uint256 amount) internal {
+    function depositCollateral(address token, address user, uint256 amount) public {
         DepositProxyInterface(proxyAddress).depositFor(token, user, user, amount);
         depositCollateralFromProxy(token, user, amount);
     }
 
-    function depositCollateralFromProxy(address token, address user, uint256 amount) internal {
+    function depositCollateralFromProxy(address token, address user, uint256 amount) public {
         address payable currentContract = address(uint160(address(this)));
         DepositProxyInterface(proxyAddress).withdrawTo(token, user, currentContract, amount);
         colleterals[token][user] = colleterals[token][user].add(amount);
 
         emit DepositCollateral(token, user, amount);
     }
+
+    function colleteralBalanceOf(address token, address account) public view returns (uint256) {
+        return colleterals[token][account];
+    }
+
+    // to allow proxy transfer ether into this current contract
+    // TODO: is there a way to prevent a user from depositing unexpectedly??
+    function () external payable {}
 
     // function withdrawCollateralToProxy(address token, address user, uint256 amount) internal {
     //     colleterals[token][user] = colleterals[token][user].sub(amount);
