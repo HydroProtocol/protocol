@@ -1,4 +1,5 @@
 const Proxy = artifacts.require('./Proxy.sol');
+const Oracle = artifacts.require('./Oracle.sol');
 const HybridExchange = artifacts.require('./HybridExchange.sol');
 const TestToken = artifacts.require('./helper/TestToken.sol');
 
@@ -55,11 +56,11 @@ const getExchangeContracts = async () => {
 const getFundingContracts = async () => {
     const accounts = await web3.eth.getAccounts();
 
+    const oracle = await newContract(Oracle);
+    console.log('Oracle address', web3.utils.toChecksumAddress(oracle._address));
+
     const proxy = await newContract(DepositProxy);
     console.log('DepositProxy address', web3.utils.toChecksumAddress(proxy._address));
-
-    // const hot = await newContract(TestToken, 'HydroToken', 'Hot', 18);
-    // console.log('Hydro Token address', web3.utils.toChecksumAddress(hot._address));
 
     const funding = await newContract(Funding, proxy._address);
     console.log('Funding address', web3.utils.toChecksumAddress(funding._address));
