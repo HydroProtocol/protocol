@@ -21,6 +21,12 @@ pragma experimental ABIEncoderV2;
 import "../lib/EIP712.sol";
 
 contract Orders is EIP712 {
+    mapping(bytes32 => OrderInfo) internal orderInfos;
+
+    struct OrderInfo {
+        uint256 filledAmount;
+    }
+
     struct Order {
         address owner;
         address relayer;
