@@ -38,21 +38,11 @@ contract Loans is Consts, ProxyCaller {
         address relayer;
         address asset;
         uint256 amount;
-
-        /**
-         * Data contains the following values packed into 32 bytes
-         * ╔════════════════════╤═══════════════════════════════════════════════════════════╗
-         * ║                    │ length(bytes)   desc                                      ║
-         * ╟────────────────────┼───────────────────────────────────────────────────────────╢
-         * ║ interestRate       │ 2               interest rate (base 10,000)               ║
-         * ║ startAt            │ 5               start timestamp                           ║
-         * ║ duration           │ 5               loan duration seconds                     ║
-         * ║ relayerFeeRate     │ 2               fee rate (base 100,00)                    ║
-         * ║ gasPrice           │ 3               gasPrice in Gwei                          ║
-         * ║                    │ rest            salt                                      ║
-         * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
-         */
-        bytes32 data;
+        uint16 interestRate;
+        uint40 startAt;
+        uint40 duration;
+        uint16 relayerFeeRate;
+        uint24 gasPrice;
     }
 
     function getLoanInterestRate(bytes32 data) internal pure returns (uint256) {
@@ -76,13 +66,14 @@ contract Loans is Consts, ProxyCaller {
     }
 
     function isOverdueLoan(Loan memory loan) public view returns (bool expired) {
-        return getLoanStartAt(loan.data) + getLoanDuration(loan.data) < block.timestamp;
+        return loan.startAt + loan.duration < block.timestamp;
+        // return getLoanStartAt(loan.data) + getLoanDuration(loan.data) < block.timestamp;
     }
 
     function calculateLoanInterest(Loan memory loan, uint256 amount) public view returns (uint256 totalInterest, uint256 relayerFee) {
-        uint256 timeDelta = block.timestamp - getLoanStartAt(loan.data);
-        totalInterest = amount.mul(getLoanInterestRate(loan.data)).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
-        relayerFee = totalInterest.mul(getLoanRelayerFeeRate(loan.data)).div(RELAYER_FEE_RATE_BASE);
+        uint256 timeDelta = block.timestamp - loan.startAt;
+        totalInterest = amount.mul(loan.interestRate).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
+        relayerFee = totalInterest.mul(loan.relayerFeeRate).div(RELAYER_FEE_RATE_BASE);
         return (totalInterest, relayerFee);
     }
 
