@@ -33,99 +33,107 @@ contract Funding is ProxyCaller, Assets, Orders, Loans, Collateral {
 
     }
 
-    // function matchOrders(
-    //     Order[] memory makerOrders,
-    //     Order memory takerOrder,
-    //     uint256[] memory filledAmount
-    // ) public {
+    function matchOrders(
+        Order memory takerOrder,
+        Order[] memory makerOrders,
+        uint256[] memory filledAmounts
+    ) public {
 
     //     require(isOrderValid(takerOrder));
-    //     require(makerOrders.length==filledAmount.length);
+        require(makerOrders.length == filledAmounts.length, "MAKER_ORDERS_AND_FILLED_AMOUNTS_MISMATCH");
 
-    //     for (uint256 i = 0; i < makerOrders.length; i++) {
+        for (uint256 i = 0; i < makerOrders.length; i++) {
 
-    //         Order memory makerOrder = makerOrders[i];
+            Order memory makerOrder = makerOrders[i];
     //         require(isOrderValid(makerOrder));
 
     //         if (isLenderOrder(makerOrder.data)) {
-    //             matchSingleOrderInternal(
-    //                 makerOrder,
-    //                 takerOrder,
-    //                 filledAmount[i],
-    //                 getInterestRate(makerOrder)
-    //             );
+                matchSingleOrderInternal(
+                    makerOrder,
+                    takerOrder,
+                    filledAmounts[i],
+                    0 // getInterestRate(makerOrder)
+                );
     //         } else {
     //             matchSingleOrderInternal(
     //                 takerOrder,
     //                 makerOrder,
-    //                 filledAmount[i],
+    //                 filledAmounts[i],
     //                 getInterestRate(makerOrder)
     //             );
     //         }
-    //     }
-    // }
+        }
+    }
 
-    // function matchSingleOrderInternal(
-    //     Order memory lenderOrder,
-    //     Order memory borrowerOrder,
-    //     uint256 amount,
-    //     uint256 executeInterest
-    // ) internal {
+    function matchSingleOrderInternal(
+        Order memory lenderOrder,
+        Order memory borrowerOrder,
+        uint256 amount,
+        uint256 executeInterest
+    ) internal {
+        address borrower = borrowerOrder.owner;
+        address lender = lenderOrder.owner;
 
-    //     address borrower = borrowerOrder.owner;
-    //     address lender = lenderOrder.owner;
+        require(borrower != lender, "CAN_NOT_MATCH_SAME_USER_ORDERS");
 
-    //     require(borrower != lender);
+        // check asset
+        require(lenderOrder.asset == borrowerOrder.asset, "ASSET_MISMATCH");
 
-    //     // check asset
-    //     require(lenderOrder.asset == borrowerOrder.asset);
+        // check relayer
+        require(lenderOrder.relayer == borrowerOrder.relayer, "RELAYER_MISMATCH");
+        require(msg.sender == lenderOrder.relayer, "INVALID_SENDER"); // use sender logic
 
-    //     // check relayer
-    //     require(lenderOrder.relayer == borrowerOrder.relayer);
-    //     require(msg.sender == lenderOrder.relayer);
+        // check executeInterest
+        // require(executeInterest >= getInterestRate(lenderOrder));
+        // require(executeInterest <= getInterestRate(borrowerOrder));
 
-    //     // check executeInterest
-    //     require(executeInterest >= getInterestRate(lenderOrder));
-    //     require(executeInterest <= getInterestRate(borrowerOrder));
+        // check amount
+        bytes32 borrowerOrderHash = hashOrder(borrowerOrder);
+        // require(amount <= borrowerOrder.amount - orderInfos[borrowerOrderId].filledAmount);
+        bytes32 lenderOrderHash = hashOrder(lenderOrder);
+        // require(amount <= lenderOrder.amount - orderInfos[lenderOrderId].filledAmount);
 
-    //     // check amount
-    //     bytes32 borrowerOrderId = hashOrder(borrowerOrder);
-    //     require(amount <= borrowerOrder.amount - orderInfos[borrowerOrderId].filledAmount);
-    //     bytes32 lenderOrderId = hashOrder(lenderOrder);
-    //     require(amount <= lenderOrder.amount - orderInfos[lenderOrderId].filledAmount);
+        // check loan duration
+        uint40 lenderDuration;
+        // if (block.timestamp + getLoanDuration(lenderOrder) < getExpiredAt(lenderOrder)){
+        //     lenderDuration = getLoanDuration(lenderOrder);
+        // } else {
+        //     lenderDuration = getExpiredAt(lenderOrder) - block.timestamp;
+        // }
+        // require(lenderDuration >= getLoanDuration(borrowerOrder));
 
-    //     // check loan duration
-    //     uint256 lenderDuration;
-    //     if (block.timestamp + getLoanDuration(lenderOrder) < getExpiredAt(lenderOrder)){
-    //         lenderDuration = getLoanDuration(lenderOrder);
-    //     } else {
-    //         lenderDuration = getExpiredAt(lenderOrder) - block.timestamp;
-    //     }
-    //     require(lenderDuration >= getLoanDuration(borrowerOrder));
+        // new loan
+        Loan memory newLoan = Loan(
+            0,
+            lenderOrderHash,
+            lenderOrder.owner,
+            borrowerOrder.owner,
+            borrowerOrder.relayer,
+            lenderOrder.asset,
+            amount,
+            uint16(executeInterest),
+            uint40(block.timestamp),
+            lenderDuration,
+            0,
+            0
+        );
 
-    //     // new loan
-    //     Loan storage newLoan = Loan(
-    //         lenderOrderId,
-    //         lender,
-    //         borrower,
-    //         lenderOrder.asset,
-    //         amount,
-    //         executeInterest,
-    //         block.timestamp,
-    //         lenderDuration
-    //     );
-    //     recordNewLoan(newLoan);
+        createLoan(newLoan);
 
-    //     // change filled amount
-    //     orderInfos[lenderOrderId].filledAmount += amount;
-    //     orderInfos[borrowerOrderId].filledAmount += amount;
+        // TODO use a match result
+        // transfer asset
+        transferFrom(borrowerOrder.asset, lenderOrder.owner, borrowerOrder.owner, amount);
+
+        // change filled amount
+        orderInfos[lenderOrderHash].filledAmount += amount;
+        orderInfos[borrowerOrderHash].filledAmount += amount;
 
     //     // borrower
     //     require(isUserRepayable(borrower));
 
     //     // settle assets
     //     vault.transferCash(lenderOrder.asset, lender, borrower, amount);
-    // }
+    }
 
     // function cancel(Order memory order) {
     //     require(msg.sender == order.owner);
