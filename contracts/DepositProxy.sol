@@ -19,7 +19,7 @@ contract DepositProxy is LibWhitelist, LibSafeERC20Transfer {
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
     // deposit token need approve first.
-    function deposit(address token, uint256 amount) public {
+    function deposit(address token, uint256 amount) public payable {
         depositFor(token, msg.sender, msg.sender, amount);
     }
 
@@ -48,6 +48,7 @@ contract DepositProxy is LibWhitelist, LibSafeERC20Transfer {
         } else {
             safeTransfer(token, to, amount);
         }
+
         emit Withdraw(token, from, amount, balances[token][from]);
     }
 
