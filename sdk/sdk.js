@@ -61,6 +61,29 @@ const generateOrderData = (
     return addTailingZero(res, 66);
 };
 
+const generateFundingOrderData = (side, expiredAt, loanDuration, interestRate, feeRate, salt) => {
+    // * ╔════════════════════╤═══════════════════════════════════════════════════════════╗
+    // * ║                    │ length(bytes)   desc                                      ║
+    // * ╟────────────────────┼───────────────────────────────────────────────────────────╢
+    // * ║ version            │ 1               order version                             ║
+    // * ║ side               │ 1               0: lend, 1: borrow                        ║
+    // * ║ expiredAt          │ 5               order expiration timestamp                ║
+    // * ║ loanDuration       │ 5               loan duration timestamp                   ║
+    // * ║ interestRate       │ 2               interest rate (base 10,000)               ║
+    // * ║ feeRate            │ 2               fee rate (base 100,00)                    ║
+    // * ║ salt               │ rest            salt                                      ║
+    // * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
+    let res = '0x01';
+    res += side == 'lend' ? '00' : '01';
+    res += addLeadingZero(new BigNumber(expiredAt).toString(16), 5 * 2);
+    res += addLeadingZero(new BigNumber(loanDuration).toString(16), 5 * 2);
+    res += addLeadingZero(new BigNumber(interestRate).toString(16), 2 * 2);
+    res += addLeadingZero(new BigNumber(feeRate).toString(16), 2 * 2);
+    res += addLeadingZero(new BigNumber(salt).toString(16), 8 * 2);
+
+    return addTailingZero(res, 66);
+};
+
 const EIP712_DOMAIN_TYPEHASH = sha3ToHex('EIP712Domain(string name)');
 const EIP712_ORDER_TYPE = sha3ToHex(
     'Order(address trader,address relayer,address baseToken,address quoteToken,uint256 baseTokenAmount,uint256 quoteTokenAmount,uint256 gasTokenAmount,bytes32 data)'
@@ -98,6 +121,7 @@ module.exports = {
     EIP712_DOMAIN_TYPEHASH,
     EIP712_ORDER_TYPE,
     getOrderHash,
+    generateFundingOrderData,
     getDomainSeparator,
     getEIP712MessageHash
 };
