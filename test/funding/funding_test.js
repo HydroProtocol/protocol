@@ -14,7 +14,7 @@ const toWei = x => {
 };
 
 contract('Funding', accounts => {
-    let funding, proxy;
+    let funding, proxy, oracle;
 
     const relayer = accounts[9];
 
@@ -28,10 +28,11 @@ contract('Funding', accounts => {
         const contracts = await getFundingContracts();
         funding = contracts.funding;
         proxy = contracts.proxy;
+        oracle = contracts.oracle;
     });
 
     const initToken = async tokenConfig => {
-        const { initBalances, initCollaterals } = tokenConfig;
+        const { initBalances, initCollaterals, etherPrice } = tokenConfig;
 
         let token;
 
@@ -52,6 +53,25 @@ contract('Funding', accounts => {
             );
             token.symbol = tokenConfig.symbol;
         }
+
+        if (etherPrice) {
+            // set oracle price
+            await oracle.methods
+                .setTokenPriceInEther(
+                    token._address,
+                    new BigNumber(etherPrice).times('1000000000000000000').toString()
+                )
+                .send({ from: accounts[0] });
+        }
+
+        // console.log(
+        //     token._address,
+        //     await oracle.methods.getTokenPriceInEther(token._address).call()
+        // );
+
+        await funding.methods
+            .addAsset(token._address, 1) // TODO 1.5
+            .send({ from: accounts[0], gasLimit: 10000000 });
 
         for (let j = 0; j < Object.keys(initBalances).length; j++) {
             const userKey = Object.keys(initBalances)[j];
@@ -146,7 +166,7 @@ contract('Funding', accounts => {
         }
     };
 
-    const assetColleterals = async (tokens, collaterals, messagePrefix) => {
+    const assetCollaterals = async (tokens, collaterals, messagePrefix) => {
         const collateralTokens = Object.keys(collaterals);
         for (let i = 0; i < collateralTokens.length; i++) {
             const tokenAddress = tokens[collateralTokens[i]];
@@ -155,7 +175,7 @@ contract('Funding', accounts => {
                 const user = users[j];
                 const expectedBalance = collaterals[collateralTokens[i]][user];
                 const actualBalance = await funding.methods
-                    .colleteralBalanceOf(tokenAddress, user)
+                    .collateralBalanceOf(tokenAddress, user)
                     .call();
                 assert.equal(
                     actualBalance,
@@ -166,6 +186,41 @@ contract('Funding', accounts => {
         }
     };
 
+    const assertCollateralStatus = async (collateralStatus, prefixMessage) => {
+        const users = Object.keys(collateralStatus);
+        for (let i = 0; i < users.length; i++) {
+            const user = users[i];
+            const collateralStateRes = await funding.methods.getUserLoansState(user).call();
+
+            // bool       liquidable;
+            // uint256[]  userAssets;
+            // Loan[]     loans;
+            // uint256[]  loanValues;
+            // uint256    loansTotalValue;
+            // uint256    collateralsTotalValue;
+
+            const collateralState = collateralStateRes;
+
+            // console.log(collateralState);
+
+            assert.equal(
+                collateralState.loansTotalValue,
+                collateralStatus[user].loansTotalValue,
+                `${prefixMessage} collateralStatus loansTotalValue not equal: expected ${
+                    collateralState.loansTotalValue
+                } actual: ${collateralStatus[user].loansTotalValue}`
+            );
+
+            assert.equal(
+                collateralState.collateralsTotalValue,
+                collateralStatus[user].collateralsTotalValue,
+                `${prefixMessage} collateralStatus collateralsTotalValue not equal: expected ${
+                    collateralState.collateralsTotalValue
+                } actual: ${collateralStatus[user].collateralsTotalValue}`
+            );
+        }
+    };
+
     const testFundingMatch = async config => {
         const {
             tokenConfigs,
@@ -173,18 +228,19 @@ contract('Funding', accounts => {
             makerOrdersParams,
             filledAmounts,
             beforeMatchProxyBalances,
+            beforeMatchCollateralStatus,
             beforeMatchCollaterals,
             afterMatchProxyBalances,
+            afterMatchCollateralStatus,
             assertDiffs,
             baseTokenFilledAmounts,
             allowPrecisionError,
             assertFilled
         } = config;
-
         const tokens = await initTokens(tokenConfigs);
 
         await assetProxyBalances(tokens, beforeMatchProxyBalances, 'Before Match');
-        await assetColleterals(tokens, beforeMatchCollaterals, 'Before Match');
+        await assetCollaterals(tokens, beforeMatchCollaterals, 'Before Match');
 
         // const balancesBeforeMatch = await getTokensUsersBalances(tokens);
         // console.log(balancesBeforeMatch);
@@ -199,12 +255,20 @@ contract('Funding', accounts => {
         }
         // console.log(makerOrders);
 
+        if (beforeMatchCollateralStatus) {
+            await assertCollateralStatus(beforeMatchCollateralStatus, 'Before Match');
+        }
+
         const res = await funding.methods
             .matchOrders(takerOrder, makerOrders, filledAmounts)
             .send({ from: relayer, gas: 10000000, gasLimit: 10000000 });
         console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.gasUsed);
 
         await assetProxyBalances(tokens, afterMatchProxyBalances, 'After Match');
+
+        if (afterMatchCollateralStatus) {
+            await assertCollateralStatus(afterMatchCollateralStatus, 'After Match');
+        }
 
         // const balancesAfterMatch = await getTokensUsersBalances(tokens);
 
@@ -288,6 +352,7 @@ contract('Funding', accounts => {
                 },
                 {
                     name: 'USD',
+                    etherPrice: '0.001',
                     symbol: 'USD',
                     decimals: 18,
                     initBalances: {
@@ -297,6 +362,7 @@ contract('Funding', accounts => {
                 },
                 {
                     name: 'HOT',
+                    etherPrice: '0.0001',
                     symbol: 'HOT',
                     decimals: 18,
                     initBalances: {
@@ -307,6 +373,16 @@ contract('Funding', accounts => {
                     }
                 }
             ],
+            beforeMatchCollateralStatus: {
+                [u1]: {
+                    loansTotalValue: '0',
+                    collateralsTotalValue: '0'
+                },
+                [u2]: {
+                    loansTotalValue: '0',
+                    collateralsTotalValue: '1500000000000000000000000000000000000'
+                }
+            },
             beforeMatchProxyBalances: {
                 USD: {
                     [u1]: toWei('500'),
@@ -343,6 +419,16 @@ contract('Funding', accounts => {
                     amount: toWei('500')
                 }
             ],
+            afterMatchCollateralStatus: {
+                [u1]: {
+                    loansTotalValue: '0',
+                    collateralsTotalValue: '0'
+                },
+                [u2]: {
+                    loansTotalValue: '500000000000000000000000000000000000',
+                    collateralsTotalValue: '1500000000000000000000000000000000000'
+                }
+            },
             afterMatchProxyBalances: {
                 USD: {
                     [u1]: toWei('0'),

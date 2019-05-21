@@ -22,16 +22,20 @@ pragma experimental ABIEncoderV2;
 import "./funding/Assets.sol";
 import "./funding/Orders.sol";
 import "./funding/Loans.sol";
+import "./funding/Auction.sol";
 import "./funding/Collateral.sol";
 import "./funding/ProxyCaller.sol";
+import "./funding/OracleCaller.sol";
 
-contract Funding is ProxyCaller, Assets, Orders, Loans, Collateral {
+contract Funding is Orders, Auction {
 
     mapping(address => uint256) inLiquidation;
 
-    constructor(address _proxyAddress) ProxyCaller(_proxyAddress) public {
-
-    }
+    constructor(address _proxyAddress, address _oracleAddress)
+        ProxyCaller(_proxyAddress)
+        OracleCaller(_oracleAddress)
+        public
+    {}
 
     function matchOrders(
         Order memory takerOrder,

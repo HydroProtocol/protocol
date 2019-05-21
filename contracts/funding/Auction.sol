@@ -22,10 +22,11 @@ pragma experimental ABIEncoderV2;
 import "../lib/SafeMath.sol";
 import "./Loans.sol";
 import "./ProxyCaller.sol";
+import "./OracleCaller.sol";
 import "./Collateral.sol";
 import "./Assets.sol";
 
-contract Auctions is Loans, Assets, Collateral {
+contract Auction is OracleCaller, Loans, Assets, Collateral {
     using SafeMath for uint256;
 
     uint256 public auctionsCount = 1;
@@ -48,8 +49,8 @@ contract Auctions is Loans, Assets, Collateral {
         uint256[]  userAssets;
         Loan[]     loans;
         uint256[]  loanValues;
-        uint256    loansValue;
-        uint256    colleteralsValue;
+        uint256    loansTotalValue;
+        uint256    collateralsTotalValue;
     }
 
     function createAuction(Loan memory loan, uint256 loanValue, uint256 loansValue, uint256[] memory assetAmounts)
@@ -126,29 +127,39 @@ contract Auctions is Loans, Assets, Collateral {
         return state.liquidable;
     }
 
+    function getAssetAmountValue(address asset, uint256 amount) internal view returns (uint256) {
+        uint256 price = getTokenPriceInEther(asset);
+        return price.mul(amount);
+    }
+
     function getUserLoansState(address user)
         public view
         returns ( UserLoansState memory state )
     {
+        state.userAssets = new uint256[](allAssets.length);
+
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            address tokenAddress = allAssets[i].tokenAddress;
+            uint256 amount = collaterals[tokenAddress][user];
+            state.collateralsTotalValue = state.collateralsTotalValue.add(getAssetAmountValue(tokenAddress, amount));
+            state.userAssets[i] = amount;
+        }
+
         state.loans = getBorrowerLoans(user);
 
         if (state.loans.length <= 0) {
             return state;
         }
 
+        state.loanValues = new uint256[](state.loans.length);
+
+
         for (uint256 i = 0; i < state.loans.length; i++) {
-            state.loanValues[i] = 0; // todo get loanValue
-            state.loansValue = state.loansValue.add(state.loanValues[i]);
+            state.loanValues[i] = getAssetAmountValue(state.loans[i].asset, state.loans[i].amount);
+            state.loansTotalValue = state.loansTotalValue.add(state.loanValues[i]);
         }
 
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            Asset memory asset = allAssets[i];
-            uint256 amount = colleterals[asset.tokenAddress][user];
-            state.colleteralsValue = state.colleteralsValue.add(0); // todo get colleteralValue
-            state.userAssets[i] = amount;
-        }
-
-        state.liquidable = state.colleteralsValue < state.loansValue.mul(150).div(100);
+        state.liquidable = state.collateralsTotalValue < state.loansTotalValue.mul(150).div(100);
     }
 
     function liquidateUser(address user) public returns (bool) {
@@ -161,14 +172,14 @@ contract Auctions is Loans, Assets, Collateral {
         // storage changes
 
         for (uint256 i = 0; i < state.loans.length; i++ ) {
-            createAuction(state.loans[i], state.loanValues[i], state.loansValue, state.userAssets);
+            createAuction(state.loans[i], state.loanValues[i], state.loansTotalValue, state.userAssets);
         }
 
-        // confiscate all colleterals
+        // confiscate all collaterals
         // transfer all user collateral to liquidatingAssets;
         for (uint256 i = 0; i < allAssets.length; i++) {
             Asset memory asset = allAssets[i];
-            colleterals[asset.tokenAddress][user] = 0;
+            collaterals[asset.tokenAddress][user] = 0;
             liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].add(state.userAssets[i]);
         }
 

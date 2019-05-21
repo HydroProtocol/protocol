@@ -27,7 +27,7 @@ import "./ProxyCaller.sol";
 contract Collateral is ProxyCaller {
     using SafeMath for uint256;
 
-    mapping (address => mapping(address => uint256)) public colleterals;
+    mapping (address => mapping(address => uint256)) public collaterals;
 
     event DepositCollateral(address token, address user, uint256 amount);
     event WithdrawCollateral(address token, address user, uint256 amount);
@@ -40,13 +40,13 @@ contract Collateral is ProxyCaller {
     function depositCollateralFromProxy(address token, address user, uint256 amount) public {
         address payable currentContract = address(uint160(address(this)));
         DepositProxyInterface(proxyAddress).withdrawTo(token, user, currentContract, amount);
-        colleterals[token][user] = colleterals[token][user].add(amount);
+        collaterals[token][user] = collaterals[token][user].add(amount);
 
         emit DepositCollateral(token, user, amount);
     }
 
-    function colleteralBalanceOf(address token, address account) public view returns (uint256) {
-        return colleterals[token][account];
+    function collateralBalanceOf(address token, address account) public view returns (uint256) {
+        return collaterals[token][account];
     }
 
     // to allow proxy transfer ether into this current contract
@@ -54,7 +54,7 @@ contract Collateral is ProxyCaller {
     function () external payable {}
 
     // function withdrawCollateralToProxy(address token, address user, uint256 amount) internal {
-    //     colleterals[token][user] = colleterals[token][user].sub(amount);
+    //     collaterals[token][user] = collaterals[token][user].sub(amount);
     //     if (token == address(0)) {
     //         DepositProxyInterface(proxyAddress).depositFor.value(amount)(token, address(this), user, amount);
     //     } else {

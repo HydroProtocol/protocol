@@ -78,6 +78,8 @@ contract Loans is Consts, ProxyCaller {
     }
 
     function getLoansByIDs(uint256[] memory ids) internal view returns (Loan[] memory loans) {
+        loans = new Loan[](ids.length);
+
         for( uint256 i = 0; i < ids.length; i++ ) {
             loans[i] = allLoans[ids[i]];
         }
@@ -90,6 +92,8 @@ contract Loans is Consts, ProxyCaller {
     function getBorrowerOverdueLoans(address user) public view returns (Loan[] memory loans) {
         uint256[] memory ids = loansByBorrower[user];
         uint256 j = 0;
+
+        loans = new Loan[](ids.length);
 
         for( uint256 i = 0; i < ids.length; i++ ) {
             Loan memory loan = allLoans[ids[i]];

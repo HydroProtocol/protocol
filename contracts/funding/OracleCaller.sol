@@ -19,24 +19,18 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./lib/LibOwnable.sol";
-import "./funding/Consts.sol";
+import "./Consts.sol";
+import "../lib/SafeMath.sol";
+import "../interfaces/OracleInterface.sol";
 
-contract Oracle is LibOwnable, Consts {
+contract OracleCaller {
+    address public oracleAddress;
 
-    // token price to ether price
-    mapping(address => uint256) public tokenPrices;
-
-    // price decimals is 18 (ORACLE_PRICE_BASE)
-    function setTokenPriceInEther(address token, uint256 price) public onlyOwner {
-        tokenPrices[token] = price;
+    constructor(address _oracleAddress) public {
+        oracleAddress = _oracleAddress;
     }
 
-    function getTokenPriceInEther(address token) public view returns (uint256) {
-        if (token == address(0))  {
-            return ORACLE_PRICE_BASE;
-        }
-
-        return tokenPrices[token];
+    function getTokenPriceInEther(address token) internal view returns (uint256) {
+        return OracleInterface(oracleAddress).getTokenPriceInEther(token);
     }
 }

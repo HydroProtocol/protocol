@@ -62,13 +62,14 @@ const getFundingContracts = async () => {
     const proxy = await newContract(DepositProxy);
     console.log('DepositProxy address', web3.utils.toChecksumAddress(proxy._address));
 
-    const funding = await newContract(Funding, proxy._address);
+    const funding = await newContract(Funding, proxy._address, oracle._address);
     console.log('Funding address', web3.utils.toChecksumAddress(funding._address));
 
     await proxy.methods.addAddress(funding._address).send({ from: accounts[0] });
 
     return {
         proxy,
+        oracle,
         funding
     };
 };
