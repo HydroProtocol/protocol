@@ -89,6 +89,10 @@ const EIP712_ORDER_TYPE = sha3ToHex(
     'Order(address trader,address relayer,address baseToken,address quoteToken,uint256 baseTokenAmount,uint256 quoteTokenAmount,uint256 gasTokenAmount,bytes32 data)'
 );
 
+const EIP712_FUNDING_ORDER_TYPE = sha3ToHex(
+    'Order(address owner,address relayer,address asset,uint256 amount,bytes32 data)'
+);
+
 const getDomainSeparator = () => {
     return sha3ToHex(EIP712_DOMAIN_TYPEHASH + sha3ToHex('Hydro Protocol').slice(2));
 };
@@ -115,10 +119,33 @@ const getOrderHash = order => {
     );
 };
 
+const getFundingOrderHash = order => {
+    const a =
+        EIP712_FUNDING_ORDER_TYPE +
+        addLeadingZero(order.owner.slice(2), 64) +
+        addLeadingZero(order.relayer.slice(2), 64) +
+        addLeadingZero(order.asset.slice(2), 64) +
+        addLeadingZero(new BigNumber(order.amount).toString(16), 64) +
+        order.data.slice(2);
+    console.log(sha3ToHex(a));
+    return getEIP712MessageHash(
+        sha3ToHex(
+            EIP712_FUNDING_ORDER_TYPE +
+                addLeadingZero(order.owner.slice(2), 64) +
+                addLeadingZero(order.relayer.slice(2), 64) +
+                addLeadingZero(order.asset.slice(2), 64) +
+                addLeadingZero(new BigNumber(order.amount).toString(16), 64) +
+                order.data.slice(2)
+        )
+    );
+};
+
 module.exports = {
     isValidSignature,
+    getFundingOrderHash,
     generateOrderData,
     EIP712_DOMAIN_TYPEHASH,
+    EIP712_FUNDING_ORDER_TYPE,
     EIP712_ORDER_TYPE,
     getOrderHash,
     generateFundingOrderData,

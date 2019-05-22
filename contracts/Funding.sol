@@ -51,21 +51,21 @@ contract Funding is Orders, Auction {
             Order memory makerOrder = makerOrders[i];
     //         require(isOrderValid(makerOrder));
 
-    //         if (isLenderOrder(makerOrder.data)) {
+            if (isLenderOrder(makerOrder.data)) {
                 matchSingleOrderInternal(
                     makerOrder,
                     takerOrder,
                     filledAmounts[i],
                     0 // getInterestRate(makerOrder)
                 );
-    //         } else {
-    //             matchSingleOrderInternal(
-    //                 takerOrder,
-    //                 makerOrder,
-    //                 filledAmounts[i],
-    //                 getInterestRate(makerOrder)
-    //             );
-    //         }
+            } else {
+                matchSingleOrderInternal(
+                    takerOrder,
+                    makerOrder,
+                    filledAmounts[i],
+                    0 // getInterestRate(makerOrder)
+                );
+            }
         }
     }
 
@@ -92,9 +92,9 @@ contract Funding is Orders, Auction {
         // require(executeInterest <= getInterestRate(borrowerOrder));
 
         // check amount
-        bytes32 borrowerOrderHash = hashOrder(borrowerOrder);
+        bytes32 borrowerOrderHash = getOrderHash(borrowerOrder);
         // require(amount <= borrowerOrder.amount - orderInfos[borrowerOrderId].filledAmount);
-        bytes32 lenderOrderHash = hashOrder(lenderOrder);
+        bytes32 lenderOrderHash = getOrderHash(lenderOrder);
         // require(amount <= lenderOrder.amount - orderInfos[lenderOrderId].filledAmount);
 
         // check loan duration
@@ -125,18 +125,15 @@ contract Funding is Orders, Auction {
         createLoan(newLoan);
 
         // TODO use a match result
-        // transfer asset
+        // settle loan, transfer asset,
         transferFrom(borrowerOrder.asset, lenderOrder.owner, borrowerOrder.owner, amount);
 
         // change filled amount
-        orderInfos[lenderOrderHash].filledAmount += amount;
-        orderInfos[borrowerOrderHash].filledAmount += amount;
+        orderFilledAmount[borrowerOrderHash] = orderFilledAmount[borrowerOrderHash].add(amount);
+        orderFilledAmount[lenderOrderHash] = orderFilledAmount[lenderOrderHash].add(amount);
 
     //     // borrower
     //     require(isUserRepayable(borrower));
-
-    //     // settle assets
-    //     vault.transferCash(lenderOrder.asset, lender, borrower, amount);
     }
 
     // function cancel(Order memory order) {

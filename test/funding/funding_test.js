@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { getFundingContracts, newContract } = require('../utils');
-const { generateFundingOrderData } = require('../../sdk/sdk');
+const { generateFundingOrderData, getFundingOrderHash } = require('../../sdk/sdk');
 
 const BigNumber = require('bignumber.js');
 const TestToken = artifacts.require('./helper/TestToken.sol');
@@ -221,6 +221,11 @@ contract('Funding', accounts => {
         }
     };
 
+    const assertOrderFilledAmount = async (orderHash, amount, prefixMessage) => {
+        const actualAmount = await funding.methods.getOrderFilledAmount(orderHash).call();
+        assert.equal(amount, actualAmount, `${prefixMessage} Order Filled Amount`);
+    };
+
     const testFundingMatch = async config => {
         const {
             tokenConfigs,
@@ -247,11 +252,16 @@ contract('Funding', accounts => {
 
         const asset = tokens[takerOrderParam.asset];
         const takerOrder = await buildOrder(takerOrderParam, asset);
-        // console.log(takerOrder);
+        takerOrder.hash = getFundingOrderHash(takerOrder);
+        await assertOrderFilledAmount(takerOrder.hash, 0, 'Before Match, taker Order');
+        console.log(takerOrder);
 
         const makerOrders = [];
         for (let i = 0; i < makerOrdersParams.length; i++) {
-            makerOrders.push(await buildOrder(makerOrdersParams[i], asset));
+            const order = await buildOrder(makerOrdersParams[i], asset);
+            order.hash = getFundingOrderHash(order);
+            makerOrders.push(order);
+            await assertOrderFilledAmount(order.hash, 0, `Before Match, maker Order #${i}`);
         }
         // console.log(makerOrders);
 
@@ -268,6 +278,23 @@ contract('Funding', accounts => {
 
         if (afterMatchCollateralStatus) {
             await assertCollateralStatus(afterMatchCollateralStatus, 'After Match');
+        }
+
+        await assertOrderFilledAmount(
+            takerOrder.hash,
+            filledAmounts
+                .reduce((acc, x) => (acc = acc.plus(new BigNumber(x))), new BigNumber('0'))
+                .toString(),
+            'After Match taker order'
+        );
+
+        for (let i = 0; i < makerOrders.length; i++) {
+            const order = makerOrders[i];
+            await assertOrderFilledAmount(
+                order.hash,
+                filledAmounts[i],
+                `After Match, maker Order #${i}`
+            );
         }
 
         // const balancesAfterMatch = await getTokensUsersBalances(tokens);
@@ -374,13 +401,9 @@ contract('Funding', accounts => {
                 }
             ],
             beforeMatchCollateralStatus: {
-                [u1]: {
-                    loansTotalValue: '0',
-                    collateralsTotalValue: '0'
-                },
                 [u2]: {
                     loansTotalValue: '0',
-                    collateralsTotalValue: '1500000000000000000000000000000000000'
+                    collateralsTotalValue: '1500000000000000000'
                 }
             },
             beforeMatchProxyBalances: {
@@ -420,13 +443,9 @@ contract('Funding', accounts => {
                 }
             ],
             afterMatchCollateralStatus: {
-                [u1]: {
-                    loansTotalValue: '0',
-                    collateralsTotalValue: '0'
-                },
                 [u2]: {
-                    loansTotalValue: '500000000000000000000000000000000000',
-                    collateralsTotalValue: '1500000000000000000000000000000000000'
+                    loansTotalValue: toWei('0.5'),
+                    collateralsTotalValue: toWei('1.5')
                 }
             },
             afterMatchProxyBalances: {

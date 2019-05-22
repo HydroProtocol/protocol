@@ -129,7 +129,7 @@ contract Auction is OracleCaller, Loans, Assets, Collateral {
 
     function getAssetAmountValue(address asset, uint256 amount) internal view returns (uint256) {
         uint256 price = getTokenPriceInEther(asset);
-        return price.mul(amount);
+        return price.mul(amount).div(ORACLE_PRICE_BASE);
     }
 
     function getUserLoansState(address user)

@@ -21,11 +21,7 @@ pragma experimental ABIEncoderV2;
 import "../lib/EIP712.sol";
 
 contract Orders is EIP712 {
-    mapping(bytes32 => OrderInfo) internal orderInfos;
-
-    struct OrderInfo {
-        uint256 filledAmount;
-    }
+    mapping(bytes32 => uint256) internal orderFilledAmount;
 
     struct Order {
         address owner;
@@ -50,7 +46,7 @@ contract Orders is EIP712 {
         bytes32 data;
     }
 
-    bytes32 public constant EIP712_ORDER_TYPE = keccak256(
+    bytes32 public constant EIP712_FUNDING_ORDER_TYPE = keccak256(
         abi.encodePacked(
             "Order(address owner,address relayer,address asset,uint256 amount,bytes32 data)"
         )
@@ -79,17 +75,17 @@ contract Orders is EIP712 {
          *
          * keccak256(
          *     abi.encodePacked(
-         *         EIP712_ORDER_TYPE,
+         *         EIP712_FUNDING_ORDER_TYPE,
          *         bytes32(order.owner),
          *         bytes32(order.relayer),
          *         bytes32(order.asset),
-         *         bytes32(order.amount),
+         *         order.amount),
          *         order.data
          *     )
          * );
          */
 
-        bytes32 orderType = EIP712_ORDER_TYPE;
+        bytes32 orderType = EIP712_FUNDING_ORDER_TYPE;
 
         assembly {
             let start := sub(order, 32)
@@ -97,7 +93,7 @@ contract Orders is EIP712 {
 
             // 192 = (1 + 5) * 32
             //
-            // [0...32)   bytes: EIP712_ORDER_TYPE
+            // [0...32)   bytes: EIP712_FUNDING_ORDER_TYPE
             // [32...192) bytes: order
             mstore(start, orderType)
             result := keccak256(start, 192)
@@ -106,6 +102,10 @@ contract Orders is EIP712 {
         }
 
         return result;
+    }
+
+    function getOrderFilledAmount(bytes32 orderHash) public view returns (uint256) {
+        return orderFilledAmount[orderHash];
     }
 
     /* Functions to extract info from data bytes in Order struct */
