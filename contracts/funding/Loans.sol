@@ -19,16 +19,21 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Consts.sol";
 import "../lib/SafeMath.sol";
+
+import "./Consts.sol";
 import "./ProxyCaller.sol";
 
-contract Loans is Consts, ProxyCaller {
+import "../helper/Debug.sol";
+
+contract Loans is Debug, Consts, ProxyCaller {
     using SafeMath for uint256;
 
     uint256 public loansCount;
     mapping(uint256 => Loan) public allLoans;
     mapping(address => uint256[]) public loansByBorrower;
+
+    event NewLoan(uint256 loanID);
 
     struct Loan {
         uint256 id;
@@ -66,12 +71,11 @@ contract Loans is Consts, ProxyCaller {
     }
 
     function isOverdueLoan(Loan memory loan) public view returns (bool expired) {
-        return loan.startAt + loan.duration < block.timestamp;
-        // return getLoanStartAt(loan.data) + getLoanDuration(loan.data) < block.timestamp;
+        return loan.startAt + loan.duration < getBlockTimestamp();
     }
 
     function calculateLoanInterest(Loan memory loan, uint256 amount) public view returns (uint256 totalInterest, uint256 relayerFee) {
-        uint256 timeDelta = block.timestamp - loan.startAt;
+        uint256 timeDelta = getBlockTimestamp() - loan.startAt;
         totalInterest = amount.mul(loan.interestRate).mul(timeDelta).div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
         relayerFee = totalInterest.mul(loan.relayerFeeRate).div(RELAYER_FEE_RATE_BASE);
         return (totalInterest, relayerFee);
@@ -110,7 +114,7 @@ contract Loans is Consts, ProxyCaller {
         allLoans[id] = loan;
         loansByBorrower[loan.borrower].push(id);
 
-        // emit Event
+        emit NewLoan(id);
     }
 
     // payer give lender all money and interest
@@ -130,18 +134,17 @@ contract Loans is Consts, ProxyCaller {
     }
 
     function reduceLoan(Loan memory loan, uint256 amount) internal {
-        loan.amount -= amount;
+        loan.amount = loan.amount.sub(amount);
+        allLoans[loan.id].amount = loan.amount;
 
         // partial close loan
         if (loan.amount > 0){
             return;
         }
 
-        // only delete loan form loansByBorrower
-        // no need to delete loan from loansById
         uint256[] storage borrowerLoanIDs = loansByBorrower[loan.borrower];
 
-        for (uint i = 0; i < borrowerLoanIDs.length; i++){
+        for (uint256 i = 0; i < borrowerLoanIDs.length; i++){
             if (borrowerLoanIDs[i] == loan.id) {
                 borrowerLoanIDs[i] = borrowerLoanIDs[borrowerLoanIDs.length-1];
                 delete borrowerLoanIDs[borrowerLoanIDs.length - 1];

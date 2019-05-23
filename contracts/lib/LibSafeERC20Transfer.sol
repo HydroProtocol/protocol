@@ -2,6 +2,10 @@ pragma solidity 0.5.8;
 
 contract LibSafeERC20Transfer {
     function safeTransfer(address token, address to, uint256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
+
         bool result;
 
         assembly {
@@ -38,6 +42,10 @@ contract LibSafeERC20Transfer {
     }
 
     function safeTransferFrom(address token, address from, address to, uint256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
+
         bool result;
 
         assembly {

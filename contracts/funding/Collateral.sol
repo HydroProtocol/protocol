@@ -33,11 +33,19 @@ contract Collateral is ProxyCaller {
     event WithdrawCollateral(address token, address user, uint256 amount);
 
     function depositCollateral(address token, address user, uint256 amount) public {
+        if (amount == 0) {
+            return;
+        }
+
         DepositProxyInterface(proxyAddress).depositFor(token, user, user, amount);
         depositCollateralFromProxy(token, user, amount);
     }
 
     function depositCollateralFromProxy(address token, address user, uint256 amount) public {
+        if (amount == 0) {
+            return;
+        }
+
         address payable currentContract = address(uint160(address(this)));
         DepositProxyInterface(proxyAddress).withdrawTo(token, user, currentContract, amount);
         collaterals[token][user] = collaterals[token][user].add(amount);
@@ -53,18 +61,23 @@ contract Collateral is ProxyCaller {
     // TODO: is there a way to prevent a user from depositing unexpectedly??
     function () external payable {}
 
-    // function withdrawCollateralToProxy(address token, address user, uint256 amount) internal {
-    //     collaterals[token][user] = collaterals[token][user].sub(amount);
+    // function withdrawCollateralToProxy(address token, address from, address to, uint256 amount) internal {
+    //     if (amount == 0) {
+    //         return;
+    //     }
+
+    //     collaterals[token][from] = collaterals[token][from].sub(amount);
+
     //     if (token == address(0)) {
-    //         DepositProxyInterface(proxyAddress).depositFor.value(amount)(token, address(this), user, amount);
+    //         depositEthFor(to, amount);
     //     } else {
     //         if (EIP20Interface(token).allowance(address(this), proxyAddress) < amount) {
     //             EIP20Interface(token).approve(proxyAddress, 0xf0000000000000000000000000000000000000000000000000000000000000);
     //         }
-    //         DepositProxyInterface(proxyAddress).depositFor(token, address(this), user, amount);
+    //         depositTokenFor(token, to, amount);
     //     }
 
-    //     emit WithdrawCollateral(token, user, amount);
+    //     emit WithdrawCollateral(token, to, amount);
     // }
 
     // function withdrawCollateral(address token, address payable user, uint256 amount) internal {

@@ -26,7 +26,7 @@ import "./OracleCaller.sol";
 import "./Collateral.sol";
 import "./Assets.sol";
 
-contract Auction is OracleCaller, Loans, Assets, Collateral {
+contract Auctions is OracleCaller, Loans, Assets, Collateral {
     using SafeMath for uint256;
 
     uint256 public auctionsCount = 1;
@@ -46,21 +46,21 @@ contract Auction is OracleCaller, Loans, Assets, Collateral {
 
     struct UserLoansState {
         bool       liquidable;
-        uint256[]  userAssets;
+        uint256[]  collateralAssetAmounts;
         Loan[]     loans;
         uint256[]  loanValues;
         uint256    loansTotalValue;
         uint256    collateralsTotalValue;
     }
 
-    function createAuction(Loan memory loan, uint256 loanValue, uint256 loansValue, uint256[] memory assetAmounts)
+    function createAuction(Loan memory loan, uint256 loanValue, uint256 loansValue, uint256[] memory collateralAssetAmounts)
         internal
     {
         uint256 id = auctionsCount++;
-        uint256[] memory actuionAssetAmounts = new uint256[](assetAmounts.length);
+        uint256[] memory actuionAssetAmounts = new uint256[](collateralAssetAmounts.length);
 
-        for (uint256 i = 0; i < assetAmounts.length; i++ ) {
-            actuionAssetAmounts[i] = loanValue.mul(assetAmounts[i]).div(loansValue);
+        for (uint256 i = 0; i < collateralAssetAmounts.length; i++ ) {
+            actuionAssetAmounts[i] = loanValue.mul(collateralAssetAmounts[i]).div(loansValue);
         }
 
         Auction memory auction = Auction({
@@ -89,6 +89,7 @@ contract Auction is OracleCaller, Loans, Assets, Collateral {
     function claimAuctionWithAmount(uint256 id, uint256 repayAmount) public {
         Auction memory auction = allAuctions[id];
         Loan memory loan = allLoans[auction.loanID];
+        uint256 loanLeftAmount = loan.amount;
 
         // pay debt
         repayLoan(loan, msg.sender, repayAmount);
@@ -98,12 +99,25 @@ contract Auction is OracleCaller, Loans, Assets, Collateral {
         // receive assets
         for (uint256 i = 0; i < allAssets.length; i++) {
             Asset memory asset = allAssets[i];
-            uint256 amount = auction.assetAmounts[i].mul(ratio).div(100);
 
-            if (asset.tokenAddress == address(0)) {
-                depositEthFor(msg.sender, amount);
-            } else {
-                depositTokenFor(asset.tokenAddress, msg.sender, amount);
+            if (auction.assetAmounts[i] == 0) {
+                continue;
+            }
+
+            uint256 amount = auction.assetAmounts[i].mul(ratio).mul(repayAmount).div(loanLeftAmount.mul(100));
+            auction.assetAmounts[i] = auction.assetAmounts[i].sub(amount);
+
+            withdrawLiquidatedAssetsToProxy(asset.tokenAddress, msg.sender, amount);
+
+            // if (ratio < 100) {
+            //     uint256 amount = auction.assetAmounts[i].mul(ratio).div(100);
+            //     liquidatingAssets[token] = liquidatingAssets[token].sub(amount);
+            // }
+
+            if (loan.amount == 0 && auction.assetAmounts[i] > 0) {
+                liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].sub(auction.assetAmounts[i]);
+                collaterals[asset.tokenAddress][loan.borrower] = collaterals[asset.tokenAddress][loan.borrower].add(auction.assetAmounts[i]);
+                auction.assetAmounts[i] = 0;
             }
         }
 
@@ -136,26 +150,28 @@ contract Auction is OracleCaller, Loans, Assets, Collateral {
         public view
         returns ( UserLoansState memory state )
     {
-        state.userAssets = new uint256[](allAssets.length);
+        state.collateralAssetAmounts = new uint256[](allAssets.length);
 
         for (uint256 i = 0; i < allAssets.length; i++) {
             address tokenAddress = allAssets[i].tokenAddress;
             uint256 amount = collaterals[tokenAddress][user];
             state.collateralsTotalValue = state.collateralsTotalValue.add(getAssetAmountValue(tokenAddress, amount));
-            state.userAssets[i] = amount;
+            state.collateralAssetAmounts[i] = amount;
         }
 
         state.loans = getBorrowerLoans(user);
-
         if (state.loans.length <= 0) {
             return state;
         }
 
         state.loanValues = new uint256[](state.loans.length);
 
-
         for (uint256 i = 0; i < state.loans.length; i++) {
-            state.loanValues[i] = getAssetAmountValue(state.loans[i].asset, state.loans[i].amount);
+            // TODO get total loan debt
+            (uint256 totalInterest, uint256 _relayerFee) = calculateLoanInterest(state.loans[i], state.loans[i].amount);
+            _relayerFee;
+
+            state.loanValues[i] = getAssetAmountValue(state.loans[i].asset, state.loans[i].amount.add(totalInterest));
             state.loansTotalValue = state.loansTotalValue.add(state.loanValues[i]);
         }
 
@@ -172,7 +188,7 @@ contract Auction is OracleCaller, Loans, Assets, Collateral {
         // storage changes
 
         for (uint256 i = 0; i < state.loans.length; i++ ) {
-            createAuction(state.loans[i], state.loanValues[i], state.loansTotalValue, state.userAssets);
+            createAuction(state.loans[i], state.loanValues[i], state.loansTotalValue, state.collateralAssetAmounts);
         }
 
         // confiscate all collaterals
@@ -180,9 +196,31 @@ contract Auction is OracleCaller, Loans, Assets, Collateral {
         for (uint256 i = 0; i < allAssets.length; i++) {
             Asset memory asset = allAssets[i];
             collaterals[asset.tokenAddress][user] = 0;
-            liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].add(state.userAssets[i]);
+
+            // TODO separate by user ??
+            liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].add(state.collateralAssetAmounts[i]);
         }
 
         return true;
+    }
+
+    function withdrawLiquidatedAssetsToProxy(address token, address to, uint256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
+
+        // TODO separate by user ??
+        liquidatingAssets[token] = liquidatingAssets[token].sub(amount);
+
+        if (token == address(0)) {
+            depositEthFor(to, amount);
+        } else {
+            if (EIP20Interface(token).allowance(address(this), proxyAddress) < amount) {
+                EIP20Interface(token).approve(proxyAddress, 0xf0000000000000000000000000000000000000000000000000000000000000);
+            }
+            depositTokenFor(token, to, amount);
+        }
+
+        emit WithdrawCollateral(token, to, amount);
     }
 }

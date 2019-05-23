@@ -39,7 +39,7 @@ contract Orders is EIP712 {
          * ║ expiredAt          │ 5               order expiration timestamp                ║
          * ║ loanDuration       │ 5               loan duration timestamp                   ║
          * ║ interestRate       │ 2               interest rate (base 10,000)               ║
-         * ║ feeRate            │ 2               fee rate (base 100,00)                    ║
+         * ║ feeRate            │ 2               fee rate (base 10,000)                    ║
          * ║ salt               │ rest            salt                                      ║
          * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
          */
@@ -126,11 +126,11 @@ contract Orders is EIP712 {
         return uint256(uint40(bytes5(data << (8*7))));
     }
 
-    function getOrderInterestRate(bytes32 data) internal pure returns (uint256) {
-        return uint256(uint16(bytes2(data << (8*12))));
+    function getOrderInterestRate(bytes32 data) internal pure returns (uint16) {
+        return uint16(bytes2(data << (8*12)));
     }
 
-    function getOrderFeeRate(bytes32 data) internal pure returns (uint256) {
-        return uint256(uint16(bytes2(data << (8*14))));
+    function getOrderFeeRate(bytes32 data) internal pure returns (uint16) {
+        return uint16(bytes2(data << (8*14)));
     }
 }

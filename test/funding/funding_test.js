@@ -7,7 +7,6 @@ const TestToken = artifacts.require('./helper/TestToken.sol');
 // const { generateOrderData, getOrderHash } = require('../../sdk/sdk');
 
 const weis = new BigNumber('1000000000000000000');
-const infinity = '999999999999999999999999999999999999999999';
 
 const toWei = x => {
     return new BigNumber(x).times(weis).toString();
@@ -30,6 +29,92 @@ contract('Funding', accounts => {
         proxy = contracts.proxy;
         oracle = contracts.oracle;
     });
+
+    const makeSnapshot = () =>
+        new Promise((resolve, reject) => {
+            web3.currentProvider.send(
+                {
+                    method: 'evm_snapshot',
+                    params: [],
+                    jsonrpc: '2.0',
+                    id: new Date().getTime()
+                },
+                (error, result) => {
+                    if (error) {
+                        reject(error);
+                    }
+
+                    resolve(result.result);
+                }
+            );
+        });
+
+    const mineEmptyBlock = async count => {
+        const mine = () =>
+            new Promise((resolve, reject) => {
+                web3.currentProvider.send(
+                    {
+                        method: 'evm_mine',
+                        params: [],
+                        jsonrpc: '2.0',
+                        id: new Date().getTime()
+                    },
+                    (error, result) => {
+                        if (error) {
+                            reject(error);
+                        }
+
+                        resolve(result.result);
+                    }
+                );
+            });
+
+        const finish = [];
+
+        for (let i = 0; i < count; i++) {
+            finish.push(mine());
+        }
+
+        return Promise.all(finish);
+    };
+
+    const updateTimestamp = timestamp =>
+        new Promise((resolve, reject) => {
+            web3.currentProvider.send(
+                {
+                    method: 'evm_mine',
+                    params: [timestamp],
+                    jsonrpc: '2.0',
+                    id: new Date().getTime()
+                },
+                (error, result) => {
+                    if (error) {
+                        reject(error);
+                    }
+
+                    resolve(result.result);
+                }
+            );
+        });
+
+    const recoverSnapshot = snapshotID =>
+        new Promise((resolve, reject) => {
+            web3.currentProvider.send(
+                {
+                    method: 'evm_revert',
+                    params: [snapshotID],
+                    jsonrpc: '2.0',
+                    id: new Date().getTime()
+                },
+                (error, result) => {
+                    if (error) {
+                        reject(error);
+                    }
+
+                    resolve(result.result);
+                }
+            );
+        });
 
     const initToken = async tokenConfig => {
         const { initBalances, initCollaterals, etherPrice } = tokenConfig;
@@ -128,6 +213,10 @@ contract('Funding', accounts => {
         return res;
     };
 
+    const pp = obj => {
+        console.log(JSON.stringify(obj, null, 2));
+    };
+
     const getTokensUsersBalances = async tokens => {
         const res = {};
         tokens['ETH'] = '0x0000000000000000000000000000000000000000';
@@ -160,7 +249,7 @@ contract('Funding', accounts => {
                 assert.equal(
                     actualBalance,
                     expectedBalance,
-                    `${messagePrefix} Expect proxy balance ${tokenAddress} token for ${user} to be ${expectedBalance}, but actual is ${actualBalance}`
+                    `${messagePrefix} ${getUserID(user)} proxy balance ${tokenAddress}`
                 );
             }
         }
@@ -186,11 +275,36 @@ contract('Funding', accounts => {
         }
     };
 
+    const changeTokenPrice = async (tokens, tokenPrices) => {
+        const symbols = Object.keys(tokenPrices);
+        // console.log(tokens, tokenPrices);
+        for (let i = 0; i < symbols.length; i++) {
+            await oracle.methods
+                .setTokenPriceInEther(
+                    tokens[symbols[i]],
+                    new BigNumber(tokenPrices[symbols[i]]).times('1000000000000000000').toString()
+                )
+                .send({ from: accounts[0] });
+        }
+    };
+
+    const getUserID = address => {
+        if (address === u1) {
+            return 'u1';
+        } else if (address === u2) {
+            return 'u2';
+        } else if (address === u3) {
+            return 'u3';
+        } else if (address === relayer) {
+            return 'relayer';
+        }
+    };
+
     const assertCollateralStatus = async (collateralStatus, prefixMessage) => {
         const users = Object.keys(collateralStatus);
         for (let i = 0; i < users.length; i++) {
             const user = users[i];
-            const collateralStateRes = await funding.methods.getUserLoansState(user).call();
+            const collateralState = await funding.methods.getUserLoansState(user).call();
 
             // bool       liquidable;
             // uint256[]  userAssets;
@@ -199,31 +313,75 @@ contract('Funding', accounts => {
             // uint256    loansTotalValue;
             // uint256    collateralsTotalValue;
 
-            const collateralState = collateralStateRes;
-
             // console.log(collateralState);
 
             assert.equal(
                 collateralState.loansTotalValue,
                 collateralStatus[user].loansTotalValue,
-                `${prefixMessage} collateralStatus loansTotalValue not equal: expected ${
-                    collateralState.loansTotalValue
-                } actual: ${collateralStatus[user].loansTotalValue}`
+                `${prefixMessage} collateralStatus loansTotalValue ${getUserID(user)}`
             );
 
             assert.equal(
                 collateralState.collateralsTotalValue,
                 collateralStatus[user].collateralsTotalValue,
-                `${prefixMessage} collateralStatus collateralsTotalValue not equal: expected ${
-                    collateralState.collateralsTotalValue
-                } actual: ${collateralStatus[user].collateralsTotalValue}`
+                `${prefixMessage} collateralStatus collateralsTotalValue ${getUserID(user)}`
             );
         }
+    };
+
+    const assertLiquidable = async user => {
+        const collateralState = await funding.methods.getUserLoansState(user).call();
+        assert.ok(collateralState.liquidable);
     };
 
     const assertOrderFilledAmount = async (orderHash, amount, prefixMessage) => {
         const actualAmount = await funding.methods.getOrderFilledAmount(orderHash).call();
         assert.equal(amount, actualAmount, `${prefixMessage} Order Filled Amount`);
+    };
+
+    const assertBatchStatus = async (status, tokens, prefix) => {
+        const { proxyBalances, collateralStatus, collaterals } = status;
+
+        if (proxyBalances) {
+            await assetProxyBalances(tokens, proxyBalances, prefix);
+        }
+
+        if (collateralStatus) {
+            await assertCollateralStatus(collateralStatus, prefix);
+        }
+
+        if (collaterals) {
+            await assetCollaterals(tokens, collaterals, prefix);
+        }
+    };
+
+    const runInSandbox = async (fn, timestamp) => {
+        let snapshotID;
+
+        try {
+            snapshotID = await makeSnapshot();
+            // let currentBlockNumber = await web3.eth.getBlockNumber();
+            // let currentBlock = await web3.eth.getBlock(currentBlockNumber);
+            // console.log('CurrentBlock', currentBlockNumber, currentBlock.timestamp);
+
+            if (timestamp) {
+                // await updateTimestamp(timestamp);
+                await funding.methods.setBlockTimestamp(timestamp).send({ from: accounts[0] });
+            }
+
+            // currentBlockNumber = await web3.eth.getBlockNumber();
+            // currentBlock = await web3.eth.getBlock(currentBlockNumber);
+            // console.log('CurrentBlock', currentBlockNumber, currentBlock.timestamp);
+
+            await fn();
+            // console.log('snapshotID', snapshotID);
+        } finally {
+            // console.log(`recover snapshot ${snapshotID}`);
+            const result = await recoverSnapshot(snapshotID);
+            if (!result) {
+                return 'recover snapshot failed';
+            }
+        }
     };
 
     const testFundingMatch = async config => {
@@ -232,30 +390,28 @@ contract('Funding', accounts => {
             takerOrderParam,
             makerOrdersParams,
             filledAmounts,
-            beforeMatchProxyBalances,
-            beforeMatchCollateralStatus,
-            beforeMatchCollaterals,
-            afterMatchProxyBalances,
-            afterMatchCollateralStatus,
-            assertDiffs,
-            baseTokenFilledAmounts,
-            allowPrecisionError,
-            assertFilled
+            beforeMatchStatus,
+            afterMatchStatus,
+            results
         } = config;
+
+        // prepare all tokens and initialized status
         const tokens = await initTokens(tokenConfigs);
+        pp(tokens);
 
-        await assetProxyBalances(tokens, beforeMatchProxyBalances, 'Before Match');
-        await assetCollaterals(tokens, beforeMatchCollaterals, 'Before Match');
+        // assert status before match
+        if (beforeMatchStatus) {
+            await assertBatchStatus(beforeMatchStatus, tokens, 'Before Match');
+        }
 
-        // const balancesBeforeMatch = await getTokensUsersBalances(tokens);
-        // console.log(balancesBeforeMatch);
-
+        // assert taker order filled amount before match
         const asset = tokens[takerOrderParam.asset];
         const takerOrder = await buildOrder(takerOrderParam, asset);
         takerOrder.hash = getFundingOrderHash(takerOrder);
         await assertOrderFilledAmount(takerOrder.hash, 0, 'Before Match, taker Order');
-        console.log(takerOrder);
+        // console.log(takerOrder);
 
+        // assert maker order filled amount before match
         const makerOrders = [];
         for (let i = 0; i < makerOrdersParams.length; i++) {
             const order = await buildOrder(makerOrdersParams[i], asset);
@@ -265,29 +421,31 @@ contract('Funding', accounts => {
         }
         // console.log(makerOrders);
 
-        if (beforeMatchCollateralStatus) {
-            await assertCollateralStatus(beforeMatchCollateralStatus, 'Before Match');
-        }
-
         const res = await funding.methods
             .matchOrders(takerOrder, makerOrders, filledAmounts)
             .send({ from: relayer, gas: 10000000, gasLimit: 10000000 });
         console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.gasUsed);
+        const loanID = res.events.NewLoan.returnValues.loanID;
+        const loan = await funding.methods.allLoans(loanID).call();
+        // console.log(loan);
+        const loanStartAt = parseInt(loan.startAt, 10);
 
-        await assetProxyBalances(tokens, afterMatchProxyBalances, 'After Match');
+        // lock the time to loan created time to avoid timestamp mismatch
+        await funding.methods.setBlockTimestamp(loanStartAt).send({ from: accounts[0] });
 
-        if (afterMatchCollateralStatus) {
-            await assertCollateralStatus(afterMatchCollateralStatus, 'After Match');
+        // assert after match
+        if (afterMatchStatus) {
+            await assertBatchStatus(afterMatchStatus, tokens, 'After Match');
         }
 
-        await assertOrderFilledAmount(
-            takerOrder.hash,
-            filledAmounts
-                .reduce((acc, x) => (acc = acc.plus(new BigNumber(x))), new BigNumber('0'))
-                .toString(),
-            'After Match taker order'
-        );
+        const totalAmount = filledAmounts
+            .reduce((acc, x) => (acc = acc.plus(new BigNumber(x))), new BigNumber('0'))
+            .toString();
 
+        // assert taker order filled amount after match
+        await assertOrderFilledAmount(takerOrder.hash, totalAmount, 'After Match taker order');
+
+        // assert maker orders filled amount after match
         for (let i = 0; i < makerOrders.length; i++) {
             const order = makerOrders[i];
             await assertOrderFilledAmount(
@@ -297,59 +455,64 @@ contract('Funding', accounts => {
             );
         }
 
-        // const balancesAfterMatch = await getTokensUsersBalances(tokens);
+        if (!results) {
+            return;
+        }
 
-        // await getTokenUsersBalances(baseToken, users, balancesAfterMatch);
-        // await getTokenUsersBalances(quoteToken, users, balancesAfterMatch);
-        // for (let i = 0; i < Object.keys(assertDiffs).length; i++) {
-        //     const tokenSymbol = Object.keys(assertDiffs)[i];
+        const { repay, liquidition } = results;
 
-        //     for (let j = 0; j < Object.keys(assertDiffs[tokenSymbol]).length; j++) {
-        //         const userKey = Object.keys(assertDiffs[tokenSymbol])[j];
-        //         const expectedDiff = assertDiffs[tokenSymbol][userKey];
-        //         const balanceKey = `${tokenSymbol}-${userKey}`;
-        //         const actualDiff = new BigNumber(balancesAfterMatch[balanceKey]).minus(
-        //             balancesBeforeMatch[balanceKey]
-        //         );
+        if (repay) {
+            await runInSandbox(async () => {
+                if (repay.tokenPrices) {
+                    await changeTokenPrice(tokens, repay.tokenPrices);
+                }
 
-        //         assertEqual(
-        //             actualDiff.toString(),
-        //             expectedDiff,
-        //             allowPrecisionError,
-        //             `${balanceKey}`
-        //         );
-        //     }
-        // }
+                await assertBatchStatus(repay.before, tokens, 'repay before');
+                // repay
+                await funding.methods
+                    .repayLoanPublic(loanID, totalAmount)
+                    .send({ from: takerOrder.owner, gasLimit: 999999999 });
 
-        // if (assertFilled) {
-        //     const { limitTaker, marketTaker, makers } = assertFilled;
+                await assertBatchStatus(repay.after, tokens, 'repay after');
+            }, loanStartAt + repay.duration);
+        }
 
-        //     if (limitTaker && takerOrderParam.type == 'limit') {
-        //         assertEqual(
-        //             await exchange.methods.filled(takerOrder.orderHash).call(),
-        //             limitTaker,
-        //             allowPrecisionError
-        //         );
-        //     }
+        if (liquidition) {
+            const borrower =
+                takerOrderParam.side === 'borrow'
+                    ? takerOrderParam.owner
+                    : makerOrdersParams[0].owner;
 
-        //     if (marketTaker && takerOrderParam.type == 'market') {
-        //         assertEqual(
-        //             await exchange.methods.filled(takerOrder.orderHash).call(),
-        //             marketTaker,
-        //             allowPrecisionError
-        //         );
-        //     }
+            await runInSandbox(async () => {
+                if (liquidition.tokenPrices) {
+                    await changeTokenPrice(tokens, liquidition.tokenPrices);
+                }
 
-        //     if (makers) {
-        //         for (let i = 0; i < makers.length; i++) {
-        //             assertEqual(
-        //                 await exchange.methods.filled(makerOrders[i].orderHash).call(),
-        //                 makers[i],
-        //                 allowPrecisionError
-        //             );
-        //         }
-        //     }
-        // }
+                await assertBatchStatus(liquidition.before, tokens, 'liquidition before');
+
+                await assertLiquidable(borrower);
+
+                let res = await funding.methods
+                    .liquidateUser(borrower)
+                    .send({ from: accounts[0], gasLimit: 20000000 });
+
+                // console.log(JSON.stringify(res));
+                const auctionID = res.events.AuctionCreated.returnValues.auctionID;
+                // console.log(await funding.methods.allAuctions(auctionID).call());
+
+                await mineEmptyBlock(liquidition.auctionRatio * 100 - 1);
+
+                // console.log(await funding.methods.allAuctions(auctionID).call());
+
+                res = await funding.methods
+                    .claimAuction(auctionID)
+                    .send({ from: liquidition.filledBy, gasLimit: 999999999 });
+
+                // pp(res);
+
+                await assertBatchStatus(liquidition.after, tokens, 'liquidition after');
+            }, loanStartAt + liquidition.duration);
+        }
     };
 
     beforeEach(async () => {
@@ -359,9 +522,14 @@ contract('Funding', accounts => {
         // set HOT price to 0.1 USD
     });
 
+    afterEach(async () => {
+        await funding.methods.setBlockTimestamp(0).send({ from: accounts[0] });
+    });
+
     // User2 pledge 1 ETH (1000 USD) and 5000 HOT (500 USD) as collateral
     // User1 lend   500 USD
     // User2 borrow 500 USD
+    // User3        1000 USD fill auction
     // Interest 10%, 2 years, fee 10%
     it('taker borrow, full match', async () => {
         const testConfig = {
@@ -371,10 +539,10 @@ contract('Funding', accounts => {
                 {
                     symbol: 'ETH',
                     initBalances: {
-                        [u2]: toWei(1)
+                        [u2]: toWei('1')
                     },
                     initCollaterals: {
-                        [u2]: toWei(1)
+                        [u2]: toWei('1')
                     }
                 },
                 {
@@ -384,7 +552,8 @@ contract('Funding', accounts => {
                     decimals: 18,
                     initBalances: {
                         [u1]: toWei(500), // user1 capital
-                        [u2]: toWei(100) // for user2 to pay interest
+                        [u2]: toWei(100), // for user2 to pay interest
+                        [u3]: toWei(1000)
                     }
                 },
                 {
@@ -400,24 +569,40 @@ contract('Funding', accounts => {
                     }
                 }
             ],
-            beforeMatchCollateralStatus: {
-                [u2]: {
-                    loansTotalValue: '0',
-                    collateralsTotalValue: '1500000000000000000'
-                }
-            },
-            beforeMatchProxyBalances: {
-                USD: {
-                    [u1]: toWei('500'),
-                    [u2]: toWei('100')
-                }
-            },
-            beforeMatchCollaterals: {
-                ETH: {
-                    [u2]: toWei(1)
+            beforeMatchStatus: {
+                proxyBalances: {
+                    ETH: {
+                        [u1]: toWei('0'),
+                        [u2]: toWei('0'),
+                        [u3]: toWei('0'),
+                        [relayer]: toWei('0')
+                    },
+                    USD: {
+                        [u1]: toWei('500'),
+                        [u2]: toWei('100'),
+                        [u3]: toWei('1000'),
+                        [relayer]: toWei('0')
+                    },
+                    HOT: {
+                        [u1]: toWei('0'),
+                        [u2]: toWei('0'),
+                        [u3]: toWei('0'),
+                        [relayer]: toWei('0')
+                    }
                 },
-                HOT: {
-                    [u2]: toWei('5000')
+                collateralStatus: {
+                    [u2]: {
+                        loansTotalValue: '0',
+                        collateralsTotalValue: toWei('1.5')
+                    }
+                },
+                collaterals: {
+                    ETH: {
+                        [u2]: toWei('1')
+                    },
+                    HOT: {
+                        [u2]: toWei('5000')
+                    }
                 }
             },
             takerOrderParam: {
@@ -426,7 +611,7 @@ contract('Funding', accounts => {
                 expiredAt: 3500000000,
                 durating: 3500000000,
                 asset: 'USD',
-                interestRate: 0,
+                interestRate: 1000, // 10%
                 feeRate: 0,
                 amount: toWei('500')
             },
@@ -437,50 +622,153 @@ contract('Funding', accounts => {
                     expiredAt: 3500000000,
                     durating: 3500000000,
                     asset: 'USD',
-                    interestRate: 0,
-                    feeRate: 0,
+                    interestRate: 1000, // 10%
+                    feeRate: 1500, // 15%
                     amount: toWei('500')
                 }
             ],
-            afterMatchCollateralStatus: {
-                [u2]: {
-                    loansTotalValue: toWei('0.5'),
-                    collateralsTotalValue: toWei('1.5')
+            afterMatchStatus: {
+                proxyBalances: {
+                    ETH: {
+                        [u1]: toWei('0'),
+                        [u2]: toWei('0'),
+                        [u3]: toWei('0'),
+                        [relayer]: toWei('0')
+                    },
+                    USD: {
+                        [u1]: toWei('0'),
+                        [u2]: toWei('600'),
+                        [u3]: toWei('1000'),
+                        [relayer]: toWei('0')
+                    },
+                    HOT: {
+                        [u1]: toWei('0'),
+                        [u2]: toWei('0'),
+                        [u3]: toWei('0'),
+                        [relayer]: toWei('0')
+                    }
+                },
+                collateralStatus: {
+                    [u2]: {
+                        loansTotalValue: toWei('0.5'),
+                        collateralsTotalValue: toWei('1.5')
+                    }
+                },
+                collaterals: {
+                    ETH: {
+                        [u2]: toWei('1')
+                    },
+                    HOT: {
+                        [u2]: toWei('5000')
+                    }
                 }
             },
-            afterMatchProxyBalances: {
-                USD: {
-                    [u1]: toWei('0'),
-                    [u2]: toWei('600')
+            results: {
+                repay: {
+                    duration: 86400 * 100,
+                    tokenPrices: {},
+                    before: {
+                        collateralStatus: {
+                            [u2]: {
+                                loansTotalValue: toWei('0.513698630136986301'), // 500(USD) * 10%(InterestRate) * 100(duration) / 365(days of year) / 1000 (Eth USD price)
+                                collateralsTotalValue: toWei('1.5')
+                            }
+                        },
+                        collaterals: {
+                            ETH: {
+                                [u2]: toWei('1')
+                            },
+                            HOT: {
+                                [u2]: toWei('5000')
+                            }
+                        }
+                    },
+                    after: {
+                        proxyBalances: {
+                            USD: {
+                                [u1]: toWei('511.643835616438356164'), // interest excluded fee: 500(USD) + 500(USD) * 10%(InterestRate) * 100(duration) * 0.85(15% relayer fee) / 365(days of year)
+                                [u2]: toWei('86.301369863013698631'), // interest: 100(USD) - 500(USD) * 10%(InterestRate) * 100(duration) / 365(days of year)
+                                [relayer]: toWei('2.054794520547945205') // fee: 500 * 10% * 100 * 0.15 / 365
+                            }
+                        },
+                        collateralStatus: {
+                            [u2]: {
+                                loansTotalValue: toWei('0'), // no debt any more
+                                collateralsTotalValue: toWei('1.5')
+                            }
+                        },
+                        collaterals: {
+                            ETH: {
+                                [u2]: toWei('1')
+                            },
+                            HOT: {
+                                [u2]: toWei('5000')
+                            }
+                        }
+                    }
+                },
+                liquidition: {
+                    duration: 86400 * 720,
+                    filledBy: u3,
+                    tokenPrices: {
+                        HOT: '0',
+                        USD: '0.00125' // 800 USD
+                    },
+                    auctionRatio: 0.6,
+                    before: {
+                        collateralStatus: {
+                            [u2]: {
+                                loansTotalValue: toWei('0.748287671232876712'), // (500 + 500 * 0.1 * 720 / 365) * 0.00125
+                                collateralsTotalValue: toWei('1')
+                            }
+                        },
+                        collaterals: {
+                            ETH: {
+                                [u2]: toWei('1')
+                            },
+                            HOT: {
+                                [u2]: toWei('5000')
+                            }
+                        }
+                    },
+                    after: {
+                        proxyBalances: {
+                            USD: {
+                                [u1]: toWei('583.835616438356164384'), // 500(USD) + 500(USD) * 10%(InterestRate) * 720(duration) * 0.85(15% relayer fee) / 365(days of year)
+                                [u2]: toWei('600'),
+                                [u3]: toWei('401.369863013698630137'), // 1000 - 500 * 10% * 720 / 365 - 500
+                                [relayer]: toWei('14.794520547945205479') // 500 * 10% * 720 * 0.15 / 365
+                            },
+                            ETH: {
+                                [u1]: toWei('0'),
+                                [u2]: toWei('0'),
+                                [u3]: toWei('0.6'), // by filling auction
+                                [relayer]: toWei('0')
+                            },
+                            HOT: {
+                                [u1]: toWei('0'),
+                                [u2]: toWei('0'),
+                                [u3]: toWei('3000'), // by filling auction
+                                [relayer]: toWei('0')
+                            }
+                        },
+                        collaterals: {
+                            ETH: {
+                                [u2]: toWei('0.4')
+                            },
+                            HOT: {
+                                [u2]: toWei('2000')
+                            }
+                        },
+                        collateralStatus: {
+                            [u2]: {
+                                loansTotalValue: toWei('0'), // not any debts
+                                collateralsTotalValue: toWei('0.4')
+                            }
+                        }
+                    }
                 }
             }
-            // assertDiffs: {
-            //     HOT: {
-            //         u1: toWei('-20'),
-            //         u2: toWei('10'),
-            //         relayer: toWei('0')
-            //     },
-            //     USD: {
-            //         u1: toWei('-20'),
-            //         u2: toWei('10'),
-            //         relayer: toWei('0')
-            //     },
-            //     ETH: {
-            //         u1: toWei('3.415'),
-            //         u2: toWei('-2.019'),
-            //         relayer: toWei('0.522')
-            //     }
-            // },
-            // assertFilledDuringLending: {
-            //     // limitTaker: toWei('20'),
-            //     // marketTaker: toWei('20'),
-            //     // makers: [toWei('10'), toWei('10')]
-            // },
-            // assertFilledAfterLending: {
-            //     // limitTaker: toWei('20'),
-            //     // marketTaker: toWei('20'),
-            //     // makers: [toWei('10'), toWei('10')]
-            // }
         };
 
         await testFundingMatch(testConfig);

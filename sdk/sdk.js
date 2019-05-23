@@ -70,7 +70,7 @@ const generateFundingOrderData = (side, expiredAt, loanDuration, interestRate, f
     // * ║ expiredAt          │ 5               order expiration timestamp                ║
     // * ║ loanDuration       │ 5               loan duration timestamp                   ║
     // * ║ interestRate       │ 2               interest rate (base 10,000)               ║
-    // * ║ feeRate            │ 2               fee rate (base 100,00)                    ║
+    // * ║ feeRate            │ 2               fee rate (base 10,000)                    ║
     // * ║ salt               │ rest            salt                                      ║
     // * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
     let res = '0x01';

@@ -24,6 +24,10 @@ contract DepositProxy is LibWhitelist, LibSafeERC20Transfer {
     }
 
     function depositFor(address token, address from, address to, uint256 amount) public payable {
+        if (amount == 0) {
+            return;
+        }
+
         if (token != address(0)) {
             safeTransferFrom(token, from, address(this), amount);
         } else {
@@ -39,6 +43,10 @@ contract DepositProxy is LibWhitelist, LibSafeERC20Transfer {
     }
 
     function withdrawTo(address token, address from, address payable to, uint256 amount) public {
+        if (amount == 0) {
+            return;
+        }
+
         require(balances[token][from] >= amount, "BALANCE_NOT_ENOUGH");
 
         balances[token][from] = balances[token][from].sub(amount);
@@ -69,6 +77,10 @@ contract DepositProxy is LibWhitelist, LibSafeERC20Transfer {
       external
       onlyAddressInWhitelist
     {
+        if (amount == 0) {
+            return;
+        }
+
         require(balances[token][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
         balances[token][from] = balances[token][from].sub(amount);

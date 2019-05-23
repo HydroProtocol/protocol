@@ -22,12 +22,14 @@ pragma experimental ABIEncoderV2;
 import "./funding/Assets.sol";
 import "./funding/Orders.sol";
 import "./funding/Loans.sol";
-import "./funding/Auction.sol";
+import "./funding/Auctions.sol";
 import "./funding/Collateral.sol";
 import "./funding/ProxyCaller.sol";
 import "./funding/OracleCaller.sol";
 
-contract Funding is Orders, Auction {
+import "./helper/Debug.sol";
+
+contract Funding is Debug, Orders, Auctions {
 
     mapping(address => uint256) inLiquidation;
 
@@ -56,14 +58,14 @@ contract Funding is Orders, Auction {
                     makerOrder,
                     takerOrder,
                     filledAmounts[i],
-                    0 // getInterestRate(makerOrder)
+                    getOrderInterestRate(makerOrder.data)
                 );
             } else {
                 matchSingleOrderInternal(
                     takerOrder,
                     makerOrder,
                     filledAmounts[i],
-                    0 // getInterestRate(makerOrder)
+                    getOrderInterestRate(makerOrder.data)
                 );
             }
         }
@@ -116,9 +118,9 @@ contract Funding is Orders, Auction {
             lenderOrder.asset,
             amount,
             uint16(executeInterest),
-            uint40(block.timestamp),
+            uint40(getBlockTimestamp()),
             lenderDuration,
-            0,
+            getOrderFeeRate(lenderOrder.data),
             0
         );
 
@@ -163,4 +165,8 @@ contract Funding is Orders, Auction {
     //     reduceLoan(loanId, amount);
     // }
 
+    function repayLoanPublic(uint256 loanID, uint256 amount) public {
+        Loan memory loan = allLoans[loanID];
+        repayLoan(loan, msg.sender, amount);
+    }
 }

@@ -31,14 +31,26 @@ contract ProxyCaller {
     }
 
     function transferFrom(address token, address from, address to, uint256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
+
         DepositProxyInterface(proxyAddress).transferFrom(token, from, to, amount);
     }
 
     function depositEthFor(address to, uint256 amount) public payable {
+        if (amount == 0) {
+            return;
+        }
+
         DepositProxyInterface(proxyAddress).depositFor.value(amount)(address(0), address(this), to, amount);
     }
 
     function depositTokenFor(address token, address to, uint256 amount) public {
+        if (amount == 0) {
+            return;
+        }
+
         DepositProxyInterface(proxyAddress).depositFor(token, address(this), to, amount);
     }
 }
