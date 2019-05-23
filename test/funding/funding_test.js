@@ -205,6 +205,9 @@ contract('Funding', accounts => {
         };
         return order;
     };
+    const setFundintBlockTime = timestamp => {
+        return funding.methods.setBlockTimestamp(timestamp).send({ from: accounts[0] });
+    };
 
     const initTokens = async configs => {
         const tokens = await Promise.all(configs.map(config => initToken(config)));
@@ -366,7 +369,7 @@ contract('Funding', accounts => {
 
             if (timestamp) {
                 // await updateTimestamp(timestamp);
-                await funding.methods.setBlockTimestamp(timestamp).send({ from: accounts[0] });
+                await setFundintBlockTime(timestamp);
             }
 
             // currentBlockNumber = await web3.eth.getBlockNumber();
@@ -483,35 +486,42 @@ contract('Funding', accounts => {
                     ? takerOrderParam.owner
                     : makerOrdersParams[0].owner;
 
+            const { fills, tokenPrices } = liquidition;
+
             await runInSandbox(async () => {
-                if (liquidition.tokenPrices) {
-                    await changeTokenPrice(tokens, liquidition.tokenPrices);
+                if (tokenPrices) {
+                    await changeTokenPrice(tokens, tokenPrices);
                 }
 
-                await assertBatchStatus(liquidition.before, tokens, 'liquidition before');
+                for (let i = 0; i < fills.length; i++) {
+                    const fill = fills[i];
+                    await setFundintBlockTime(loanStartAt + fill.duration);
 
-                await assertLiquidable(borrower);
+                    await assertBatchStatus(fill.before, tokens, `liquidition fill #${i} before`);
 
-                let res = await funding.methods
-                    .liquidateUser(borrower)
-                    .send({ from: accounts[0], gasLimit: 20000000 });
+                    await assertLiquidable(borrower);
 
-                // console.log(JSON.stringify(res));
-                const auctionID = res.events.AuctionCreated.returnValues.auctionID;
-                // console.log(await funding.methods.allAuctions(auctionID).call());
+                    let res = await funding.methods
+                        .liquidateUser(borrower)
+                        .send({ from: accounts[0], gasLimit: 20000000 });
 
-                await mineEmptyBlock(liquidition.auctionRatio * 100 - 1);
+                    // console.log(JSON.stringify(res));
+                    const auctionID = res.events.AuctionCreated.returnValues.auctionID;
+                    // console.log(await funding.methods.allAuctions(auctionID).call());
 
-                // console.log(await funding.methods.allAuctions(auctionID).call());
+                    await mineEmptyBlock(fill.auctionRatio * 100 - 1);
 
-                res = await funding.methods
-                    .claimAuction(auctionID)
-                    .send({ from: liquidition.filledBy, gasLimit: 999999999 });
+                    // console.log(await funding.methods.allAuctions(auctionID).call());
 
-                // pp(res);
+                    res = await funding.methods
+                        .claimAuctionWithAmount(auctionID, fill.amount)
+                        .send({ from: fill.user, gasLimit: 999999999 });
 
-                await assertBatchStatus(liquidition.after, tokens, 'liquidition after');
-            }, loanStartAt + liquidition.duration);
+                    // pp(res);
+
+                    await assertBatchStatus(fill.after, tokens, `liquidition fill #${i} after`);
+                }
+            });
         }
     };
 
@@ -707,66 +717,71 @@ contract('Funding', accounts => {
                         }
                     }
                 },
-                liquidition: {
-                    duration: 86400 * 720,
-                    filledBy: u3,
+                liquiditions: {
                     tokenPrices: {
                         HOT: '0',
                         USD: '0.00125' // 800 USD
                     },
-                    auctionRatio: 0.6,
-                    before: {
-                        collateralStatus: {
-                            [u2]: {
-                                loansTotalValue: toWei('0.748287671232876712'), // (500 + 500 * 0.1 * 720 / 365) * 0.00125
-                                collateralsTotalValue: toWei('1')
-                            }
-                        },
-                        collaterals: {
-                            ETH: {
-                                [u2]: toWei('1')
+                    fills: [
+                        {
+                            user: u3,
+                            amount: toWei('500'),
+                            auctionRatio: 0.6,
+                            duration: 86400 * 720,
+                            before: {
+                                collateralStatus: {
+                                    [u2]: {
+                                        loansTotalValue: toWei('0.748287671232876712'), // (500 + 500 * 0.1 * 720 / 365) * 0.00125
+                                        collateralsTotalValue: toWei('1')
+                                    }
+                                },
+                                collaterals: {
+                                    ETH: {
+                                        [u2]: toWei('1')
+                                    },
+                                    HOT: {
+                                        [u2]: toWei('5000')
+                                    }
+                                }
                             },
-                            HOT: {
-                                [u2]: toWei('5000')
+                            after: {
+                                proxyBalances: {
+                                    USD: {
+                                        [u1]: toWei('583.835616438356164384'), // 500(USD) + 500(USD) * 10%(InterestRate) * 720(duration) * 0.85(15% relayer fee) / 365(days of year)
+                                        [u2]: toWei('600'),
+                                        [u3]: toWei('401.369863013698630137'), // 1000 - 500 * 10% * 720 / 365 - 500
+                                        [relayer]: toWei('14.794520547945205479') // 500 * 10% * 720 * 0.15 / 365
+                                    },
+                                    ETH: {
+                                        [u1]: toWei('0'),
+                                        [u2]: toWei('0'),
+                                        [u3]: toWei('0.6'), // by filling auction
+                                        [relayer]: toWei('0')
+                                    },
+                                    HOT: {
+                                        [u1]: toWei('0'),
+                                        [u2]: toWei('0'),
+                                        [u3]: toWei('3000'), // by filling auction
+                                        [relayer]: toWei('0')
+                                    }
+                                },
+                                collaterals: {
+                                    ETH: {
+                                        [u2]: toWei('0.4')
+                                    },
+                                    HOT: {
+                                        [u2]: toWei('2000')
+                                    }
+                                },
+                                collateralStatus: {
+                                    [u2]: {
+                                        loansTotalValue: toWei('0'), // not any debts
+                                        collateralsTotalValue: toWei('0.4')
+                                    }
+                                }
                             }
                         }
-                    },
-                    after: {
-                        proxyBalances: {
-                            USD: {
-                                [u1]: toWei('583.835616438356164384'), // 500(USD) + 500(USD) * 10%(InterestRate) * 720(duration) * 0.85(15% relayer fee) / 365(days of year)
-                                [u2]: toWei('600'),
-                                [u3]: toWei('401.369863013698630137'), // 1000 - 500 * 10% * 720 / 365 - 500
-                                [relayer]: toWei('14.794520547945205479') // 500 * 10% * 720 * 0.15 / 365
-                            },
-                            ETH: {
-                                [u1]: toWei('0'),
-                                [u2]: toWei('0'),
-                                [u3]: toWei('0.6'), // by filling auction
-                                [relayer]: toWei('0')
-                            },
-                            HOT: {
-                                [u1]: toWei('0'),
-                                [u2]: toWei('0'),
-                                [u3]: toWei('3000'), // by filling auction
-                                [relayer]: toWei('0')
-                            }
-                        },
-                        collaterals: {
-                            ETH: {
-                                [u2]: toWei('0.4')
-                            },
-                            HOT: {
-                                [u2]: toWei('2000')
-                            }
-                        },
-                        collateralStatus: {
-                            [u2]: {
-                                loansTotalValue: toWei('0'), // not any debts
-                                collateralsTotalValue: toWei('0.4')
-                            }
-                        }
-                    }
+                    ]
                 }
             }
         };
