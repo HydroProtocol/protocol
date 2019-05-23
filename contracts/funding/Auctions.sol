@@ -87,7 +87,7 @@ contract Auctions is OracleCaller, Loans, Assets, Collateral {
     }
 
     function claimAuctionWithAmount(uint256 id, uint256 repayAmount) public {
-        Auction memory auction = allAuctions[id];
+        Auction storage auction = allAuctions[id];
         Loan memory loan = allLoans[auction.loanID];
         uint256 loanLeftAmount = loan.amount;
 
@@ -108,11 +108,6 @@ contract Auctions is OracleCaller, Loans, Assets, Collateral {
             auction.assetAmounts[i] = auction.assetAmounts[i].sub(amount);
 
             withdrawLiquidatedAssetsToProxy(asset.tokenAddress, msg.sender, amount);
-
-            // if (ratio < 100) {
-            //     uint256 amount = auction.assetAmounts[i].mul(ratio).div(100);
-            //     liquidatingAssets[token] = liquidatingAssets[token].sub(amount);
-            // }
 
             if (loan.amount == 0 && auction.assetAmounts[i] > 0) {
                 liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].sub(auction.assetAmounts[i]);
@@ -188,6 +183,7 @@ contract Auctions is OracleCaller, Loans, Assets, Collateral {
         // storage changes
 
         for (uint256 i = 0; i < state.loans.length; i++ ) {
+            liquidLoans[state.loans[i].id] = true; // TODO refactor this shit
             createAuction(state.loans[i], state.loanValues[i], state.loansTotalValue, state.collateralAssetAmounts);
         }
 

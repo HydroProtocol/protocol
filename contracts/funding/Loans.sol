@@ -33,6 +33,8 @@ contract Loans is Debug, Consts, ProxyCaller {
     mapping(uint256 => Loan) public allLoans;
     mapping(address => uint256[]) public loansByBorrower;
 
+    mapping(uint256 => bool) public liquidLoans;
+
     event NewLoan(uint256 loanID);
 
     struct Loan {
@@ -89,8 +91,21 @@ contract Loans is Debug, Consts, ProxyCaller {
         }
     }
 
-    function getBorrowerLoans(address user) public view returns (Loan[] memory) {
-        return getLoansByIDs(loansByBorrower[user]);
+    function getBorrowerLoans(address user) public view returns (Loan[] memory loans) {
+        uint256[] memory ids = loansByBorrower[user];
+        // return getLoansByIDs(loansByBorrower[user]);
+
+        loans = new Loan[](ids.length);
+        uint256 j;
+        for( uint256 i = 0; i < ids.length; i++ ) {
+            Loan memory loan = allLoans[ids[i]];
+
+            if(!liquidLoans[loan.id]) {
+                loans[j++] = loan;
+            }
+        }
+
+        return loans;
     }
 
     function getBorrowerOverdueLoans(address user) public view returns (Loan[] memory loans) {
@@ -152,5 +167,8 @@ contract Loans is Debug, Consts, ProxyCaller {
                 break;
             }
         }
+
+        delete liquidLoans[loan.id];
+        // TODO deltel loan?
     }
 }
