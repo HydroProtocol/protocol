@@ -23,13 +23,13 @@ import "./funding/Assets.sol";
 import "./funding/Orders.sol";
 import "./funding/Loans.sol";
 import "./funding/Auctions.sol";
-import "./funding/Collateral.sol";
 import "./funding/ProxyCaller.sol";
 import "./funding/OracleCaller.sol";
+import "./funding/CollateralAccounts.sol";
 
 import "./helper/Debug.sol";
 
-contract Funding is Debug, Orders, Auctions {
+contract Funding is Debug, Orders, Auctions, CollateralAccounts {
 
     mapping(address => uint256) inLiquidation;
 
@@ -124,7 +124,9 @@ contract Funding is Debug, Orders, Auctions {
             0
         );
 
-        createLoan(newLoan);
+        uint256 id = createLoan(newLoan);
+
+        findOrCreateDefaultCollateralAccount(borrowerOrder.owner).loanIDs.push(id);
 
         // TODO use a match result
         // settle loan, transfer asset,
@@ -168,5 +170,72 @@ contract Funding is Debug, Orders, Auctions {
     function repayLoanPublic(uint256 loanID, uint256 amount) public {
         Loan memory loan = allLoans[loanID];
         repayLoan(loan, msg.sender, amount);
+    }
+
+    function claimAuction(uint256 id) public {
+        Auction memory auction = allAuctions[id];
+        Loan memory loan = allLoans[auction.loanID];
+        claimAuctionWithAmount(id, loan.amount);
+    }
+
+    function claimAuctionWithAmount(uint256 id, uint256 repayAmount) public {
+        Auction storage auction = allAuctions[id];
+        Loan memory loan = allLoans[auction.loanID];
+        uint256 loanLeftAmount = loan.amount;
+
+        // pay debt
+        repayLoan(loan, msg.sender, repayAmount);
+
+        uint256 ratio = getAuctionRatio(auction);
+
+        CollateralAccount storage account = findOrCreateDefaultCollateralAccount(loan.borrower);
+
+        // receive assets
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            Asset memory asset = allAssets[i];
+
+            if (auction.assetAmounts[i] == 0) {
+                continue;
+            }
+
+            uint256 amount = auction.assetAmounts[i].mul(ratio).mul(repayAmount).div(loanLeftAmount.mul(100));
+            auction.assetAmounts[i] = auction.assetAmounts[i].sub(amount);
+
+            withdrawLiquidatedAssetsToProxy(asset.tokenAddress, msg.sender, amount);
+
+            if (loan.amount == 0 && auction.assetAmounts[i] > 0) {
+                liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].sub(auction.assetAmounts[i]);
+                account.assetAmounts[asset.tokenAddress] = account.assetAmounts[asset.tokenAddress].add(auction.assetAmounts[i]);
+                auction.assetAmounts[i] = 0;
+            }
+        }
+
+        emit AuctionClaimed(id, repayAmount);
+
+        if (loan.amount == 0) {
+            delete allAuctions[id];
+
+            emit AuctionFinished(id);
+        }
+    }
+
+    function withdrawLiquidatedAssetsToProxy(address token, address to, uint256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
+
+        // TODO separate by user ??
+        liquidatingAssets[token] = liquidatingAssets[token].sub(amount);
+
+        if (token == address(0)) {
+            depositEthFor(to, amount);
+        } else {
+            if (EIP20Interface(token).allowance(address(this), proxyAddress) < amount) {
+                EIP20Interface(token).approve(proxyAddress, 0xf0000000000000000000000000000000000000000000000000000000000000);
+            }
+            depositTokenFor(token, to, amount);
+        }
+
+        emit WithdrawCollateral(token, to, amount);
     }
 }

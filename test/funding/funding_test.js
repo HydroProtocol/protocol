@@ -182,7 +182,7 @@ contract('Funding', accounts => {
 
                 await funding.methods
                     .depositCollateralFromProxy(token._address, user, amount)
-                    .send({ from: user });
+                    .send({ from: user, gas: 1000000 });
             }
         }
 
@@ -303,11 +303,28 @@ contract('Funding', accounts => {
         }
     };
 
+    const getCollateralAccountState = async user => {
+        const defaultCollateralAccountID = await funding.methods
+            .userDefaultCollateralAccounts(user)
+            .call();
+
+        if (defaultCollateralAccountID == 0) {
+            return {
+                loansTotalValue: '0',
+                collateralsTotalValue: '0'
+            };
+        } else {
+            return await funding.methods
+                .getCollateralAccountState(defaultCollateralAccountID)
+                .call();
+        }
+    };
+
     const assertCollateralStatus = async (collateralStatus, prefixMessage) => {
         const users = Object.keys(collateralStatus);
         for (let i = 0; i < users.length; i++) {
             const user = users[i];
-            const collateralState = await funding.methods.getUserLoansState(user).call();
+            const collateralState = await getCollateralAccountState(user);
 
             // bool       liquidable;
             // uint256[]  userAssets;
@@ -333,7 +350,7 @@ contract('Funding', accounts => {
     };
 
     const assertLiquidable = async user => {
-        const collateralState = await funding.methods.getUserLoansState(user).call();
+        const collateralState = await getCollateralAccountState(user);
         assert.ok(collateralState.liquidable);
     };
 
@@ -400,7 +417,7 @@ contract('Funding', accounts => {
 
         // prepare all tokens and initialized status
         const tokens = await initTokens(tokenConfigs);
-        pp(tokens);
+        // pp(tokens);
 
         // assert status before match
         if (beforeMatchStatus) {
@@ -498,8 +515,12 @@ contract('Funding', accounts => {
 
                 await assertLiquidable(borrower);
 
+                const defaultCollateralAccountID = await funding.methods
+                    .userDefaultCollateralAccounts(borrower)
+                    .call();
+
                 const res = await funding.methods
-                    .liquidateUser(borrower)
+                    .liquidateCollateralAccount(defaultCollateralAccountID)
                     .send({ from: accounts[0], gasLimit: 20000000 });
 
                 const auctionID = res.events.AuctionCreated.returnValues.auctionID;

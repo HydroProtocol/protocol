@@ -33,8 +33,6 @@ contract Loans is Debug, Consts, ProxyCaller {
     mapping(uint256 => Loan) public allLoans;
     mapping(address => uint256[]) public loansByBorrower;
 
-    mapping(uint256 => bool) public liquidLoans;
-
     event NewLoan(uint256 loanID);
 
     struct Loan {
@@ -92,20 +90,7 @@ contract Loans is Debug, Consts, ProxyCaller {
     }
 
     function getBorrowerLoans(address user) public view returns (Loan[] memory loans) {
-        uint256[] memory ids = loansByBorrower[user];
-        // return getLoansByIDs(loansByBorrower[user]);
-
-        loans = new Loan[](ids.length);
-        uint256 j;
-        for( uint256 i = 0; i < ids.length; i++ ) {
-            Loan memory loan = allLoans[ids[i]];
-
-            if(!liquidLoans[loan.id]) {
-                loans[j++] = loan;
-            }
-        }
-
-        return loans;
+        return getLoansByIDs(loansByBorrower[user]);
     }
 
     function getBorrowerOverdueLoans(address user) public view returns (Loan[] memory loans) {
@@ -122,7 +107,7 @@ contract Loans is Debug, Consts, ProxyCaller {
         }
     }
 
-    function createLoan(Loan memory loan) internal {
+    function createLoan(Loan memory loan) internal returns(uint256) {
         // TODO a max loans count, otherwize it may be impossible to liquidate his all loans in a single block
 
         uint256 id = loansCount++;
@@ -130,6 +115,8 @@ contract Loans is Debug, Consts, ProxyCaller {
         loansByBorrower[loan.borrower].push(id);
 
         emit NewLoan(id);
+
+        return id;
     }
 
     // payer give lender all money and interest
@@ -157,18 +144,21 @@ contract Loans is Debug, Consts, ProxyCaller {
             return;
         }
 
-        uint256[] storage borrowerLoanIDs = loansByBorrower[loan.borrower];
+        unlinkLoanAndUser(loan.id, loan.borrower);
+
+        // TODO deltel loan?
+    }
+
+    function unlinkLoanAndUser(uint256 loanID, address user) internal {
+        uint256[] storage borrowerLoanIDs = loansByBorrower[user];
 
         for (uint256 i = 0; i < borrowerLoanIDs.length; i++){
-            if (borrowerLoanIDs[i] == loan.id) {
+            if (borrowerLoanIDs[i] == loanID) {
                 borrowerLoanIDs[i] = borrowerLoanIDs[borrowerLoanIDs.length-1];
                 delete borrowerLoanIDs[borrowerLoanIDs.length - 1];
                 borrowerLoanIDs.length--;
                 break;
             }
         }
-
-        delete liquidLoans[loan.id];
-        // TODO deltel loan?
     }
 }

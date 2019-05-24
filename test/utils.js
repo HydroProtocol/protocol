@@ -55,10 +55,8 @@ const getExchangeContracts = async () => {
 
 const getFundingContracts = async () => {
     const accounts = await web3.eth.getAccounts();
-
     const oracle = await newContract(Oracle);
     console.log('Oracle address', web3.utils.toChecksumAddress(oracle._address));
-
     const proxy = await newContract(DepositProxy);
     console.log('DepositProxy address', web3.utils.toChecksumAddress(proxy._address));
 
