@@ -19,10 +19,10 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./lib/LibOwnable.sol";
+import "./lib/Ownable.sol";
 import "./funding/Consts.sol";
 
-contract Oracle is LibOwnable, Consts {
+contract Oracle is Ownable, Consts {
 
     // token price to ether price
     mapping(address => uint256) public tokenPrices;

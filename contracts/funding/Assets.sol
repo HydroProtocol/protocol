@@ -18,9 +18,9 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "../lib/LibOwnable.sol";
+import "../lib/Ownable.sol";
 
-contract Assets is LibOwnable {
+contract Assets is Ownable {
     struct Asset {
         address tokenAddress;
         uint256 collerateRate;

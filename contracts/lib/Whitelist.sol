@@ -18,9 +18,9 @@
 
 pragma solidity ^0.5.8;
 
-import "./LibOwnable.sol";
+import "./Ownable.sol";
 
-contract LibWhitelist is LibOwnable {
+contract Whitelist is Ownable {
     mapping (address => bool) public whitelist;
     address[] public allAddresses;
 

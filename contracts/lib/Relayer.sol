@@ -19,7 +19,7 @@
 pragma solidity ^0.5.8;
 
 /**
- * @title LibRelayer provides two distinct features for relayers.
+ * @title Relayer provides two distinct features for relayers.
  *
  * First, Relayers can opt into or out of the Hydro liquidity incentive system.
  *
@@ -28,7 +28,7 @@ pragma solidity ^0.5.8;
  * The delegate scheme allows additional possibilities for smart contract interaction.
  * on behalf of the relayer.
  */
-contract LibRelayer {
+contract Relayer {
 
     /**
      * Mapping of relayerAddress => delegateAddress

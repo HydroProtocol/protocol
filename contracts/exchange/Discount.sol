@@ -19,12 +19,12 @@
 pragma solidity ^0.5.8;
 
 import "../lib/SafeMath.sol";
-import "../lib/LibOwnable.sol";
+import "../lib/Ownable.sol";
 
 /**
  * Library to handle fee discount calculation
  */
-contract Discount is LibOwnable {
+contract Discount is Ownable {
     using SafeMath for uint256;
 
     // The base discounted rate is 100% of the current rate, or no discount.

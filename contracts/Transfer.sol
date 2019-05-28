@@ -19,11 +19,11 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Store.sol";
+import "./GlobalStore.sol";
 
-import "./lib/LibEvents.sol";
+import "./lib/Events.sol";
 import "./lib/SafeMath.sol";
-import "./lib/LibSafeERC20Transfer.sol";
+import "./lib/SafeERC20.sol";
 
 contract Transfer is Store {
     using SafeMath for uint256;
@@ -50,13 +50,13 @@ contract Transfer is Store {
         mapping (address => mapping (address => uint)) storage balances = state.balances;
 
         if (asset != address(0)) {
-            LibSafeERC20Transfer.safeTransferFrom(asset, from, address(this), amount);
+            SafeERC20.safeTransferFrom(asset, from, address(this), amount);
         } else {
             require(amount == msg.value, "Wrong amount");
         }
 
         balances[asset][to] = balances[asset][to].add(amount);
-        LibEvents.logDeposit(asset, from, to, amount);
+        Events.logDeposit(asset, from, to, amount);
     }
 
     /** @dev withdraw asset
@@ -87,10 +87,10 @@ contract Transfer is Store {
         if (asset == address(0)) {
             to.transfer(amount);
         } else {
-            LibSafeERC20Transfer.safeTransfer(asset, to, amount);
+            SafeERC20.safeTransfer(asset, to, amount);
         }
 
-        LibEvents.logWithdraw(asset, from, to, amount);
+        Events.logWithdraw(asset, from, to, amount);
     }
 
     /** @dev fallback function to allow deposit ether into this contract */
@@ -129,6 +129,6 @@ contract Transfer is Store {
         balances[asset][from] = balances[asset][from].sub(amount);
         balances[asset][to] = balances[asset][to].add(amount);
 
-        LibEvents.logTransfer(asset, from, to, amount);
+        Events.logTransfer(asset, from, to, amount);
     }
 }

@@ -1,17 +1,19 @@
 const assert = require('assert');
-const LibWhitelist = artifacts.require('./lib/LibWhitelist.sol');
+const Whitelist = artifacts.require('./lib/Whitelist.sol');
 const { newContract, getContracts } = require('./utils');
 
 contract('Whitelist', accounts => {
     it('default whitelist is empty', async () => {
-        const whitelistContract = await newContract(LibWhitelist);
+        const whitelistContract = await newContract(Whitelist);
 
-        const whitelist = await whitelistContract.methods.getAllAddresses().call({ from: accounts[0] });
+        const whitelist = await whitelistContract.methods
+            .getAllAddresses()
+            .call({ from: accounts[0] });
         assert.equal(whitelist.length, 0);
     });
 
     it('can add/remove address into whitelist', async () => {
-        const whitelistContract = await newContract(LibWhitelist);
+        const whitelistContract = await newContract(Whitelist);
         let whitelist;
 
         await whitelistContract.methods.addAddress(accounts[1]).send({ from: accounts[0] });
@@ -39,7 +41,7 @@ contract('Whitelist', accounts => {
     });
 
     it('should do nothing when remove an address not in whitelist', async () => {
-        const whitelistContract = await newContract(LibWhitelist);
+        const whitelistContract = await newContract(Whitelist);
         let whitelist;
 
         await whitelistContract.methods.removeAddress(accounts[1]).send({ from: accounts[0] });

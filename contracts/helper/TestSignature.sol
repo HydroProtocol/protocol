@@ -1,16 +1,16 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "../lib/LibSignature.sol";
+import "../lib/Signature.sol";
 
 // Test wrapper
 
-contract TestSignature is LibSignature {
-    function isValidSignaturePublic(bytes32 hash, address addr, OrderSignature memory orderSignature)
+contract TestSignature {
+    function isValidSignaturePublic(bytes32 hash, address addr, Signature.OrderSignature memory orderSignature)
         public
         pure
         returns (bool)
     {
-        return isValidSignature(hash, addr, orderSignature);
+        return Signature.isValidSignature(hash, addr, orderSignature);
     }
 }

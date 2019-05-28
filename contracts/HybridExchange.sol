@@ -20,15 +20,15 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./lib/SafeMath.sol";
-import "./lib/LibMath.sol";
-import "./lib/LibSignature.sol";
-import "./lib/LibRelayer.sol";
+import "./lib/Math.sol";
+import "./lib/Signature.sol";
+import "./lib/Relayer.sol";
 
 import "./exchange/Orders.sol";
 import "./exchange/Discount.sol";
 import "./exchange/Errors.sol";
 
-contract HybridExchange is LibMath, Orders, LibRelayer, Discount, Errors {
+contract HybridExchange is Orders, Relayer, Discount, Errors {
     using SafeMath for uint256;
 
     uint256 public constant FEE_RATE_BASE = 100000;
@@ -68,7 +68,7 @@ contract HybridExchange is LibMath, Orders, LibRelayer, Discount, Errors {
         uint256 quoteTokenAmount;
         uint256 gasTokenAmount;
         bytes32 data;
-        OrderSignature signature;
+        Signature.OrderSignature signature;
     }
 
     /**
@@ -215,7 +215,7 @@ contract HybridExchange is LibMath, Orders, LibRelayer, Discount, Errors {
 
         require(status == uint8(OrderStatus.FILLABLE), ORDER_IS_NOT_FILLABLE);
         require(
-            isValidSignature(orderInfo.orderHash, orderParam.trader, orderParam.signature),
+            Signature.isValidSignature(orderInfo.orderHash, orderParam.trader, orderParam.signature),
             INVALID_ORDER_SIGNATURE
         );
 
@@ -419,7 +419,7 @@ contract HybridExchange is LibMath, Orders, LibRelayer, Discount, Errors {
         pure
         returns (uint256)
     {
-        return getPartialAmountFloor(
+        return Math.getPartialAmountFloor(
             orderParam.quoteTokenAmount,
             orderParam.baseTokenAmount,
             amount
@@ -439,7 +439,7 @@ contract HybridExchange is LibMath, Orders, LibRelayer, Discount, Errors {
         pure
         returns (uint256)
     {
-        return getPartialAmountFloor(
+        return Math.getPartialAmountFloor(
             orderParam.baseTokenAmount,
             orderParam.quoteTokenAmount,
             amount

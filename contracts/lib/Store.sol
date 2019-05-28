@@ -21,7 +21,7 @@ pragma experimental ABIEncoderV2;
 
 import "./Types.sol";
 
-library LibStore {
+library Store {
     struct State {
         // collateral count
         uint256 collateralAccountCount;

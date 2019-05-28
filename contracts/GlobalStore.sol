@@ -19,11 +19,11 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./lib/LibStore.sol";
+import "./lib/Store.sol";
 
 /**
  * Global state store
  */
-contract Store {
-    LibStore.State state;
+contract GlobalStore {
+    Store.State state;
 }

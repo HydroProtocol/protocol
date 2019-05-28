@@ -19,7 +19,7 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-library LibEvents {
+library Events {
     event Deposit(address asset, address from, address to, uint256 amount);
 
     function logDeposit(address asset, address from, address to, uint256 amount) internal {
