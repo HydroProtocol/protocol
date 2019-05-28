@@ -20,18 +20,21 @@ pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
 library Events {
+    // some assets move into contract
     event Deposit(address asset, address from, address to, uint256 amount);
 
     function logDeposit(address asset, address from, address to, uint256 amount) internal {
         emit Deposit(asset, from, to, amount);
     }
 
+    // some assets move out of contract
     event Withdraw(address asset, address from, address to, uint256 amount);
 
     function logWithdraw(address asset, address from, address to, uint256 amount) internal {
         emit Withdraw(asset, from, to, amount);
     }
 
+    // internal assets movement
     event Transfer(address asset, address from, address to, uint256 amount);
 
     function logTransfer(address asset, address from, address to, uint256 amount) internal {
