@@ -23,7 +23,7 @@ import "../lib/EIP712.sol";
 import "../lib/LibSignature.sol";
 import "../lib/LibMath.sol";
 
-contract Orders is EIP712, LibSignature, LibMath {
+contract Orders is LibSignature, LibMath {
 
     uint256 public constant REBATE_RATE_BASE = 100;
 
@@ -75,8 +75,8 @@ contract Orders is EIP712, LibSignature, LibMath {
      * @param order The order data struct.
      * @return Fully qualified EIP712 hash of the order in the Hydro Protocol domain.
      */
-    function getOrderHash(Order memory order) internal view returns (bytes32 orderHash) {
-        orderHash = hashEIP712Message(hashOrder(order));
+    function getOrderHash(Order memory order) internal pure returns (bytes32 orderHash) {
+        orderHash = EIP712.hashMessage(hashOrder(order));
         return orderHash;
     }
 

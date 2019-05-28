@@ -44,7 +44,7 @@ library EIP712 {
      * @param eip712hash The EIP712 hash struct.
      * @return EIP712 hash applied to this EIP712 Domain.
      */
-    function hashEIP712Message(bytes32 eip712hash) internal pure returns (bytes32) {
+    function hashMessage(bytes32 eip712hash) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, eip712hash));
     }
 }
