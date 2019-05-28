@@ -19,36 +19,22 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-library Types {
-    struct Asset {
-        address tokenAddress;
-        uint256 collerateRate;
+library LibEvents {
+    event Deposit(address asset, address from, address to, uint256 amount);
+
+    function logDeposit(address asset, address from, address to, uint256 amount) internal {
+        emit Deposit(asset, from, to, amount);
     }
 
-    struct LoanLender {
-        address lender;
-        uint256 interestRate;
-        uint256 amount;
-        bytes32 lenderOrderHash;
+    event Withdraw(address asset, address from, address to, uint256 amount);
+
+    function logWithdraw(address asset, address from, address to, uint256 amount) internal {
+        emit Withdraw(asset, from, to, amount);
     }
 
-    struct Loan {
-        uint256 id;
-        uint256 _type; // pool or p2p
-        LoanLender[] lenders;
-        address borrower;
-        uint256 amount;
-        address asset;
-        uint256 startAt;
-        uint256 expiredAt;
-        uint256 averageInterestRate;
-    }
+    event Transfer(address asset, address from, address to, uint256 amount);
 
-    struct CollateralAccount {
-        uint256 id;
-        address owner;
-        uint256 liquidateRate;
-        uint256[] loanIDs;
-        mapping(address => uint256) collateralAssetAmounts;
+    function logTransfer(address asset, address from, address to, uint256 amount) internal {
+        emit Transfer(asset, from, to, amount);
     }
 }
