@@ -25,9 +25,6 @@ import "./lib/LibEvents.sol";
 import "./lib/SafeMath.sol";
 import "./lib/LibSafeERC20Transfer.sol";
 
-/**
- * Global state store
- */
 contract Transfer is Store {
     using SafeMath for uint256;
 
