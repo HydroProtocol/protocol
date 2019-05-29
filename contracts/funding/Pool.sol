@@ -20,95 +20,163 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "../lib/SafeMath.sol";
-import "../lib/Whitelist.sol";
+import "../lib/Types.sol";
 import "../lib/Consts.sol";
+import "../GlobalStore.sol";
 
-contract Pool is Consts, Store {
+contract Pool is Consts, GlobalStore {
     using SafeMath for uint256;
 
     uint256 poolAnnualInterest;
-    uint256 poolInterestStartTime;
+    uint40 poolInterestStartTime;
 
     // total suppy and borrow
-    mapping (address => uint256) public totalSupply;
-    mapping (address => uint256) public totalBorrow;
+    mapping (uint16 => uint256) public totalSupply;
+    mapping (uint16 => uint256) public totalBorrow;
 
-    // token => total shares
-    mapping (address => uint256) totalSupplyShares;
+    // assetID => total shares
+    mapping (uint16 => uint256) totalSupplyShares;
 
-    // token => user => shares
-    mapping (address => mapping (address => uint256)) supplyShares;
+    // assetID => user => shares
+    mapping (uint16 => mapping (address => uint256)) supplyShares;
 
     // supply asset
-    function supplyToPool(address token, uint256 amount) public {
+    function supplyPool(uint16 assetID, uint256 amount) public {
 
-        require(Store.balance[msg.sender][token] >= amount, "USER_BALANCE_NOT_ENOUGH");
+        require(state.balances[assetID][msg.sender] >= amount, "USER_BALANCE_NOT_ENOUGH");
 
         // first supply
-        if (totalSupply[token] == 0){
-            Store.balance[msg.sender][token] -= amount;
-            totalSupply[token] = amount;
-            supplyShares[token][msg.sender] = amount;
-            totalSupplyShares[token] = amount;
+        if (totalSupply[assetID] == 0){
+            state.balances[assetID][msg.sender] -= amount;
+            totalSupply[assetID] = amount;
+            supplyShares[assetID][msg.sender] = amount;
+            totalSupplyShares[assetID] = amount;
             return ;
         }
 
         // accrue interest
-        _accrueInterest(token);
+        _accrueInterest(assetID);
 
         // new supply shares
-        uint256 shares = amount.mul(totalSupplyShares[token]).div(totalSupply[token]);
-        Store.balance[msg.sender][token] -= amount;
-        totalSupply[token] = totalSupply[token].add(amount);
-        supplyShares[token][msg.sender] = supplyShares[token][msg.sender].add(shares);
-        totalSupplyShares[token] = totalSupplyShares[token].add(shares);
+        uint256 shares = amount.mul(totalSupplyShares[assetID]).div(totalSupply[assetID]);
+        state.balances[assetID][msg.sender] -= amount;
+        totalSupply[assetID] = totalSupply[assetID].add(amount);
+        supplyShares[assetID][msg.sender] = supplyShares[assetID][msg.sender].add(shares);
+        totalSupplyShares[assetID] = totalSupplyShares[assetID].add(shares);
 
     }
 
     // withdraw asset
     // to avoid precision problem, input share amount instead of token amount
-    function withdraw(address token, uint256 sharesAmount) public {
+    function withdrawPool(uint16 assetID, uint256 sharesAmount) public {
 
-        uint256 tokenAmount = sharesAmount.mul(totalSupply[token]).div(totalSupplyShares[token]);
-        require(sharesAmount <= supplyShares[token][msg.sender], "USER_BALANCE_NOT_ENOUGH");
-        require(tokenAmount <= totalSupply[token], "POOL_BALANCE_NOT_ENOUGH");
+        uint256 assetAmount = sharesAmount.mul(totalSupply[assetID]).div(totalSupplyShares[assetID]);
+        require(sharesAmount <= supplyShares[assetID][msg.sender], "USER_BALANCE_NOT_ENOUGH");
+        require(assetAmount.add(totalBorrow[assetID]) <= totalSupply[assetID], "POOL_BALANCE_NOT_ENOUGH");
 
-        totalSupply[token] -= tokenAmount;
-        Store.balance[msg.sender][token] += tokenAmount;
-        supplyShares[token][msg.sender] -= sharesAmount;
-        totalSupplyShares[token] -= sharesAmount;
+        supplyShares[assetID][msg.sender] -= sharesAmount;
+        totalSupplyShares[assetID] -= sharesAmount;
+        totalSupply[assetID] -= assetAmount;
+        state.balances[assetID][msg.sender] += assetAmount;
 
     }
 
     // borrow and repay
-    function borrow() internal returns (bytes32 loanId){
+    function borrowPool(
+        uint32 collateralAccountId,
+        uint16 assetID,
+        uint256 amount,
+        uint16 maxInterestRate,
+        uint40 minExpiredAt
+    ) internal returns (uint32[] memory loanIds){
+
+        // check amount & interest
+        uint16 interestRate = getInterestRate(assetID, amount);
+        require(interestRate <= maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
+        _accrueInterest(assetID);
+
+        // build loan
+        Types.Loan memory loan = Types.Loan(
+            state.loansCount++,
+            assetID,
+            collateralAccountId,
+            uint40(block.timestamp),
+            minExpiredAt,
+            interestRate,
+            Types.LoanSource.Pool,
+            amount
+        );
+
+        // record global loan
+        state.allLoans[loan.id] = loan;
+
+        // record collateral account loan
+        Types.CollateralAccount storage account = state.allCollateralAccounts[collateralAccountId];
+        account.loanIDs.push(loan.id);
+
+        // set borrow amount
+        totalBorrow[assetID] += amount;
+        poolAnnualInterest += amount.mul(interestRate).div(INTEREST_RATE_BASE);
+
+        loanIds[0] = loan.id;
+        return loanIds;
 
     }
 
-    function repay(bytes32 loanId, uint256 amount) internal {
+    function repayPool(uint32 loanId, uint256 amount) internal {
+
+        Types.Loan storage loan = state.allLoans[loanId];
+        require(loan.source==Types.LoanSource.Pool, "LOAN_NOT_CREATED_BY_POOL");
+
+        require(amount <= loan.amount, "REPAY_AMOUNT_TOO_MUCH");
+
+        // minus first and add second
+        poolAnnualInterest -= uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
+        loan.amount -= amount;
+        poolAnnualInterest += uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
+
+        totalBorrow[loan.assetID] -= amount;
 
     }
 
-    // get interest
-    function getInterest(address token, uint256 amount) public view returns(uint256 interestRate){
-        require(totalSupply[token]>=totalBorrow[token].add(amount), "BORROW_EXCEED_LIMITATION");
-        return 100;
+    // get interestRate
+    function getInterestRate(uint16 assetID, uint256 amount) public view returns(uint16 interestRate){
+        // 使用计提利息后的supply
+        uint256 interest = _getUnpaidInterest(assetID);
+
+        uint256 supply = totalSupply[assetID].add(interest);
+        uint256 borrow = totalBorrow[assetID].add(amount);
+
+        require(supply >= borrow, "BORROW_EXCEED_LIMITATION");
+
+        uint256 borrowRatio = borrow.mul(INTEREST_RATE_BASE).div(supply);
+
+        // 0.2r + 0.5r^2
+        uint256 rate1 = borrowRatio.mul(INTEREST_RATE_BASE).mul(2);
+        uint256 rate2 = borrowRatio.mul(borrowRatio).mul(5);
+
+        return uint16(rate1.add(rate2).div(INTEREST_RATE_BASE.mul(10)));
     }
 
     // accrue interest to totalSupply
-    function _accrueInterest(address token) internal {
+    function _accrueInterest(uint16 assetID) internal {
 
         // interest since last update
+        uint256 interest = _getUnpaidInterest(assetID);
+
+        // accrue interest to supply
+        totalSupply[assetID] = totalSupply[assetID].add(interest);
+
+        // update interest time
+        poolInterestStartTime = uint40(block.timestamp);
+    }
+
+    function _getUnpaidInterest(uint16 assetID) internal view returns(uint256) {
         uint256 interest = block.timestamp
             .sub(poolInterestStartTime)
             .mul(poolAnnualInterest)
             .div(SECONDS_OF_YEAR);
-
-        // accrue interest to supply
-        totalSupply[token] = totalSupply[token].add(interest);
-
-        // update interest time
-        poolInterestStartTime = block.timestamp;
+        return interest;
     }
 
 }
