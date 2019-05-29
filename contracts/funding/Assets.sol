@@ -23,6 +23,7 @@ import "../GlobalStore.sol";
 import "../lib/Ownable.sol";
 import "../lib/Types.sol";
 import "../lib/Events.sol";
+import "../interfaces/OracleInterface.sol";
 
 contract Assets is Ownable, GlobalStore {
     modifier onlyAssetNotExist(address tokenAddress) {
@@ -44,12 +45,12 @@ contract Assets is Ownable, GlobalStore {
         return state.assetsCount;
     }
 
-    function addAsset(address tokenAddress, uint256 collerateRate)
+    function addAsset(address tokenAddress, uint256 collerateRate, address oracleAddress)
         public
         onlyOwner
         onlyAssetNotExist(tokenAddress)
     {
-        Types.Asset memory asset = Types.Asset(tokenAddress, collerateRate);
+        Types.Asset memory asset = Types.Asset(tokenAddress, collerateRate, OracleInterface(oracleAddress));
         uint256 index = state.assetsCount++;
         state.assets[index] = asset;
 

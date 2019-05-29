@@ -19,6 +19,9 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./SafeMath.sol";
+import "../interfaces/OracleInterface.sol";
+
 library Types {
     enum LoanSource {
         Pool,
@@ -33,8 +36,7 @@ library Types {
     struct Asset {
         address tokenAddress;
         uint256 collerateRate;
-
-        // oracle
+        OracleInterface oracle;
     }
 
     struct LoanItem {
@@ -78,7 +80,8 @@ library Types {
         // in a lending account, there will be multi loans
         uint32[] loanIDs;
 
-        mapping(uint256 => uint256) collateralAssetAmounts;
+        // assetID => assetAmount
+        mapping(uint16 => uint256) collateralAssetAmounts;
     }
 
     // memory only
@@ -87,28 +90,51 @@ library Types {
         uint256[]  collateralAssetAmounts;
         Loan[]     loans;
         uint256[]  loanValues;
-        uint256    loansTotalValue;
-        uint256    collateralsTotalValue;
+        uint256    loansTotalUSDValue;
+        uint256    collateralsTotalUSDlValue;
     }
 
     struct Auction {
-        uint256 id;
+        uint32 id;
+        // To calculate the ratio
+        uint32 startBlockNumber;
+
+        uint32 loanID;
 
         // The amount of loan when the auction is created, and it's unmodifiable.
         uint256 totalLoanAmount;
-
-        // To calculate the ratio
-        uint256 startBlockNumber;
-
-        uint256 loanID;
 
         // assets under liquidated
         mapping(uint256 => uint256) assetAmounts;
     }
 }
 
+library Asset {
+    function getPrice(Types.Asset storage asset) internal view returns (uint256) {
+        return asset.oracle.getPrice(asset.tokenAddress);
+    }
+}
+
 library Loan {
+    using SafeMath for uint256;
+
     function isOverdue(Types.Loan memory loan, uint256 time) internal pure returns (bool) {
         return loan.expiredAt < time;
+    }
+
+    /**
+     * Get loan interest with given amount and timestamp
+     * Result should divide (Consts.INTEREST_RATE_BASE * Consts.SECONDS_OF_YEAR)
+     */
+    function interest(Types.Loan memory loan, uint256 amount, uint40 currentTimestamp) public pure returns (uint256) {
+        uint40 timeDelta = currentTimestamp - loan.startAt;
+        return amount.mul(loan.interestRate).mul(timeDelta);
+    }
+}
+
+library Auction {
+    function ratio(Types.Auction memory auction) internal view returns (uint256) {
+        uint256 currentRatio = block.number - auction.startBlockNumber;
+        return currentRatio < 100 ? currentRatio : 100;
     }
 }

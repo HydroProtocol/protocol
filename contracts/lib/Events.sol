@@ -48,4 +48,39 @@ library Events {
     function logAssetCreate(Types.Asset memory asset) internal {
         emit AssetCreate(asset);
     }
+
+    // a user deposit tokens to default collateral account
+    event DepositCollateral(address token, address user, uint256 amount);
+
+    function logDepositCollateral(address token, address user, uint256 amount) internal {
+        emit DepositCollateral(token, user, amount);
+    }
+
+    // a user withdraw tokens from default collateral account
+    event WithdrawCollateral(address token, address user, uint256 amount);
+
+    function logWithdrawCollateral(address token, address user, uint256 amount) internal {
+        emit WithdrawCollateral(token, user, amount);
+    }
+
+    // an auction is created
+    event AuctionCreate(uint256 auctionID);
+
+    function logAuctionCreate(uint256 auctionID) internal {
+        emit AuctionCreate(auctionID);
+    }
+
+    // a user filled an acution
+    event FillAuction(uint256 auctionID, uint256 filledAmount);
+
+    function logFillAuction(uint256 auctionID, uint256 filledAmount) internal {
+        emit FillAuction(auctionID, filledAmount);
+    }
+
+    // an auction is finished
+    event AuctionFinished(uint256 auctionID);
+
+    function logAuctionFinished(uint256 auctionID) internal {
+        emit AuctionFinished(auctionID);
+    }
 }

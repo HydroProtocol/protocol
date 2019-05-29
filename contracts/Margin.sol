@@ -116,21 +116,21 @@ contract Margin is Ownable {
 
     function transfer(address trader, TransferParams memory params) internal {
         // transfer funds from proxy to current contract
-        depositTokenFor(params.collateralAsset, trader, params.collateralAmount);
+        // depositTokenFor(params.collateralAsset, trader, params.collateralAmount);
 
         // TODO any require to check amount??
     }
 
     // borrow funds from a source, and move the funds into current contarct
-    function borrow(BorrowingParams memory params) internal returns (Types.Loan memory) {
-        Types.Loan memory loan = BorrowingSourceInterface(params.contractAddress).borrow(
-            params.borrowAsset,
-            params.borrowAmount,
-            params.maxInterestRate,
-            params.data
-        );
+    function borrow(BorrowingParams memory params) internal returns (Types.Loan memory loan) {
+        // Types.Loan memory loan = BorrowingSourceInterface(params.contractAddress).borrow(
+        //     params.borrowAsset,
+        //     params.borrowAmount,
+        //     params.maxInterestRate,
+        //     params.data
+        // );
 
-        require(loan.interestRate <= params.maxInterestRate, "Interest Rate Not Match");
+        // require(loan.interestRate <= params.maxInterestRate, "Interest Rate Not Match");
 
         // borrowAsset Balance after
         // asset borrowedAmount is enough

@@ -20,61 +20,11 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "../lib/SafeMath.sol";
-import "./Loans.sol";
-import "./Assets.sol";
-import "../interfaces/EIP20Interface.sol";
+import "../GlobalStore.sol";
 
-contract Auctions is Loans, Assets {
+import { Types } from "../lib/Types.sol";
+import "../lib/Events.sol";
+
+contract Auctions is GlobalStore {
     using SafeMath for uint256;
-
-    uint256 public auctionsCount = 1;
-    mapping(uint256 => Auction) public allAuctions;
-    mapping (address => uint256) public liquidatingAssets;
-
-    event AuctionCreated(uint256 auctionID);
-    event AuctionClaimed(uint256 auctionID, uint256 AuctionClaimed);
-    event AuctionFinished(uint256 auctionID);
-
-    struct Auction {
-        uint256 id;
-        uint256 startBlockNumber;
-        uint256 loanID;
-        uint256[] assetAmounts;
-    }
-
-    struct UserLoansState {
-        bool       liquidable;
-        uint256[]  collateralAssetAmounts;
-        Loan[]     loans;
-        uint256[]  loanValues;
-        uint256    loansTotalValue;
-        uint256    collateralsTotalValue;
-    }
-
-    function createAuction(Loan memory loan, uint256 loanValue, uint256 loansValue, uint256[] memory collateralAssetAmounts)
-        internal
-    {
-        uint256 id = auctionsCount++;
-        uint256[] memory actuionAssetAmounts = new uint256[](collateralAssetAmounts.length);
-
-        for (uint256 i = 0; i < collateralAssetAmounts.length; i++ ) {
-            actuionAssetAmounts[i] = loanValue.mul(collateralAssetAmounts[i]).div(loansValue);
-        }
-
-        Auction memory auction = Auction({
-            id: id,
-            startBlockNumber: block.number,
-            loanID: loan.id,
-            assetAmounts: actuionAssetAmounts
-        });
-
-        allAuctions[id] = auction;
-
-        emit AuctionCreated(id);
-    }
-
-    function getAuctionRatio(Auction memory auction) internal view returns (uint256) {
-        uint256 currentRatio = block.number - auction.startBlockNumber;
-        return currentRatio < 100 ? currentRatio : 100;
-    }
 }

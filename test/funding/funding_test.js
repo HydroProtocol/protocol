@@ -310,8 +310,8 @@ contract('Funding', accounts => {
 
         if (defaultCollateralAccountID == 0) {
             return {
-                loansTotalValue: '0',
-                collateralsTotalValue: '0'
+                loansTotalUSDValue: '0',
+                collateralsTotalUSDlValue: '0'
             };
         } else {
             return await funding.methods
@@ -330,21 +330,21 @@ contract('Funding', accounts => {
             // uint256[]  userAssets;
             // Loan[]     loans;
             // uint256[]  loanValues;
-            // uint256    loansTotalValue;
-            // uint256    collateralsTotalValue;
+            // uint256    loansTotalUSDValue;
+            // uint256    collateralsTotalUSDlValue;
 
             // console.log(collateralState);
 
             assert.equal(
-                collateralState.loansTotalValue,
-                collateralStatus[user].loansTotalValue,
-                `${prefixMessage} collateralStatus loansTotalValue ${getUserID(user)}`
+                collateralState.loansTotalUSDValue,
+                collateralStatus[user].loansTotalUSDValue,
+                `${prefixMessage} collateralStatus loansTotalUSDValue ${getUserID(user)}`
             );
 
             assert.equal(
-                collateralState.collateralsTotalValue,
-                collateralStatus[user].collateralsTotalValue,
-                `${prefixMessage} collateralStatus collateralsTotalValue ${getUserID(user)}`
+                collateralState.collateralsTotalUSDlValue,
+                collateralStatus[user].collateralsTotalUSDlValue,
+                `${prefixMessage} collateralStatus collateralsTotalUSDlValue ${getUserID(user)}`
             );
         }
     };
@@ -632,8 +632,8 @@ contract('Funding', accounts => {
                 },
                 collateralStatus: {
                     [u2]: {
-                        loansTotalValue: '0',
-                        collateralsTotalValue: toWei('1.5')
+                        loansTotalUSDValue: '0',
+                        collateralsTotalUSDlValue: toWei('1.5')
                     }
                 },
                 collaterals: {
@@ -690,8 +690,8 @@ contract('Funding', accounts => {
                 },
                 collateralStatus: {
                     [u2]: {
-                        loansTotalValue: toWei('0.5'),
-                        collateralsTotalValue: toWei('1.5')
+                        loansTotalUSDValue: toWei('0.5'),
+                        collateralsTotalUSDlValue: toWei('1.5')
                     }
                 },
                 collaterals: {
@@ -710,8 +710,8 @@ contract('Funding', accounts => {
                     before: {
                         collateralStatus: {
                             [u2]: {
-                                loansTotalValue: toWei('0.513698630136986301'), // 500(USD) * 10%(InterestRate) * 100(duration) / 365(days of year) / 1000 (Eth USD price)
-                                collateralsTotalValue: toWei('1.5')
+                                loansTotalUSDValue: toWei('0.513698630136986301'), // 500(USD) * 10%(InterestRate) * 100(duration) / 365(days of year) / 1000 (Eth USD price)
+                                collateralsTotalUSDlValue: toWei('1.5')
                             }
                         },
                         collaterals: {
@@ -733,8 +733,8 @@ contract('Funding', accounts => {
                         },
                         collateralStatus: {
                             [u2]: {
-                                loansTotalValue: toWei('0'), // no debt any more
-                                collateralsTotalValue: toWei('1.5')
+                                loansTotalUSDValue: toWei('0'), // no debt any more
+                                collateralsTotalUSDlValue: toWei('1.5')
                             }
                         },
                         collaterals: {
@@ -756,8 +756,8 @@ contract('Funding', accounts => {
                     before: {
                         collateralStatus: {
                             [u2]: {
-                                loansTotalValue: toWei('0.748287671232876712'), // (500 + 500 * 0.1 * 720 / 365) * 0.00125
-                                collateralsTotalValue: toWei('1')
+                                loansTotalUSDValue: toWei('0.748287671232876712'), // (500 + 500 * 0.1 * 720 / 365) * 0.00125
+                                collateralsTotalUSDlValue: toWei('1')
                             }
                         },
                         collaterals: {
@@ -806,8 +806,8 @@ contract('Funding', accounts => {
                                 },
                                 collateralStatus: {
                                     [u2]: {
-                                        loansTotalValue: toWei('0'), // not any debts
-                                        collateralsTotalValue: toWei('0')
+                                        loansTotalUSDValue: toWei('0'), // not any debts
+                                        collateralsTotalUSDlValue: toWei('0')
                                     }
                                 }
                             }
@@ -848,8 +848,8 @@ contract('Funding', accounts => {
                                 },
                                 collateralStatus: {
                                     [u2]: {
-                                        loansTotalValue: toWei('0'),
-                                        collateralsTotalValue: toWei('0.176')
+                                        loansTotalUSDValue: toWei('0'),
+                                        collateralsTotalUSDlValue: toWei('0.176')
                                     }
                                 }
                             }

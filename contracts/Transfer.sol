@@ -47,15 +47,13 @@ contract Transfer is GlobalStore {
             return;
         }
 
-        mapping (address => mapping (address => uint)) storage balances = state.balances;
-
         if (asset != address(0)) {
             SafeERC20.safeTransferFrom(asset, from, address(this), amount);
         } else {
             require(amount == msg.value, "Wrong amount");
         }
 
-        balances[asset][to] = balances[asset][to].add(amount);
+        state.balances[asset][to] = state.balances[asset][to].add(amount);
         Events.logDeposit(asset, from, to, amount);
     }
 
@@ -78,11 +76,9 @@ contract Transfer is GlobalStore {
             return;
         }
 
-        mapping (address => mapping (address => uint)) storage balances = state.balances;
+        require(state.balances[asset][from] >= amount, "BALANCE_NOT_ENOUGH");
 
-        require(balances[asset][from] >= amount, "BALANCE_NOT_ENOUGH");
-
-        balances[asset][from] = balances[asset][from].sub(amount);
+        state.balances[asset][from] = state.balances[asset][from].sub(amount);
 
         if (asset == address(0)) {
             to.transfer(amount);
@@ -117,17 +113,15 @@ contract Transfer is GlobalStore {
     function transferFrom(address asset, address from, address to, uint256 amount)
       internal
     {
-        mapping (address => mapping (address => uint)) storage balances = state.balances;
-
         // do nothing when amount is zero
         if (amount == 0) {
             return;
         }
 
-        require(balances[asset][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
+        require(state.balances[asset][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
-        balances[asset][from] = balances[asset][from].sub(amount);
-        balances[asset][to] = balances[asset][to].add(amount);
+        state.balances[asset][from] = state.balances[asset][from].sub(amount);
+        state.balances[asset][to] = state.balances[asset][to].add(amount);
 
         Events.logTransfer(asset, from, to, amount);
     }

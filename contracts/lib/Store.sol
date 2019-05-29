@@ -19,12 +19,21 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Types.sol";
+import { Types } from "./Types.sol";
 
 library Store {
     struct State {
         // count of collateral accounts
-        uint256 collateralAccountCount;
+        uint32 collateralAccountCount;
+
+        // count of loans
+        uint32 loansCount;
+
+        // count of assets
+        uint16 assetsCount;
+
+        // count of auctions
+        uint32 auctionsCount;
 
         // all collateral accounts
         mapping(uint256 => Types.CollateralAccount) allCollateralAccounts;
@@ -32,20 +41,17 @@ library Store {
         // user default collateral account
         mapping(address => uint256) userDefaultCollateralAccounts;
 
-        // count of assets
-        uint256 assetsCount;
-
         // all supported assets
         mapping(uint256 => Types.Asset) assets;
-
-        // count of loans
-        uint256 loansCount;
 
         // all loans
         mapping(uint256 => Types.Loan) allLoans;
 
         // p2p loan items
         mapping(uint256 => Types.LoanItem[]) loanDetail;
+
+        // all auctions
+        mapping(uint256 => Types.Auction) allAuctions;
 
         /**
          * Free Balances, Can be used to
