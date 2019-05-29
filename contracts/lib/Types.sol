@@ -7,7 +7,7 @@ library Types {
         uint256 collerateRate;
     }
 
-    struct LoanLender {
+struct LoanLender {
         address lender;
         uint256 interestRate;
         uint256 amount;
