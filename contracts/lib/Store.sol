@@ -24,28 +24,28 @@ import "./Types.sol";
 library Store {
     struct State {
         // count of collateral accounts
-        uint256 collateralAccountCount;
+        uint32 collateralAccountCount;
 
         // all collateral accounts
-        mapping(uint256 => Types.CollateralAccount) allCollateralAccounts;
+        mapping(uint32 => Types.CollateralAccount) allCollateralAccounts;
 
         // user default collateral account
-        mapping(address => uint256) userDefaultCollateralAccounts;
+        mapping(address => uint32) userDefaultCollateralAccounts;
 
         // count of assets
-        uint256 assetsCount;
+        uint16 assetsCount;
 
         // all supported assets
-        mapping(uint256 => Types.Asset) assets;
+        mapping(uint16 => Types.Asset) assets;
 
         // count of loans
-        uint256 loansCount;
+        uint32 loansCount;
 
         // all loans
-        mapping(uint256 => Types.Loan) allLoans;
+        mapping(uint32 => Types.Loan) allLoans;
 
         // p2p loan items
-        mapping(uint256 => Types.LoanItem[]) loanDetail;
+        mapping(uint32 => Types.LoanItem[]) loanDetail;
 
         /**
          * Free Balances, Can be used to
@@ -57,6 +57,6 @@ library Store {
          *
          * first key is asset address, second key is user address
          */
-        mapping (address => mapping (address => uint)) balances;
+        mapping (uint16 => mapping (address => uint256)) balances;
     }
 }
