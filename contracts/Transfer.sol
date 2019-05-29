@@ -25,7 +25,7 @@ import "./lib/Events.sol";
 import "./lib/SafeMath.sol";
 import "./lib/SafeERC20.sol";
 
-contract Transfer is Store {
+contract Transfer is GlobalStore {
     using SafeMath for uint256;
 
     /** @dev deposit asset

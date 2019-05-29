@@ -23,28 +23,40 @@ import "./Types.sol";
 
 library Store {
     struct State {
-        // collateral count
+        // count of collateral accounts
         uint256 collateralAccountCount;
 
-        // a map to save all Margin collateral accounts
+        // all collateral accounts
         mapping(uint256 => Types.CollateralAccount) allCollateralAccounts;
 
-        // a map to save all funding collateral accounts
+        // user default collateral account
         mapping(address => uint256) userDefaultCollateralAccounts;
 
+        // count of assets
         uint256 assetsCount;
 
+        // all supported assets
         mapping(uint256 => Types.Asset) assets;
 
+        // count of loans
         uint256 loansCount;
 
-        //
+        // all loans
         mapping(uint256 => Types.Loan) allLoans;
 
-        //
-        mapping(address => uint256[]) loansByBorrower;
+        // p2p loan items
+        mapping(uint256 => Types.LoanItem[]) loanDetail;
 
-        // asset balances (free to use money)
+        /**
+         * Free Balances, Can be used to
+         *   1) Common trade
+         *   2) Lend in p2p funding
+         *   3) Margin trade as collateral
+         *   4) Deposit to pool to win interest
+         *   5) Withdraw to your address
+         *
+         * first key is asset address, second key is user address
+         */
         mapping (address => mapping (address => uint)) balances;
     }
 }

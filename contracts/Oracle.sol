@@ -20,7 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./lib/Ownable.sol";
-import "./funding/Consts.sol";
+import "./lib/Consts.sol";
 
 contract Oracle is Ownable, Consts {
 
