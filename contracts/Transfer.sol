@@ -24,93 +24,98 @@ import "./GlobalStore.sol";
 import "./lib/Events.sol";
 import "./lib/SafeMath.sol";
 import "./lib/SafeERC20.sol";
+import "./lib/Consts.sol";
 
-contract Transfer is GlobalStore {
+contract Transfer is Consts, GlobalStore {
     using SafeMath for uint256;
 
     /** @dev deposit asset
       * @param asset   Address of asset to transfer.
       * @param amount  Amount of asset to transfer.
       */
-    function deposit(address asset, uint256 amount) public payable {
+    function deposit(uint16 asset, uint256 amount) public payable {
         depositFor(asset, msg.sender, msg.sender, amount);
     }
 
     /** @dev Transfer asset into current contract
-      * @param asset   Address of asset to transfer.
+      * @param assetID ID of asset to transfer.
       * @param from    Address of asset owner.
       * @param to      Address of the receiver.
       * @param amount  Amount of asset to transfer.
       */
-    function depositFor(address asset, address from, address to, uint256 amount) public payable {
+    function depositFor(uint16 assetID, address from, address to, uint256 amount) public payable {
         if (amount == 0) {
             return;
         }
 
-        if (asset != address(0)) {
-            SafeERC20.safeTransferFrom(asset, from, address(this), amount);
+        Types.Asset storage asset = state.assets[assetID];
+
+        if (asset.tokenAddress != ETHEREUM_TOKEN_ADDRESS) {
+            SafeERC20.safeTransferFrom(asset.tokenAddress, from, address(this), amount);
         } else {
             require(amount == msg.value, "Wrong amount");
         }
 
-        state.balances[asset][to] = state.balances[asset][to].add(amount);
-        Events.logDeposit(asset, from, to, amount);
+        state.balances[assetID][to] = state.balances[assetID][to].add(amount);
+        Events.logDeposit(assetID, from, to, amount);
     }
 
     /** @dev withdraw asset
       * @param asset   Address of asset to transfer.
       * @param amount  Amount of asset to transfer.
       */
-    function withdraw(address asset, uint256 amount) public {
+    function withdraw(uint16 asset, uint256 amount) public {
         withdrawTo(asset, msg.sender, msg.sender, amount);
     }
 
     /** @dev Transfer asset out of current contract
-      * @param asset   Address of asset to transfer.
+      * @param assetID ID of asset to transfer.
       * @param from    Address of asset owner.
       * @param to      Address of the receiver.
       * @param amount  Amount of asset to transfer.
       */
-    function withdrawTo(address asset, address from, address payable to, uint256 amount) public {
+    function withdrawTo(uint16 assetID, address from, address payable to, uint256 amount) public {
         if (amount == 0) {
             return;
         }
 
-        require(state.balances[asset][from] >= amount, "BALANCE_NOT_ENOUGH");
+        require(state.balances[assetID][from] >= amount, "BALANCE_NOT_ENOUGH");
 
-        state.balances[asset][from] = state.balances[asset][from].sub(amount);
+        Types.Asset storage asset = state.assets[assetID];
 
-        if (asset == address(0)) {
+        state.balances[assetID][from] = state.balances[assetID][from].sub(amount);
+
+        if (asset.tokenAddress == ETHEREUM_TOKEN_ADDRESS) {
             to.transfer(amount);
         } else {
-            SafeERC20.safeTransfer(asset, to, amount);
+            SafeERC20.safeTransfer(asset.tokenAddress, to, amount);
         }
 
-        Events.logWithdraw(asset, from, to, amount);
+        Events.logWithdraw(assetID, from, to, amount);
     }
 
     /** @dev fallback function to allow deposit ether into this contract */
     function () external payable {
 
         // deposit ${msg.value} ether for ${msg.sender}
-        deposit(address(0), msg.value);
+        deposit(getAssetIDByAddress(ETHEREUM_TOKEN_ADDRESS), msg.value);
     }
 
     /** @dev Get a user's asset balance
-      * @param asset  Address of asset
-      * @param user   Address of user
+      * @param assetID  ID of asset
+      * @param user     Address of user
       */
-    function balanceOf(address asset, address user) public view returns (uint256) {
-        return state.balances[asset][user];
+    function balanceOf(uint16 assetID, address user) public view returns (uint256) {
+        return state.balances[assetID][user];
     }
 
     /** @dev Invoking internal funds transfer.
-      * @param asset   Address of asset to transfer.
+      * @param assetID ID of asset to transfer.
       * @param from    Address to transfer asset from.
       * @param to      Address to transfer asset to.
       * @param amount  Amount of asset to transfer.
       */
-    function transferFrom(address asset, address from, address to, uint256 amount)
+    function transferFrom(uint16 assetID, address from, address to, uint256 amount)
       internal
     {
         // do nothing when amount is zero
@@ -118,11 +123,11 @@ contract Transfer is GlobalStore {
             return;
         }
 
-        require(state.balances[asset][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
+        require(state.balances[assetID][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
-        state.balances[asset][from] = state.balances[asset][from].sub(amount);
-        state.balances[asset][to] = state.balances[asset][to].add(amount);
+        state.balances[assetID][from] = state.balances[assetID][from].sub(amount);
+        state.balances[assetID][to] = state.balances[assetID][to].add(amount);
 
-        Events.logTransfer(asset, from, to, amount);
+        Events.logTransfer(assetID, from, to, amount);
     }
 }

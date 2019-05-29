@@ -29,7 +29,7 @@ import "../lib/Consts.sol";
 
 import { Loan, Types } from "../lib/Types.sol";
 
-contract Loans is GlobalStore, Transfer, Debug, Consts {
+contract Loans is Consts, GlobalStore, Transfer, Debug {
     using SafeMath for uint256;
     using Loan for Types.Loan;
 
@@ -59,10 +59,9 @@ contract Loans is GlobalStore, Transfer, Debug, Consts {
     // payer give lender all money and interest
     function repayLoan(Types.Loan memory loan, address payer, uint256 amount) internal {
         uint256 interest = loan.interest(amount, getBlockTimestamp());
-        Types.Asset storage asset = state.assets[loan.assetID];
 
         // borrowed amount and pay interest
-        transferFrom(asset.tokenAddress, payer, address(this), amount.add(interest)); // todo
+        transferFrom(loan.assetID, payer, address(this), amount.add(interest)); // todo
 
         // pay the fee
         loan.amount = loan.amount.sub(amount);

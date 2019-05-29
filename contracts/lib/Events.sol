@@ -23,24 +23,24 @@ import { Types } from "./Types.sol";
 
 library Events {
     // some assets move into contract
-    event Deposit(address asset, address from, address to, uint256 amount);
+    event Deposit(uint16 assetID, address from, address to, uint256 amount);
 
-    function logDeposit(address asset, address from, address to, uint256 amount) internal {
-        emit Deposit(asset, from, to, amount);
+    function logDeposit(uint16 assetID, address from, address to, uint256 amount) internal {
+        emit Deposit(assetID, from, to, amount);
     }
 
     // some assets move out of contract
-    event Withdraw(address asset, address from, address to, uint256 amount);
+    event Withdraw(uint16 assetID, address from, address to, uint256 amount);
 
-    function logWithdraw(address asset, address from, address to, uint256 amount) internal {
-        emit Withdraw(asset, from, to, amount);
+    function logWithdraw(uint16 assetID, address from, address to, uint256 amount) internal {
+        emit Withdraw(assetID, from, to, amount);
     }
 
     // internal assets movement
-    event Transfer(address asset, address from, address to, uint256 amount);
+    event Transfer(uint16 assetID, address from, address to, uint256 amount);
 
-    function logTransfer(address asset, address from, address to, uint256 amount) internal {
-        emit Transfer(asset, from, to, amount);
+    function logTransfer(uint16 assetID, address from, address to, uint256 amount) internal {
+        emit Transfer(assetID, from, to, amount);
     }
 
     event AssetCreate(Types.Asset asset);

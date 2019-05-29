@@ -63,6 +63,6 @@ library Store {
          *
          * first key is asset address, second key is user address
          */
-        mapping (address => mapping (address => uint)) balances;
+        mapping (uint16 => mapping (address => uint)) balances;
     }
 }

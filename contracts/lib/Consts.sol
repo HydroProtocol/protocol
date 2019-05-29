@@ -26,4 +26,6 @@ contract Consts {
     uint256 public constant ORACLE_PRICE_BASE = 1000000000000000000;
 
     uint256 public constant LIQUIDATE_RATE_BASE = 100;
+
+    address public constant ETHEREUM_TOKEN_ADDRESS = address(0);
 }

@@ -100,7 +100,7 @@ contract Pool is Consts, GlobalStore {
             state.loansCount++,
             assetID,
             collateralAccountId,
-            uint40(block.timestamp),
+            getBlockTimestamp(),
             minExpiredAt,
             interestRate,
             Types.LoanSource.Pool,
@@ -168,11 +168,11 @@ contract Pool is Consts, GlobalStore {
         totalSupply[assetID] = totalSupply[assetID].add(interest);
 
         // update interest time
-        poolInterestStartTime = uint40(block.timestamp);
+        poolInterestStartTime = getBlockTimestamp();
     }
 
     function _getUnpaidInterest(uint16 assetID) internal view returns(uint256) {
-        uint256 interest = block.timestamp
+        uint256 interest = uint256(getBlockTimestamp())
             .sub(poolInterestStartTime)
             .mul(poolAnnualInterest)
             .div(SECONDS_OF_YEAR);

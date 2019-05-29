@@ -73,6 +73,16 @@ contract GlobalStore {
 
     // Getter Methods
 
+    function getAssetIDByAddress(address tokenAddress) internal view returns (uint16 assetID) {
+        for( uint16 i = 0; i < state.assetsCount; i++ ) {
+            if( tokenAddress == state.assets[i].tokenAddress ) {
+                return i;
+            }
+        }
+
+        revert("CAN_NOT_FIND_ASSET_ID");
+    }
+
     function getLoansByIDs(uint32[] memory loanIDs) internal view returns (Types.Loan[] memory loans) {
         loans = new Types.Loan[](loanIDs.length);
 
