@@ -16,21 +16,14 @@
 
 */
 
-pragma solidity ^0.5.8;
+pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Consts.sol";
-import "../lib/SafeMath.sol";
-import "../interfaces/OracleInterface.sol";
+import "./lib/Store.sol";
 
-contract OracleCaller {
-    address public oracleAddress;
-
-    constructor(address _oracleAddress) public {
-        oracleAddress = _oracleAddress;
-    }
-
-    function getTokenPriceInEther(address token) internal view returns (uint256) {
-        return OracleInterface(oracleAddress).getTokenPriceInEther(token);
-    }
+/**
+ * Global state store
+ */
+contract GlobalStore {
+    Store.State state;
 }

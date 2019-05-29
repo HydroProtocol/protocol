@@ -18,7 +18,7 @@
 
 pragma solidity 0.5.8;
 
-library LibSafeERC20Transfer {
+library SafeERC20 {
     function safeTransfer(address token, address to, uint256 amount) internal {
         if (amount == 0) {
             return;

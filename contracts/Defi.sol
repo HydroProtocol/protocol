@@ -19,7 +19,7 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Store.sol";
+import "./GlobalStore.sol";
 // import "./Funding.sol";
 // import "./HybridExchange.sol";
 
@@ -30,7 +30,7 @@ import "./Store.sol";
  *   3) Margin Trading
  */
 contract Defi is
-    Store
+    GlobalStore
     // HybridExchange
     // Funding
 {

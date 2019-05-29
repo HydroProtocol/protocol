@@ -20,7 +20,7 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/EIP712.sol";
 
-contract Orders is EIP712 {
+contract Orders {
     mapping(bytes32 => uint256) internal orderFilledAmount;
 
     struct Order {
@@ -58,8 +58,8 @@ contract Orders is EIP712 {
      * @param order The order data struct.
      * @return Fully qualified EIP712 hash of the order in the Hydro Protocol domain.
      */
-    function getOrderHash(Order memory order) internal view returns (bytes32 orderHash) {
-        orderHash = hashEIP712Message(hashOrder(order));
+    function getOrderHash(Order memory order) internal pure returns (bytes32 orderHash) {
+        orderHash = EIP712.hashMessage(hashOrder(order));
         return orderHash;
     }
 

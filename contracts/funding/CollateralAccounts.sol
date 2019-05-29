@@ -22,12 +22,10 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/SafeMath.sol";
 import "./Loans.sol";
-import "./ProxyCaller.sol";
-import "./OracleCaller.sol";
 import "./Assets.sol";
 import "./Auctions.sol";
 
-contract CollateralAccounts is OracleCaller, Loans, Assets, Auctions {
+contract CollateralAccounts is Loans, Assets, Auctions {
     using SafeMath for uint256;
 
     // collateral count

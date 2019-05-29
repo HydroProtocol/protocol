@@ -1,36 +1,88 @@
+/*
+
+    Copyright 2019 The Hydro Protocol Foundation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+*/
+
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
 library Types {
+    enum LoanSource {
+        Pool,
+        P2P
+    }
+
+    enum CollateralAccountState {
+        Normal,
+        Liquid
+    }
+
     struct Asset {
         address tokenAddress;
         uint256 collerateRate;
+
+        // oracle
     }
 
-struct LoanLender {
+    struct LoanItem {
         address lender;
-        uint256 interestRate;
+        uint16 interestRate;
         uint256 amount;
         bytes32 lenderOrderHash;
     }
 
+    // When someone borrows some asset from a source
+    // A Loan is created to record the details
     struct Loan {
-        uint256 id;
-        uint256 _type; // pool or p2p
-        LoanLender[] lenders;
-        address borrower;
+        uint32 id;
+        uint16 assetID;
+        uint32 collateralAccountID;
+        uint40 startAt;
+        uint40 expiredAt;
+
+        // in pool model, it's the commonn interest rate
+        // in p2p source, it's a average interest rate
+        uint16 interestRate;
+
+        // pool or p2p
+        LoanSource source;
+
+        // amount of borrowed asset
         uint256 amount;
-        address asset;
-        uint256 startAt;
-        uint256 expiredAt;
-        uint256 averageInterestRate;
     }
 
     struct CollateralAccount {
-        uint256 id;
+        uint32 id;
+
+        // liquidation rate
+        uint16 liquidateRate;
+
         address owner;
-        uint256 liquidateRate;
-        uint256[] loanIDs;
+
+        // in a margin account, there is only one loan
+        // in a lending account, there will be multi loans
+        uint32[] loanIDs;
+
+
         mapping(address => uint256) collateralAssetAmounts;
+    }
+}
+
+library Loan {
+    function isOverdue(Types.Loan memory loan, uint256 time) internal pure returns (bool) {
+        return loan.expiredAt < time;
     }
 }

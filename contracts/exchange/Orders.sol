@@ -20,10 +20,9 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "../lib/EIP712.sol";
-import "../lib/LibSignature.sol";
-import "../lib/LibMath.sol";
+import "../lib/Math.sol";
 
-contract Orders is EIP712, LibSignature, LibMath {
+contract Orders {
 
     uint256 public constant REBATE_RATE_BASE = 100;
 
@@ -75,8 +74,8 @@ contract Orders is EIP712, LibSignature, LibMath {
      * @param order The order data struct.
      * @return Fully qualified EIP712 hash of the order in the Hydro Protocol domain.
      */
-    function getOrderHash(Order memory order) internal view returns (bytes32 orderHash) {
-        orderHash = hashEIP712Message(hashOrder(order));
+    function getOrderHash(Order memory order) internal pure returns (bytes32 orderHash) {
+        orderHash = EIP712.hashMessage(hashOrder(order));
         return orderHash;
     }
 
@@ -162,6 +161,6 @@ contract Orders is EIP712, LibSignature, LibMath {
         uint256 makerRebate = uint256(uint16(bytes2(data << (8*12))));
 
         // make sure makerRebate will never be larger than REBATE_RATE_BASE, which is 100
-        return min(makerRebate, REBATE_RATE_BASE);
+        return Math.min(makerRebate, REBATE_RATE_BASE);
     }
 }

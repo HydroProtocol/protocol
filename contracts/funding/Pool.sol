@@ -21,10 +21,10 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/SafeMath.sol";
 import "../lib/Types.sol";
-import "../lib/LibConsts.sol";
-import "../Store.sol";
+import "../lib/Consts.sol";
+import "../lib/Store.sol";
 
-contract Pool is Store {
+contract Pool is Consts, Store {
     using SafeMath for uint256;
 
     uint256 poolAnnualInterest;
@@ -172,7 +172,7 @@ contract Pool is Store {
         uint256 interest = block.timestamp
             .sub(poolInterestStartTime)
             .mul(poolAnnualInterest)
-            .div(LibConsts.getSecondsOfYear());
+            .div(SECONDS_OF_YEAR);
 
         // accrue interest to supply
         totalSupply[assetId] = totalSupply[assetId].add(interest);

@@ -19,83 +19,103 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Store.sol";
-import "./lib/SafeMath.sol";
-import "./lib/LibSafeERC20Transfer.sol";
+import "./GlobalStore.sol";
 
-/**
- * Global state store
- */
-contract Transfer is Store {
+import "./lib/Events.sol";
+import "./lib/SafeMath.sol";
+import "./lib/SafeERC20.sol";
+
+contract Transfer is GlobalStore {
     using SafeMath for uint256;
 
-    // event Deposit(address token, address account, uint256 amount, uint256 balance);
-    // event Withdraw(address token, address account, uint256 amount, uint256 balance);
-    // event Transfer(address indexed from, address indexed to, uint256 amount);
-
-    // deposit token need approve first.
-    function deposit(address token, uint256 amount) public payable {
-        depositFor(token, msg.sender, msg.sender, amount);
+    /** @dev deposit asset
+      * @param asset   Address of asset to transfer.
+      * @param amount  Amount of asset to transfer.
+      */
+    function deposit(address asset, uint256 amount) public payable {
+        depositFor(asset, msg.sender, msg.sender, amount);
     }
 
-    function depositFor(address token, address from, address to, uint256 amount) public payable {
+    /** @dev Transfer asset into current contract
+      * @param asset   Address of asset to transfer.
+      * @param from    Address of asset owner.
+      * @param to      Address of the receiver.
+      * @param amount  Amount of asset to transfer.
+      */
+    function depositFor(address asset, address from, address to, uint256 amount) public payable {
         if (amount == 0) {
             return;
         }
 
         mapping (address => mapping (address => uint)) storage balances = state.balances;
 
-        if (token != address(0)) {
-            LibSafeERC20Transfer.safeTransferFrom(token, from, address(this), amount);
+        if (asset != address(0)) {
+            SafeERC20.safeTransferFrom(asset, from, address(this), amount);
         } else {
             require(amount == msg.value, "Wrong amount");
         }
 
-        balances[token][to] = balances[token][to].add(amount);
-        emit Deposit(token, to, amount, balances[token][to]);
+        balances[asset][to] = balances[asset][to].add(amount);
+        Events.logDeposit(asset, from, to, amount);
     }
 
-    function withdraw(address token, uint256 amount) external {
-        withdrawTo(token, msg.sender, msg.sender, amount);
+    /** @dev withdraw asset
+      * @param asset   Address of asset to transfer.
+      * @param amount  Amount of asset to transfer.
+      */
+    function withdraw(address asset, uint256 amount) public {
+        withdrawTo(asset, msg.sender, msg.sender, amount);
     }
 
-    function withdrawTo(address token, address from, address payable to, uint256 amount) public {
+    /** @dev Transfer asset out of current contract
+      * @param asset   Address of asset to transfer.
+      * @param from    Address of asset owner.
+      * @param to      Address of the receiver.
+      * @param amount  Amount of asset to transfer.
+      */
+    function withdrawTo(address asset, address from, address payable to, uint256 amount) public {
         if (amount == 0) {
             return;
         }
 
         mapping (address => mapping (address => uint)) storage balances = state.balances;
 
-        require(balances[token][from] >= amount, "BALANCE_NOT_ENOUGH");
+        require(balances[asset][from] >= amount, "BALANCE_NOT_ENOUGH");
 
-        balances[token][from] = balances[token][from].sub(amount);
+        balances[asset][from] = balances[asset][from].sub(amount);
 
-        if (token == address(0)) {
+        if (asset == address(0)) {
             to.transfer(amount);
         } else {
-            safeTransfer(token, to, amount);
+            SafeERC20.safeTransfer(asset, to, amount);
         }
 
-        emit Withdraw(token, from, amount, balances[token][from]);
+        Events.logWithdraw(asset, from, to, amount);
     }
 
+    /** @dev fallback function to allow deposit ether into this contract */
     function () external payable {
+
+        // deposit ${msg.value} ether for ${msg.sender}
         deposit(address(0), msg.value);
     }
 
-    function balanceOf(address token, address account) public view returns (uint256) {
-        return state.balances[token][account];
+    /** @dev Get a user's asset balance
+      * @param asset  Address of asset
+      * @param user   Address of user
+      */
+    function balanceOf(address asset, address user) public view returns (uint256) {
+        return state.balances[asset][user];
     }
 
     /** @dev Invoking internal funds transfer.
-      * @param token Address of token to transfer.
-      * @param from Address to transfer token from.
-      * @param to Address to transfer token to.
-      * @param amount Amount of token to transfer.
+      * @param asset   Address of asset to transfer.
+      * @param from    Address to transfer asset from.
+      * @param to      Address to transfer asset to.
+      * @param amount  Amount of asset to transfer.
       */
-    function transferFrom(address token, address from, address to, uint256 amount)
+    function transferFrom(address asset, address from, address to, uint256 amount)
       internal
-    //   onlyAddressInWhitelist
     {
         mapping (address => mapping (address => uint)) storage balances = state.balances;
 
@@ -104,11 +124,11 @@ contract Transfer is Store {
             return;
         }
 
-        require(balances[token][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
+        require(balances[asset][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
-        balances[token][from] = balances[token][from].sub(amount);
-        balances[token][to] = balances[token][to].add(amount);
+        balances[asset][from] = balances[asset][from].sub(amount);
+        balances[asset][to] = balances[asset][to].add(amount);
 
-        // TODO: emit Transfer(from, to, amount);
+        Events.logTransfer(asset, from, to, amount);
     }
 }

@@ -19,15 +19,13 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./lib/LibOwnable.sol";
-import "./funding/ProxyCaller.sol";
+import "./lib/Ownable.sol";
 // import "./funding/Consts.sol";
 
-import "./interfaces/BorrowingSourceInterface.sol";
 
 import "./lib/Types.sol";
 
-contract Margin is LibOwnable, ProxyCaller {
+contract Margin is Ownable {
 
     // struct types
 

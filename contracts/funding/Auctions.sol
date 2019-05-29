@@ -21,12 +21,10 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/SafeMath.sol";
 import "./Loans.sol";
-import "./ProxyCaller.sol";
-import "./OracleCaller.sol";
 import "./Assets.sol";
 import "../interfaces/EIP20Interface.sol";
 
-contract Auctions is OracleCaller, Loans, Assets {
+contract Auctions is Loans, Assets {
     using SafeMath for uint256;
 
     uint256 public auctionsCount = 1;
@@ -71,7 +69,6 @@ contract Auctions is OracleCaller, Loans, Assets {
         });
 
         allAuctions[id] = auction;
-        unlinkLoanAndUser(loan.id, loan.borrower);
 
         emit AuctionCreated(id);
     }

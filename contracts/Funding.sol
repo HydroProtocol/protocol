@@ -23,8 +23,6 @@ import "./funding/Assets.sol";
 import "./funding/Orders.sol";
 import "./funding/Loans.sol";
 import "./funding/Auctions.sol";
-import "./funding/ProxyCaller.sol";
-import "./funding/OracleCaller.sol";
 import "./funding/CollateralAccounts.sol";
 
 import "./helper/Debug.sol";
@@ -34,8 +32,6 @@ contract Funding is Debug, Orders, Auctions, CollateralAccounts {
     mapping(address => uint256) inLiquidation;
 
     constructor(address _proxyAddress, address _oracleAddress)
-        ProxyCaller(_proxyAddress)
-        OracleCaller(_oracleAddress)
         public
     {}
 
