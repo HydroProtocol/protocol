@@ -25,7 +25,7 @@ library Types {
         P2P
     }
 
-    enum CollateralAccountState {
+    enum CollateralAccountStatus {
         Normal,
         Liquid
     }
@@ -67,6 +67,8 @@ library Types {
     struct CollateralAccount {
         uint32 id;
 
+        CollateralAccountStatus status;
+
         // liquidation rate
         uint16 liquidateRate;
 
@@ -76,8 +78,32 @@ library Types {
         // in a lending account, there will be multi loans
         uint32[] loanIDs;
 
+        mapping(uint256 => uint256) collateralAssetAmounts;
+    }
 
-        mapping(address => uint256) collateralAssetAmounts;
+    // memory only
+    struct CollateralAccountDetails {
+        bool       liquidable;
+        uint256[]  collateralAssetAmounts;
+        Loan[]     loans;
+        uint256[]  loanValues;
+        uint256    loansTotalValue;
+        uint256    collateralsTotalValue;
+    }
+
+    struct Auction {
+        uint256 id;
+
+        // The amount of loan when the auction is created, and it's unmodifiable.
+        uint256 totalLoanAmount;
+
+        // To calculate the ratio
+        uint256 startBlockNumber;
+
+        uint256 loanID;
+
+        // assets under liquidated
+        mapping(uint256 => uint256) assetAmounts;
     }
 }
 

@@ -18,28 +18,21 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "../GlobalStore.sol";
+
 import "../lib/Ownable.sol";
+import "../lib/Types.sol";
+import "../lib/Events.sol";
 
-contract Assets is Ownable {
-    struct Asset {
-        address tokenAddress;
-        uint256 collerateRate;
-    }
-
-    // assets order is very important, and we should not support any function to modify the order.
-    Asset[] public allAssets;
-    mapping(address => uint256) public allAssetsMap;
-
-    event AssetCreated(Asset asset);
-
+contract Assets is Ownable, GlobalStore {
     modifier onlyAssetNotExist(address tokenAddress) {
         require(!isAssetExist(tokenAddress), "TOKEN_IS_ALREADY_EXIST");
         _;
     }
 
     function isAssetExist(address tokenAddress) internal view returns (bool) {
-        for(uint256 i = 0; i < allAssets.length; i++) {
-            if (allAssets[i].tokenAddress == tokenAddress) {
+        for(uint256 i = 0; i < state.assetsCount; i++) {
+            if (state.assets[i].tokenAddress == tokenAddress) {
                 return true;
             }
         }
@@ -48,7 +41,7 @@ contract Assets is Ownable {
     }
 
     function getAllAssetsCount() public view returns (uint256) {
-        return allAssets.length;
+        return state.assetsCount;
     }
 
     function addAsset(address tokenAddress, uint256 collerateRate)
@@ -56,9 +49,10 @@ contract Assets is Ownable {
         onlyOwner
         onlyAssetNotExist(tokenAddress)
     {
-        Asset memory asset = Asset(tokenAddress, collerateRate);
-        uint256 index = allAssets.push(asset);
-        allAssetsMap[tokenAddress] = index;
-        emit AssetCreated(asset);
+        Types.Asset memory asset = Types.Asset(tokenAddress, collerateRate);
+        uint256 index = state.assetsCount++;
+        state.assets[index] = asset;
+
+        Events.logAssetCreate(asset);
     }
 }

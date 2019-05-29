@@ -19,6 +19,8 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
+import { Types } from "./Types.sol";
+
 library Events {
     // some assets move into contract
     event Deposit(address asset, address from, address to, uint256 amount);
@@ -39,5 +41,11 @@ library Events {
 
     function logTransfer(address asset, address from, address to, uint256 amount) internal {
         emit Transfer(asset, from, to, amount);
+    }
+
+    event AssetCreate(Types.Asset asset);
+
+    function logAssetCreate(Types.Asset memory asset) internal {
+        emit AssetCreate(asset);
     }
 }
