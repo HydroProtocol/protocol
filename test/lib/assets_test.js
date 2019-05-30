@@ -1,4 +1,6 @@
-const { getHydroContract } = require('../utils.js');
+const {
+    getHydroContract
+} = require('../utils.js');
 const assert = require('assert');
 
 contract('Assets', accounts => {
@@ -9,6 +11,6 @@ contract('Assets', accounts => {
     });
 
     it('test', async () => {
-        assert.equal(true, true);
+        assert.equal(await hydro.methods.getAllAssetsCount().call(), 0);
     });
 });

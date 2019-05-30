@@ -5,7 +5,9 @@ const TestToken = artifacts.require('./helper/TestToken.sol');
 const Funding = artifacts.require('./Funding.sol');
 const BigNumber = require('bignumber.js');
 
-BigNumber.config({ EXPONENTIAL_AT: 1000 });
+BigNumber.config({
+    EXPONENTIAL_AT: 1000
+});
 
 const newContract = async (contract, ...args) => {
     const c = await contract.new(...args);
@@ -24,9 +26,29 @@ const setHotAmount = async (hotContract, user, amount) => {
     const diff = new BigNumber(amount).minus(balance);
 
     if (diff.gt(0)) {
-        await hotContract.methods.transfer(user, diff.toString()).send({ from: accounts[0] });
+        await hotContract.methods.transfer(user, diff.toString()).send({
+            from: accounts[0]
+        });
     } else if (diff.lt(0)) {
-        await hotContract.methods.transfer(accounts[0], diff.abs().toString()).send({ from: user });
+        await hotContract.methods.transfer(accounts[0], diff.abs().toString()).send({
+            from: user
+        });
+    }
+};
+
+const setTokenAmount = async (toeknContract, user, amount) => {
+    const balance = await toeknContract.methods.balanceOf(user).call();
+    const accounts = await web3.eth.getAccounts();
+    const diff = new BigNumber(amount).minus(balance);
+
+    if (diff.gt(0)) {
+        await toeknContract.methods.transfer(user, diff.toString()).send({
+            from: accounts[0]
+        });
+    } else if (diff.lt(0)) {
+        await toeknContract.methods.transfer(accounts[0], diff.abs().toString()).send({
+            from: user
+        });
     }
 };
 
@@ -41,7 +63,9 @@ const getExchangeContracts = async () => {
     const exchange = await newContract(HybridExchange, proxy._address, hot._address);
     // console.log('Dxchange address', web3.utils.toChecksumAddress(exchange._address));
 
-    await proxy.methods.addAddress(exchange._address).send({ from: accounts[0] });
+    await proxy.methods.addAddress(exchange._address).send({
+        from: accounts[0]
+    });
 
     return {
         hot,
@@ -50,30 +74,11 @@ const getExchangeContracts = async () => {
     };
 };
 
-const getFundingContracts = async () => {
-    const accounts = await web3.eth.getAccounts();
-    const oracle = await newContract(Oracle);
-    console.log('Oracle address', web3.utils.toChecksumAddress(oracle._address));
-    const proxy = await newContract(DepositProxy);
-    console.log('DepositProxy address', web3.utils.toChecksumAddress(proxy._address));
-
-    const funding = await newContract(Funding, proxy._address, oracle._address);
-    console.log('Funding address', web3.utils.toChecksumAddress(funding._address));
-
-    await proxy.methods.addAddress(funding._address).send({ from: accounts[0] });
-
-    return {
-        proxy,
-        oracle,
-        funding
-    };
-};
-
 const getHydroContract = async () => {
     const hydro = await newContract(Hydro);
     console.log('Hydro address', web3.utils.toChecksumAddress(hydro._address));
 
-    return;
+    return hydro;
 };
 
 const clone = x => JSON.parse(JSON.stringify(x));
