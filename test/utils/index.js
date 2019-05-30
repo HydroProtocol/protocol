@@ -9,6 +9,12 @@ BigNumber.config({
     EXPONENTIAL_AT: 1000
 });
 
+const weis = new BigNumber('1000000000000000000');
+
+const toWei = x => {
+    return new BigNumber(x).times(weis).toString();
+};
+
 const newContract = async (contract, ...args) => {
     const c = await contract.new(...args);
     const instance = new web3.eth.Contract(contract.abi, c.address);
@@ -87,7 +93,7 @@ module.exports = {
     newContractAt,
     getContracts: getExchangeContracts,
     getFundingContracts,
-    getHydroContract,
     clone,
-    setHotAmount
+    setHotAmount,
+    toWei
 };

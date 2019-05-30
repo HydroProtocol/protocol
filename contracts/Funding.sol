@@ -27,9 +27,7 @@ contract Funding is Orders {
 
     mapping(address => uint256) inLiquidation;
 
-    constructor(address _proxyAddress, address _oracleAddress)
-        public
-    {}
+    constructor(address _proxyAddress, address _oracleAddress) public {}
 
     // function matchOrders(
     //     Order memory takerOrder,

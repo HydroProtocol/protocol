@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "bignumber.js": "^7.2.1",
+    "debug": "^4.1.1",
     "ethereumjs-util": "^5.2.0",
     "ganache-cli": "^6.4.3",
     "solidity-coverage": "^0.5.11",

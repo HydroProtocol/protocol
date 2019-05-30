@@ -29,28 +29,24 @@ library Pool {
 
     // supply asset
     function supply(Store.State storage state, uint16 assetID, uint256 amount) internal {
-
         require(state.balances[assetID][msg.sender] >= amount, "USER_BALANCE_NOT_ENOUGH");
 
-        // first supply
+        uint256 shares;
+
         if (state.pool.totalSupply[assetID] == 0){
-            state.balances[assetID][msg.sender] -= amount;
-            state.pool.totalSupply[assetID] = amount;
-            state.pool.supplyShares[assetID][msg.sender] = amount;
-            state.pool.totalSupplyShares[assetID] = amount;
-            return ;
+            shares = amount;
+        } else {
+            shares = amount.mul(state.pool.totalSupplyShares[assetID]).div(state.pool.totalSupply[assetID]);
         }
 
         // accrue interest
         _accrueInterest(state, assetID);
 
         // new supply shares
-        uint256 shares = amount.mul(state.pool.totalSupplyShares[assetID]).div(state.pool.totalSupply[assetID]);
         state.balances[assetID][msg.sender] -= amount;
         state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(amount);
         state.pool.supplyShares[assetID][msg.sender] = state.pool.supplyShares[assetID][msg.sender].add(shares);
         state.pool.totalSupplyShares[assetID] = state.pool.totalSupplyShares[assetID].add(shares);
-
     }
 
     // withdraw asset
@@ -164,6 +160,7 @@ library Pool {
             .sub(state.pool.poolInterestStartTime)
             .mul(state.pool.poolAnnualInterest)
             .div(Consts.SECONDS_OF_YEAR());
+
         return interest;
     }
 

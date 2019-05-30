@@ -39,6 +39,10 @@ library Assets {
         return false;
     }
 
+    function getAsset(Store.State storage state, uint16 assetID) internal view returns (Types.Asset memory) {
+        return state.assets[assetID];
+    }
+
     function getAllAssetsCount(Store.State storage state) internal view returns (uint256) {
         return state.assetsCount;
     }
