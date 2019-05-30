@@ -26,7 +26,7 @@ import "./lib/SafeMath.sol";
 import "./lib/SafeERC20.sol";
 import "./lib/Consts.sol";
 
-contract Transfer is Consts, GlobalStore {
+contract Transfer is GlobalStore {
     using SafeMath for uint256;
 
     /** @dev deposit asset
@@ -50,7 +50,7 @@ contract Transfer is Consts, GlobalStore {
 
         Types.Asset storage asset = state.assets[assetID];
 
-        if (asset.tokenAddress != ETHEREUM_TOKEN_ADDRESS) {
+        if (asset.tokenAddress != Consts.ETHEREUM_TOKEN_ADDRESS()) {
             SafeERC20.safeTransferFrom(asset.tokenAddress, from, address(this), amount);
         } else {
             require(amount == msg.value, "Wrong amount");
@@ -85,7 +85,7 @@ contract Transfer is Consts, GlobalStore {
 
         state.balances[assetID][from] = state.balances[assetID][from].sub(amount);
 
-        if (asset.tokenAddress == ETHEREUM_TOKEN_ADDRESS) {
+        if (asset.tokenAddress == Consts.ETHEREUM_TOKEN_ADDRESS()) {
             to.transfer(amount);
         } else {
             SafeERC20.safeTransfer(asset.tokenAddress, to, amount);
@@ -98,7 +98,7 @@ contract Transfer is Consts, GlobalStore {
     function () external payable {
 
         // deposit ${msg.value} ether for ${msg.sender}
-        deposit(getAssetIDByAddress(ETHEREUM_TOKEN_ADDRESS), msg.value);
+        deposit(getAssetIDByAddress(Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
     }
 
     /** @dev Get a user's asset balance

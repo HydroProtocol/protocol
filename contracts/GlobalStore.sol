@@ -31,7 +31,9 @@ contract GlobalStore {
     using SafeMath for uint256;
     Store.State state;
 
-    // Setter Methods
+    ////////////////////
+    // Setter Methods //
+    ////////////////////
 
     /**
      * Create a auction for a loan and save it in global state
@@ -82,7 +84,9 @@ contract GlobalStore {
         }
     }
 
-    // Getter Methods
+    ////////////////////
+    // Getter Methods //
+    ////////////////////
 
     function getAssetIDByAddress(address tokenAddress) internal view returns (uint16 assetID) {
         for( uint16 i = 0; i < state.assetsCount; i++ ) {
@@ -100,21 +104,5 @@ contract GlobalStore {
         for( uint256 i = 0; i < loanIDs.length; i++ ) {
             loans[i] = state.allLoans[loanIDs[i]];
         }
-    }
-
-    // for debug only
-
-    uint256 internal updatedTimestamp = 0;
-
-    function getBlockTimestamp() internal view returns (uint40) {
-        if (updatedTimestamp > 0) {
-            return uint40(updatedTimestamp);
-        } else {
-            return uint40(block.timestamp);
-        }
-    }
-
-    function setBlockTimestamp(uint256 newTimestamp) public {
-        updatedTimestamp = newTimestamp;
     }
 }

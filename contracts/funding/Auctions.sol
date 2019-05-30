@@ -27,7 +27,7 @@ import "../lib/SafeMath.sol";
 import { Types, Auction } from "../lib/Types.sol";
 import "../lib/Events.sol";
 
-contract Auctions is GlobalStore, Pool {
+contract Auctions is GlobalStore {
     using SafeMath for uint256;
     using Auction for Types.Auction;
 
@@ -42,7 +42,7 @@ contract Auctions is GlobalStore, Pool {
         Types.Loan storage loan = state.allLoans[auction.loanID];
 
         // TODO repay p2p loan
-        repayPool(loan.id, repayAmount);
+        Pool.repay(state, loan.id, repayAmount);
 
         uint256 ratio = auction.ratio();
         // receive assets

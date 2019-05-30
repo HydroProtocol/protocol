@@ -22,6 +22,10 @@ pragma experimental ABIEncoderV2;
 import { Types } from "./Types.sol";
 
 library Events {
+    //////////////////
+    // Funds moving //
+    //////////////////
+
     // some assets move into contract
     event Deposit(uint16 assetID, address from, address to, uint256 amount);
 
@@ -43,12 +47,6 @@ library Events {
         emit Transfer(assetID, from, to, amount);
     }
 
-    event AssetCreate(Types.Asset asset);
-
-    function logAssetCreate(Types.Asset memory asset) internal {
-        emit AssetCreate(asset);
-    }
-
     // a user deposit tokens to default collateral account
     event DepositCollateral(address token, address user, uint256 amount);
 
@@ -62,6 +60,20 @@ library Events {
     function logWithdrawCollateral(address token, address user, uint256 amount) internal {
         emit WithdrawCollateral(token, user, amount);
     }
+
+    ///////////////////
+    // Admin Actions //
+    ///////////////////
+
+    event AssetCreate(Types.Asset asset);
+
+    function logAssetCreate(Types.Asset memory asset) internal {
+        emit AssetCreate(asset);
+    }
+
+    /////////////
+    // Auction //
+    /////////////
 
     // an auction is created
     event AuctionCreate(uint256 auctionID);
@@ -82,5 +94,15 @@ library Events {
 
     function logAuctionFinished(uint256 auctionID) internal {
         emit AuctionFinished(auctionID);
+    }
+
+    //////////
+    // Loan //
+    //////////
+
+    event LoanCreate(uint256 loanID);
+
+    function logLoanCreate(uint256 loanID) internal {
+        emit LoanCreate(loanID);
     }
 }

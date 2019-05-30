@@ -114,7 +114,7 @@ contract Funding is Debug, Orders, Auctions, CollateralAccounts {
     //         lenderOrder.asset,
     //         amount,
     //         uint16(executeInterest),
-    //         uint40(getBlockTimestamp()),
+    //         uint40(block.timestamp),
     //         lenderDuration,
     //         getOrderFeeRate(lenderOrder.data),
     //         0

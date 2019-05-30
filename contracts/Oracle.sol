@@ -22,7 +22,7 @@ pragma experimental ABIEncoderV2;
 import "./lib/Ownable.sol";
 import "./lib/Consts.sol";
 
-contract Oracle is Consts, Ownable {
+contract Oracle is Ownable {
 
     // token price to ether price
     mapping(address => uint256) public tokenPrices;
@@ -34,7 +34,7 @@ contract Oracle is Consts, Ownable {
 
     function getTokenPriceInEther(address token) public view returns (uint256) {
         if (token == address(0))  {
-            return ORACLE_PRICE_BASE;
+            return Consts.ORACLE_PRICE_BASE();
         }
 
         return tokenPrices[token];

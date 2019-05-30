@@ -26,7 +26,7 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import { Types, Loan, Asset } from "../lib/Types.sol";
 
-contract CollateralAccounts is Consts, GlobalStore {
+contract CollateralAccounts is GlobalStore {
     using SafeMath for uint256;
     using Loan for Types.Loan;
     using Asset for Types.Asset;
@@ -126,8 +126,8 @@ contract CollateralAccounts is Consts, GlobalStore {
         for (uint256 i = 0; i < details.loans.length; i++) {
 
             uint256 totalInterest = details.loans[i].
-                interest(details.loans[i].amount, getBlockTimestamp()).
-                div(INTEREST_RATE_BASE.mul(SECONDS_OF_YEAR));
+                interest(details.loans[i].amount, uint40(block.timestamp)).
+                div(Consts.INTEREST_RATE_BASE().mul(Consts.SECONDS_OF_YEAR()));
 
             Types.Asset storage asset = state.assets[details.loans[i].assetID];
 
@@ -135,7 +135,8 @@ contract CollateralAccounts is Consts, GlobalStore {
             details.loansTotalUSDValue = details.loansTotalUSDValue.add(details.loanValues[i]);
         }
 
-        details.liquidable = details.collateralsTotalUSDlValue < details.loansTotalUSDValue.mul(account.liquidateRate).div(LIQUIDATE_RATE_BASE);
+        details.liquidable = details.collateralsTotalUSDlValue <
+            details.loansTotalUSDValue.mul(account.liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
     }
 
     function liquidateCollateralAccounts(uint256[] memory accountIDs) public {

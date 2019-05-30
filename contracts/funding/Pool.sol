@@ -22,13 +22,13 @@ pragma experimental ABIEncoderV2;
 import "../lib/SafeMath.sol";
 import "../lib/Types.sol";
 import "../lib/Consts.sol";
-import "../GlobalStore.sol";
+import "../lib/Store.sol";
 
-contract Pool is Consts, GlobalStore {
+library Pool {
     using SafeMath for uint256;
 
     // supply asset
-    function supplyPool(uint16 assetID, uint256 amount) public {
+    function supplyPool(Store.State storage state, uint16 assetID, uint256 amount) internal {
 
         require(state.balances[assetID][msg.sender] >= amount, "USER_BALANCE_NOT_ENOUGH");
 
@@ -42,7 +42,7 @@ contract Pool is Consts, GlobalStore {
         }
 
         // accrue interest
-        _accrueInterest(assetID);
+        _accrueInterest(state, assetID);
 
         // new supply shares
         uint256 shares = amount.mul(state.pool.totalSupplyShares[assetID]).div(state.pool.totalSupply[assetID]);
@@ -55,7 +55,7 @@ contract Pool is Consts, GlobalStore {
 
     // withdraw asset
     // to avoid precision problem, input share amount instead of token amount
-    function withdrawPool(uint16 assetID, uint256 sharesAmount) public {
+    function withdrawPool(Store.State storage state, uint16 assetID, uint256 sharesAmount) public {
 
         uint256 assetAmount = sharesAmount.mul(state.pool.totalSupply[assetID]).div(state.pool.totalSupplyShares[assetID]);
         require(sharesAmount <= state.pool.supplyShares[assetID][msg.sender], "USER_BALANCE_NOT_ENOUGH");
@@ -70,6 +70,7 @@ contract Pool is Consts, GlobalStore {
 
     // borrow and repay
     function borrowPool(
+        Store.State storage state,
         uint32 collateralAccountId,
         uint16 assetID,
         uint256 amount,
@@ -78,16 +79,16 @@ contract Pool is Consts, GlobalStore {
     ) internal returns (uint32[] memory loanIds){
 
         // check amount & interest
-        uint16 interestRate = getInterestRate(assetID, amount);
+        uint16 interestRate = getInterestRate(state, assetID, amount);
         require(interestRate > maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
-        _accrueInterest(assetID);
+        _accrueInterest(state, assetID);
 
         // build loan
         Types.Loan memory loan = Types.Loan(
             state.loansCount++,
             assetID,
             collateralAccountId,
-            getBlockTimestamp(),
+            uint40(block.timestamp),
             minExpiredAt,
             interestRate,
             Types.LoanSource.Pool,
@@ -103,14 +104,14 @@ contract Pool is Consts, GlobalStore {
 
         // set borrow amount
         state.pool.totalBorrow[assetID] += amount;
-        state.pool.poolAnnualInterest += amount.mul(interestRate).div(INTEREST_RATE_BASE);
+        state.pool.poolAnnualInterest += amount.mul(interestRate).div(Consts.INTEREST_RATE_BASE());
 
         loanIds[0] = loan.id;
         return loanIds;
 
     }
 
-    function repayPool(uint32 loanId, uint256 amount) internal {
+    function repay(Store.State storage state, uint32 loanId, uint256 amount) internal {
 
         Types.Loan storage loan = state.allLoans[loanId];
         require(loan.source==Types.LoanSource.Pool, "LOAN_NOT_CREATED_BY_POOL");
@@ -118,51 +119,51 @@ contract Pool is Consts, GlobalStore {
         require(amount <= loan.amount, "REPAY_AMOUNT_TOO_MUCH");
 
         // minus first and add second
-        state.pool.poolAnnualInterest -= uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
+        state.pool.poolAnnualInterest -= uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
         loan.amount -= amount;
-        state.pool.poolAnnualInterest += uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
+        state.pool.poolAnnualInterest += uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
 
         state.pool.totalBorrow[loan.assetID] -= amount;
 
     }
 
     // get interestRate
-    function getInterestRate(uint16 assetID, uint256 amount) public view returns(uint16 interestRate){
+    function getInterestRate(Store.State storage state, uint16 assetID, uint256 amount) public view returns(uint16 interestRate){
         // 使用计提利息后的supply
-        uint256 interest = _getUnpaidInterest(assetID);
+        uint256 interest = _getUnpaidInterest(state, assetID);
 
         uint256 supply = state.pool.totalSupply[assetID].add(interest);
         uint256 borrow = state.pool.totalBorrow[assetID].add(amount);
 
         require(supply >= borrow, "BORROW_EXCEED_LIMITATION");
 
-        uint256 borrowRatio = borrow.mul(INTEREST_RATE_BASE).div(supply);
+        uint256 borrowRatio = borrow.mul(Consts.INTEREST_RATE_BASE()).div(supply);
 
         // 0.2r + 0.5r^2
-        uint256 rate1 = borrowRatio.mul(INTEREST_RATE_BASE).mul(2);
+        uint256 rate1 = borrowRatio.mul(Consts.INTEREST_RATE_BASE()).mul(2);
         uint256 rate2 = borrowRatio.mul(borrowRatio).mul(5);
 
-        return uint16(rate1.add(rate2).div(INTEREST_RATE_BASE.mul(10)));
+        return uint16(rate1.add(rate2).div(Consts.INTEREST_RATE_BASE().mul(10)));
     }
 
     // accrue interest to totalSupply
-    function _accrueInterest(uint16 assetID) internal {
+    function _accrueInterest(Store.State storage state, uint16 assetID) internal {
 
         // interest since last update
-        uint256 interest = _getUnpaidInterest(assetID);
+        uint256 interest = _getUnpaidInterest(state, assetID);
 
         // accrue interest to supply
         state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(interest);
 
         // update interest time
-        state.pool.poolInterestStartTime = getBlockTimestamp();
+        state.pool.poolInterestStartTime = uint40(block.timestamp);
     }
 
-    function _getUnpaidInterest(uint16 assetID) internal view returns(uint256) {
-        uint256 interest = uint256(getBlockTimestamp())
+    function _getUnpaidInterest(Store.State storage state, uint16 assetID) internal view returns(uint256) {
+        uint256 interest = uint256(block.timestamp)
             .sub(state.pool.poolInterestStartTime)
             .mul(state.pool.poolAnnualInterest)
-            .div(SECONDS_OF_YEAR);
+            .div(Consts.SECONDS_OF_YEAR());
         return interest;
     }
 

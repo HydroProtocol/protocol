@@ -25,15 +25,13 @@ import "../Transfer.sol";
 import "../helper/Debug.sol";
 
 import "../lib/SafeMath.sol";
-import "../lib/Consts.sol";
 
 import { Loan, Types } from "../lib/Types.sol";
+import "../lib/Events.sol";
 
-contract Loans is Consts, GlobalStore, Transfer, Debug {
+contract Loans is GlobalStore, Transfer, Debug {
     using SafeMath for uint256;
     using Loan for Types.Loan;
-
-    event NewLoan(uint256 loanID);
 
     function getUserLoans(address user) public view returns (Types.Loan[] memory loans) {
         uint256 defaultAccountID = state.userDefaultCollateralAccounts[user];
@@ -50,21 +48,7 @@ contract Loans is Consts, GlobalStore, Transfer, Debug {
         // TODO a max loans count, otherwize it may be impossible to liquidate his all loans in a single block
         uint256 id = state.loansCount++;
         state.allLoans[id] = loan;
-
-        emit NewLoan(id); // TODO: move to events
-
+        Events.logLoanCreate(id);
         return id;
-    }
-
-    // payer give lender all money and interest
-    function repayLoan(Types.Loan memory loan, address payer, uint256 amount) internal {
-        uint256 interest = loan.interest(amount, getBlockTimestamp());
-
-        // borrowed amount and pay interest
-        transferFrom(loan.assetID, payer, address(this), amount.add(interest)); // todo
-
-        // pay the fee
-        loan.amount = loan.amount.sub(amount);
-        state.allLoans[loan.id].amount = loan.amount;
     }
 }

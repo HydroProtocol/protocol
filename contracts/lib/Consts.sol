@@ -17,13 +17,46 @@
 */
 pragma solidity ^0.5.8;
 
-contract Consts {
-    uint256 internal constant SECONDS_OF_YEAR = 31536000;
-    uint256 public constant INTEREST_RATE_BASE = 10000;
-    uint256 public constant FEE_RATE_BASE = 10000;
-    uint256 public constant RELAYER_FEE_RATE_BASE = 10000;
-    uint256 public constant SIMULIZED_GAS_COST = 300000;
-    uint256 public constant ORACLE_PRICE_BASE = 1000000000000000000;
-    uint256 public constant LIQUIDATE_RATE_BASE = 100;
-    address public constant ETHEREUM_TOKEN_ADDRESS = address(0);
+library Consts {
+    // uint256 public constant SECONDS_OF_YEAR = 31536000;
+    // uint256 public constant INTEREST_RATE_BASE = 10000;
+    // uint256 public constant FEE_RATE_BASE = 10000;
+    // uint256 public constant RELAYER_FEE_RATE_BASE = 10000;
+    // uint256 public constant SIMULIZED_GAS_COST = 300000;
+    // uint256 public constant ORACLE_PRICE_BASE = 1000000000000000000;
+    // uint256 public constant LIQUIDATE_RATE_BASE = 100;
+    // address public constant ETHEREUM_TOKEN_ADDRESS = address(0);
+
+    function SECONDS_OF_YEAR() internal pure returns (uint256) {
+        return 31536000;
+    }
+
+    function INTEREST_RATE_BASE() internal pure returns (uint256) {
+        return 10000;
+    }
+
+    function FEE_RATE_BASE() internal pure returns (uint256) {
+        return 10000;
+    }
+
+    function RELAYER_FEE_RATE_BASE() internal pure returns (uint256) {
+        return 10000;
+    }
+
+    function SIMULIZED_GAS_COST() internal pure returns (uint256) {
+        return 300000;
+    }
+
+    function ORACLE_PRICE_BASE() internal pure returns (uint256) {
+        return 1000000000000000000;
+    }
+
+    function LIQUIDATE_RATE_BASE() internal pure returns (uint256) {
+        return 100;
+    }
+
+    function ETHEREUM_TOKEN_ADDRESS() internal pure returns (address) {
+        return address(0);
+    }
+
 }
