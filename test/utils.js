@@ -77,7 +77,6 @@ const getExchangeContracts = async () => {
 const getHydroContract = async () => {
     const hydro = await newContract(Hydro);
     console.log('Hydro address', web3.utils.toChecksumAddress(hydro._address));
-
     return hydro;
 };
 
