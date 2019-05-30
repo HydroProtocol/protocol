@@ -20,7 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 
-import "../GlobalStore.sol";
+import "../lib/Store.sol";
 
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
@@ -28,18 +28,21 @@ import "../funding/Loans.sol";
 import "../funding/Auctions.sol";
 import { Types, Loan, Asset } from "../lib/Types.sol";
 
-contract CollateralAccounts is GlobalStore {
+library CollateralAccounts {
     using SafeMath for uint256;
     using Loan for Types.Loan;
     using Asset for Types.Asset;
 
-    function findOrCreateDefaultCollateralAccount(address user) internal returns (Types.CollateralAccount storage) {
+    function findOrCreateDefaultCollateralAccount(
+        Store.State storage state,
+        address user
+    ) internal returns (Types.CollateralAccount storage) {
         uint256 id = state.userDefaultCollateralAccounts[user];
         Types.CollateralAccount storage account = state.allCollateralAccounts[id];
 
         if (account.owner != user) {
             // default account liquidate rate is 150%
-            id = createCollateralAccount(user, 150);
+            id = createCollateralAccount(state, user, 150);
             state.userDefaultCollateralAccounts[user] = id;
             account = state.allCollateralAccounts[id];
         }
@@ -47,7 +50,11 @@ contract CollateralAccounts is GlobalStore {
         return account;
     }
 
-    function createCollateralAccount(address user, uint16 liquidateRate) internal returns (uint256) {
+    function createCollateralAccount(
+        Store.State storage state,
+        address user,
+        uint16 liquidateRate
+    ) internal returns (uint256) {
         uint32 id = state.collateralAccountCount++;
         Types.CollateralAccount memory account;
 
@@ -60,7 +67,7 @@ contract CollateralAccounts is GlobalStore {
     }
 
     // // deposit collateral for default account
-    // function depositCollateral(address token, address user, uint256 amount) public {
+    // function depositCollateral(address token, address user, uint256 amount) internal {
     //     if (amount == 0) {
     //         return;
     //     }
@@ -69,7 +76,7 @@ contract CollateralAccounts is GlobalStore {
     //     depositCollateralFromProxy(token, user, amount);
     // }
 
-    // function depositCollateralFromProxy(address token, address user, uint256 amount) public {
+    // function depositCollateralFromProxy(address token, address user, uint256 amount) internal {
     //     if (amount == 0) {
     //         return;
     //     }
@@ -86,7 +93,11 @@ contract CollateralAccounts is GlobalStore {
     /**
      * Get a user's default collateral account asset balance
      */
-    function collateralBalanceOf(uint16 assetID, address user) public view returns (uint256) {
+    function collateralBalanceOf(
+        Store.State storage state,
+        uint16 assetID,
+        address user
+    ) internal view returns (uint256) {
         uint256 id = state.userDefaultCollateralAccounts[user];
         Types.CollateralAccount storage account = state.allCollateralAccounts[id];
 
@@ -97,12 +108,11 @@ contract CollateralAccounts is GlobalStore {
         return account.collateralAssetAmounts[assetID];
     }
 
-    // to allow proxy transfer ether into this current contract
-    // TODO: is there a way to prevent a user from depositing unexpectedly??
-    function () external payable {}
-
-    function getCollateralAccountDetails(uint256 id)
-        public view
+    function getCollateralAccountDetails(
+        Store.State storage state,
+        uint256 id
+    )
+        internal view
         returns (Types.CollateralAccountDetails memory details)
     {
         Types.CollateralAccount storage account = state.allCollateralAccounts[id];
@@ -141,23 +151,32 @@ contract CollateralAccounts is GlobalStore {
             details.loansTotalUSDValue.mul(account.liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
     }
 
-    function liquidateCollateralAccounts(uint256[] memory accountIDs) public {
+    function liquidateCollateralAccounts(
+        Store.State storage state,
+        uint256[] memory accountIDs
+    ) internal {
         for( uint256 i = 0; i < accountIDs.length; i++ ) {
-            liquidateCollateralAccount(accountIDs[i]);
+            liquidateCollateralAccount(state, accountIDs[i]);
         }
     }
 
-    function isCollateralAccountLiquidable(uint256 id) public view returns (bool) {
-        Types.CollateralAccountDetails memory details = getCollateralAccountDetails(id);
+    function isCollateralAccountLiquidable(
+        Store.State storage state,
+        uint256 id
+    ) internal view returns (bool) {
+        Types.CollateralAccountDetails memory details = getCollateralAccountDetails(state, id);
         return details.liquidable;
     }
 
     /**
      * Total liquidate a collateral account
      */
-    function liquidateCollateralAccount(uint256 id) public returns (bool) {
+    function liquidateCollateralAccount(
+        Store.State storage state,
+        uint256 id
+    ) internal returns (bool) {
         Types.CollateralAccount storage account = state.allCollateralAccounts[id];
-        Types.CollateralAccountDetails memory details = getCollateralAccountDetails(id);
+        Types.CollateralAccountDetails memory details = getCollateralAccountDetails(state, id);
 
         if (!details.liquidable) {
             return false;

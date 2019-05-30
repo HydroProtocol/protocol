@@ -20,6 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./funding/Assets.sol";
+import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
 /**
@@ -27,14 +28,32 @@ import "./GlobalStore.sol";
  */
 contract ExternalFunctions is GlobalStore {
 
-    ////////////////////
-    // View Functions //
-    ////////////////////
+    //////////////////////
+    // Assets Functions //
+    //////////////////////
 
     function getAllAssetsCount()
         internal
         view returns (uint256)
     {
         return Assets.getAllAssetsCount(state);
+    }
+
+    //////////////////////////////////
+    // Collateral Account Functions //
+    //////////////////////////////////
+
+    function liquidateCollateralAccounts(uint256[] calldata accountIDs) external {
+        CollateralAccounts.liquidateCollateralAccounts(state, accountIDs);
+    }
+
+    function liquidateCollateralAccount(uint256 accountID) external {
+        CollateralAccounts.liquidateCollateralAccount(state, accountID);
+    }
+
+    function isCollateralAccountLiquidable(
+        uint256 accountID
+    ) external view {
+        CollateralAccounts.isCollateralAccountLiquidable(state, accountID);
     }
 }
