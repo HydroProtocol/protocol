@@ -69,13 +69,6 @@ const getFundingContracts = async () => {
     };
 };
 
-const getHydroContract = async () => {
-    const hydro = await newContract(Hydro);
-    console.log('Hydro address', web3.utils.toChecksumAddress(hydro._address));
-
-    return;
-};
-
 const clone = x => JSON.parse(JSON.stringify(x));
 
 module.exports = {
