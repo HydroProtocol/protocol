@@ -22,14 +22,13 @@ pragma experimental ABIEncoderV2;
 import "../GlobalStore.sol";
 
 import "../Transfer.sol";
-import "../helper/Debug.sol";
 
 import "../lib/SafeMath.sol";
 
 import { Loan, Types } from "../lib/Types.sol";
 import "../lib/Events.sol";
 
-contract Loans is GlobalStore, Transfer, Debug {
+contract Loans is GlobalStore, Transfer {
     using SafeMath for uint256;
     using Loan for Types.Loan;
 

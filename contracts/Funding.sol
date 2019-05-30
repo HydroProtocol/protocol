@@ -25,9 +25,7 @@ import "./funding/Loans.sol";
 import "./funding/Auctions.sol";
 import "./funding/CollateralAccounts.sol";
 
-import "./helper/Debug.sol";
-
-contract Funding is Debug, Orders, Auctions, CollateralAccounts {
+contract Funding is Orders, Auctions, CollateralAccounts {
 
     mapping(address => uint256) inLiquidation;
 
