@@ -97,12 +97,4 @@ contract GlobalStore {
 
         revert("CAN_NOT_FIND_ASSET_ID");
     }
-
-    function getLoansByIDs(uint32[] memory loanIDs) internal view returns (Types.Loan[] memory loans) {
-        loans = new Types.Loan[](loanIDs.length);
-
-        for( uint256 i = 0; i < loanIDs.length; i++ ) {
-            loans[i] = state.allLoans[loanIDs[i]];
-        }
-    }
 }

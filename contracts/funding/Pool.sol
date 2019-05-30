@@ -28,7 +28,7 @@ library Pool {
     using SafeMath for uint256;
 
     // supply asset
-    function supplyPool(Store.State storage state, uint16 assetID, uint256 amount) internal {
+    function supply(Store.State storage state, uint16 assetID, uint256 amount) internal {
 
         require(state.balances[assetID][msg.sender] >= amount, "USER_BALANCE_NOT_ENOUGH");
 
@@ -55,7 +55,7 @@ library Pool {
 
     // withdraw asset
     // to avoid precision problem, input share amount instead of token amount
-    function withdrawPool(Store.State storage state, uint16 assetID, uint256 sharesAmount) public {
+    function withdraw(Store.State storage state, uint16 assetID, uint256 sharesAmount) internal {
 
         uint256 assetAmount = sharesAmount.mul(state.pool.totalSupply[assetID]).div(state.pool.totalSupplyShares[assetID]);
         require(sharesAmount <= state.pool.supplyShares[assetID][msg.sender], "USER_BALANCE_NOT_ENOUGH");
@@ -69,14 +69,14 @@ library Pool {
     }
 
     // borrow and repay
-    function borrowPool(
+    function borrow(
         Store.State storage state,
         uint32 collateralAccountId,
         uint16 assetID,
         uint256 amount,
         uint16 maxInterestRate,
         uint40 minExpiredAt
-    ) internal returns (uint32[] memory loanIds){
+    ) internal returns (uint32[] memory loanIds) {
 
         // check amount & interest
         uint16 interestRate = getInterestRate(state, assetID, amount);
@@ -128,16 +128,16 @@ library Pool {
     }
 
     // get interestRate
-    function getInterestRate(Store.State storage state, uint16 assetID, uint256 amount) public view returns(uint16 interestRate){
+    function getInterestRate(Store.State storage state, uint16 assetID, uint256 amount) internal view returns(uint16 interestRate){
         // 使用计提利息后的supply
         uint256 interest = _getUnpaidInterest(state, assetID);
 
-        uint256 supply = state.pool.totalSupply[assetID].add(interest);
-        uint256 borrow = state.pool.totalBorrow[assetID].add(amount);
+        uint256 _supply = state.pool.totalSupply[assetID].add(interest);
+        uint256 _borrow = state.pool.totalBorrow[assetID].add(amount);
 
-        require(supply >= borrow, "BORROW_EXCEED_LIMITATION");
+        require(_supply >= _borrow, "BORROW_EXCEED_LIMITATION");
 
-        uint256 borrowRatio = borrow.mul(Consts.INTEREST_RATE_BASE()).div(supply);
+        uint256 borrowRatio = _borrow.mul(Consts.INTEREST_RATE_BASE()).div(_supply);
 
         // 0.2r + 0.5r^2
         uint256 rate1 = borrowRatio.mul(Consts.INTEREST_RATE_BASE()).mul(2);

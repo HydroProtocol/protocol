@@ -24,6 +24,7 @@ import "../GlobalStore.sol";
 
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
+import "../funding/Loans.sol";
 import { Types, Loan, Asset } from "../lib/Types.sol";
 
 contract CollateralAccounts is GlobalStore {
@@ -115,7 +116,7 @@ contract CollateralAccounts is GlobalStore {
             details.collateralsTotalUSDlValue = details.collateralsTotalUSDlValue.add(asset.getPrice().mul(amount));
         }
 
-        details.loans = getLoansByIDs(account.loanIDs);
+        details.loans = Loans.getByIDs(state, account.loanIDs);
 
         if (details.loans.length <= 0) {
             return details;

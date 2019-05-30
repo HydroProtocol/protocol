@@ -19,33 +19,37 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "../GlobalStore.sol";
-
-import "../Transfer.sol";
-
+import "../lib/Store.sol";
 import "../lib/SafeMath.sol";
-
 import { Loan, Types } from "../lib/Types.sol";
 import "../lib/Events.sol";
 
-contract Loans is GlobalStore, Transfer {
+library Loans {
     using SafeMath for uint256;
     using Loan for Types.Loan;
 
-    function getUserLoans(address user) public view returns (Types.Loan[] memory loans) {
+    function getByIDs(Store.State storage state, uint32[] memory loanIDs) internal view returns (Types.Loan[] memory loans) {
+        loans = new Types.Loan[](loanIDs.length);
+
+        for( uint256 i = 0; i < loanIDs.length; i++ ) {
+            loans[i] = state.allLoans[loanIDs[i]];
+        }
+    }
+
+    function getUserLoans(Store.State storage state, address user) internal view returns (Types.Loan[] memory loans) {
         uint256 defaultAccountID = state.userDefaultCollateralAccounts[user];
 
         if(defaultAccountID == 0) {
             return loans;
         } else {
-            return getLoansByIDs(state.allCollateralAccounts[defaultAccountID].loanIDs);
+            return getByIDs(state, state.allCollateralAccounts[defaultAccountID].loanIDs);
         }
-
     }
 
-    function createLoan(Types.Loan memory loan) internal returns(uint256) {
+    function create(Store.State storage state, Types.Loan memory loan) internal returns(uint256) {
         // TODO a max loans count, otherwize it may be impossible to liquidate his all loans in a single block
-        uint256 id = state.loansCount++;
+        uint32 id = state.loansCount++;
+        loan.id = id;
         state.allLoans[id] = loan;
         Events.logLoanCreate(id);
         return id;
