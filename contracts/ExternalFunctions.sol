@@ -20,6 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./funding/Assets.sol";
+import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
@@ -99,5 +100,18 @@ contract ExternalFunctions is GlobalStore {
         external
     {
         CollateralAccounts.depositCollateral(state, assetID, msg.sender, amount);
+    }
+
+    ////////////////////
+    // Pool Functions //
+    ////////////////////
+
+    function poolSupply(
+        uint16 assetID,
+        uint256 amount
+    )
+        external
+    {
+        Pool.supply(state, assetID, amount);
     }
 }

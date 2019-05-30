@@ -34,12 +34,18 @@ const depositCollateral = async (token, user, amount) => {
     await hydro.depositCollateral(assetID, amount, { from: user });
 };
 
+const depositPool = async (token, user, amount) => {
+    const hydro = await Hydro.deployed();
+    const assetID = await hydro.getAssetIDByAddress(token.address);
+    await hydro.poolSupply(assetID, amount, { from: user });
+};
+
 const createAsset = async assetConfig => {
     const hydro = await Hydro.deployed();
     const accounts = await web3.eth.getAccounts();
     const owner = accounts[0];
 
-    const { initBalances, initCollaterals, oraclePrice } = assetConfig;
+    const { initBalances, initCollaterals, oraclePrice, initPool } = assetConfig;
 
     let token;
 
@@ -73,7 +79,7 @@ const createAsset = async assetConfig => {
     await hydro.addAsset(token.address, 1, oracle.address, {
         from: accounts[0],
         gasLimit: 10000000
-    }); // TODO 1.5
+    });
 
     if (initBalances) {
         for (let j = 0; j < Object.keys(initBalances).length; j++) {
@@ -92,20 +98,24 @@ const createAsset = async assetConfig => {
         }
     }
 
+    if (initPool) {
+        for (let j = 0; j < Object.keys(initPool).length; j++) {
+            const user = Object.keys(initPool)[j];
+            const amount = initPool[user];
+            await depositAsset(token, user, amount);
+            await depositPool(token, user, amount);
+        }
+    }
+
     debug(`Create Asset ${token.symbol} done`);
 
     return token;
 };
 
 const createAssets = async configs => {
-    // const tokens = await Promise.all(configs.map(config => createAsset(config)));
-    const tokens = [];
+    const tokens = await Promise.all(configs.map(config => createAsset(config)));
 
-    for (let i = 0; i < configs.length; i++) {
-        const token = await createAsset(configs[i]);
-        token.symbol = token.address;
-        tokens.push(token);
-    }
+    tokens.forEach((t, i) => (t.symbol = configs[i]));
 
     return tokens;
 };
