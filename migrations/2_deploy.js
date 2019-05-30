@@ -1,5 +1,7 @@
 const Hydro = artifacts.require('Hydro');
+const Oracle = artifacts.require('Oracle');
 
-module.exports = function(deployer) {
-    deployer.deploy(Hydro);
+module.exports = async deployer => {
+    await deployer.deploy(Hydro);
+    await deployer.deploy(Oracle);
 };

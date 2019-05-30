@@ -32,11 +32,11 @@ contract Transfer is GlobalStore {
     using SafeMath for uint256;
 
     /** @dev deposit asset
-      * @param asset   Address of asset to transfer.
+      * @param assetID ID of asset to transfer.
       * @param amount  Amount of asset to transfer.
       */
-    function deposit(uint16 asset, uint256 amount) public payable {
-        depositFor(asset, msg.sender, msg.sender, amount);
+    function deposit(uint16 assetID, uint256 amount) public payable {
+        depositFor(assetID, msg.sender, msg.sender, amount);
     }
 
     /** @dev Transfer asset into current contract
@@ -98,7 +98,6 @@ contract Transfer is GlobalStore {
 
     /** @dev fallback function to allow deposit ether into this contract */
     function () external payable {
-
         // deposit ${msg.value} ether for ${msg.sender}
         deposit(Assets.getAssetIDByAddress(state, Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
     }
