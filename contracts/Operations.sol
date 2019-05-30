@@ -29,12 +29,12 @@ import "./funding/Assets.sol";
 contract Operations is Ownable, GlobalStore {
     function addAsset(
         address tokenAddress,
-        uint256 collerateRate,
+        uint256 collateralRate,
         address oracleAddress
     )
         external
         onlyOwner
     {
-        Assets.addAsset(state, tokenAddress, collerateRate, oracleAddress);
+        Assets.addAsset(state, tokenAddress, collateralRate, oracleAddress);
     }
 }

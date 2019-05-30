@@ -1,7 +1,6 @@
 const snapshot = () =>
     new Promise((resolve, reject) => {
-        web3.currentProvider.send(
-            {
+        web3.currentProvider.send({
                 method: 'evm_snapshot',
                 params: [],
                 jsonrpc: '2.0',
@@ -20,8 +19,7 @@ const snapshot = () =>
 const mineEmptyBlock = async count => {
     const mine = () =>
         new Promise((resolve, reject) => {
-            web3.currentProvider.send(
-                {
+            web3.currentProvider.send({
                     method: 'evm_mine',
                     params: [],
                     jsonrpc: '2.0',
@@ -48,8 +46,7 @@ const mineEmptyBlock = async count => {
 
 const updateTimestamp = timestamp =>
     new Promise((resolve, reject) => {
-        web3.currentProvider.send(
-            {
+        web3.currentProvider.send({
                 method: 'evm_mine',
                 params: [timestamp],
                 jsonrpc: '2.0',
@@ -67,8 +64,7 @@ const updateTimestamp = timestamp =>
 
 const recover = snapshotID =>
     new Promise((resolve, reject) => {
-        web3.currentProvider.send(
-            {
+        web3.currentProvider.send({
                 method: 'evm_revert',
                 params: [snapshotID],
                 jsonrpc: '2.0',
@@ -84,7 +80,7 @@ const recover = snapshotID =>
         );
     });
 
-export const evm = {
+module.exports = {
     recover,
     snapshot
 };

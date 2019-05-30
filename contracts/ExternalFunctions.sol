@@ -39,6 +39,22 @@ contract ExternalFunctions is GlobalStore {
         return Assets.getAllAssetsCount(state);
     }
 
+    function getAssetID(address tokenAddress)
+        external
+        view returns (uint16 assetID)
+    {
+        return Assets.getAssetIDByAddress(state, tokenAddress);
+    }
+
+    function getAssetInfo(uint16 assetID)
+        external
+        view returns (address tokenAddress, address oracleAddress, uint256 collateralRate)
+    {
+        Types.Asset storage asset = state.assets[assetID];
+        oracleAddress = address(asset.oracle);
+        return (asset.tokenAddress, address(asset.oracle), asset.collateralRate);
+    }
+
     //////////////////////////////////
     // Collateral Account Functions //
     //////////////////////////////////

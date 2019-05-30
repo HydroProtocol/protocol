@@ -39,6 +39,10 @@ library Consts {
         return 10000;
     }
 
+    function COLLATERAL_RATE_BASE() internal pure returns (uint256) {
+        return 10000;
+    }
+
     function RELAYER_FEE_RATE_BASE() internal pure returns (uint256) {
         return 10000;
     }
