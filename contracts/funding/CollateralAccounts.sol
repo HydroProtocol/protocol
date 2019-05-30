@@ -66,29 +66,18 @@ library CollateralAccounts {
         return id;
     }
 
-    // // deposit collateral for default account
-    // function depositCollateral(address token, address user, uint256 amount) internal {
-    //     if (amount == 0) {
-    //         return;
-    //     }
+    // deposit collateral for default account
+    function depositCollateral(Store.State storage state, uint16 assetID, address user, uint256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
 
-    //     DepositProxyInterface(proxyAddress).depositFor(token, user, user, amount);
-    //     depositCollateralFromProxy(token, user, amount);
-    // }
+        state.balances[assetID][user] = state.balances[assetID][user].sub(amount);
+        Types.CollateralAccount storage account = findOrCreateDefaultCollateralAccount(state, user);
 
-    // function depositCollateralFromProxy(address token, address user, uint256 amount) internal {
-    //     if (amount == 0) {
-    //         return;
-    //     }
-
-    //     address payable currentContract = address(uint160(address(this)));
-    //     DepositProxyInterface(proxyAddress).withdrawTo(token, user, currentContract, amount);
-
-    //     CollateralAccount storage account = findOrCreateDefaultCollateralAccount(user);
-    //     account.assetAmounts[token] = account.assetAmounts[token].add(amount);
-
-    //     emit DepositCollateral(token, user, amount);
-    // }
+        account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
+        Events.logDepositCollateral(assetID, user, amount);
+    }
 
     /**
      * Get a user's default collateral account asset balance

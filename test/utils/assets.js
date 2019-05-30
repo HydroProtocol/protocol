@@ -28,6 +28,12 @@ const depositAsset = async (token, user, amount) => {
     }
 };
 
+const depositCollateral = async (token, user, amount) => {
+    const hydro = await Hydro.deployed();
+    const assetID = await hydro.getAssetIDByAddress(token.address);
+    await hydro.depositCollateral(assetID, amount, { from: user });
+};
+
 const createAsset = async assetConfig => {
     const hydro = await Hydro.deployed();
     const accounts = await web3.eth.getAccounts();
@@ -82,9 +88,7 @@ const createAsset = async assetConfig => {
             const user = Object.keys(initCollaterals)[j];
             const amount = initCollaterals[user];
             await depositAsset(token, user, amount);
-            //     await funding.methods
-            //         .depositCollateralFromProxy(token.address, user, amount)
-            //         .send({ from: user, gas: 1000000 });
+            await depositCollateral(token, user, amount);
         }
     }
 

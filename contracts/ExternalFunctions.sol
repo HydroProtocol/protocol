@@ -34,14 +34,16 @@ contract ExternalFunctions is GlobalStore {
 
     function getAllAssetsCount()
         external
-        view returns (uint256)
+        view
+        returns (uint256)
     {
         return Assets.getAllAssetsCount(state);
     }
 
     function getAsset(uint16 assetID)
         external
-        view returns (Types.Asset memory)
+        view
+        returns (Types.Asset memory)
     {
         return Assets.getAsset(state, assetID);
     }
@@ -58,23 +60,44 @@ contract ExternalFunctions is GlobalStore {
     // Collateral Account Functions //
     //////////////////////////////////
 
-    function liquidateCollateralAccounts(uint256[] calldata accountIDs) external {
+    function liquidateCollateralAccounts(uint256[] calldata accountIDs)
+        external
+    {
         CollateralAccounts.liquidateCollateralAccounts(state, accountIDs);
     }
 
-    function liquidateCollateralAccount(uint256 accountID) external {
+    function liquidateCollateralAccount(uint256 accountID)
+        external
+    {
         CollateralAccounts.liquidateCollateralAccount(state, accountID);
     }
 
     function isCollateralAccountLiquidable(
         uint256 accountID
-    ) external view returns (bool) {
+    )
+        external
+        view
+        returns (bool)
+    {
         return CollateralAccounts.isCollateralAccountLiquidable(state, accountID);
     }
 
     function getCollateralAccountDetails(
         uint256 accountID
-    ) external view returns (Types.CollateralAccountDetails memory) {
+    )
+        external
+        view
+        returns (Types.CollateralAccountDetails memory)
+    {
         return CollateralAccounts.getCollateralAccountDetails(state, accountID);
+    }
+
+    function depositCollateral(
+        uint16 assetID,
+        uint256 amount
+    )
+        external
+    {
+        CollateralAccounts.depositCollateral(state, assetID, msg.sender, amount);
     }
 }
