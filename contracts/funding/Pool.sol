@@ -72,7 +72,7 @@ library Pool {
         uint256 amount,
         uint16 maxInterestRate,
         uint40 minExpiredAt
-    ) internal returns (uint32[] memory loanIds) {
+    ) internal returns (uint32 loanID) {
 
         // check amount & interest
         uint16 interestRate = getInterestRate(state, assetID, amount);
@@ -102,9 +102,7 @@ library Pool {
         state.pool.totalBorrow[assetID] += amount;
         state.pool.poolAnnualInterest += amount.mul(interestRate).div(Consts.INTEREST_RATE_BASE());
 
-        loanIds[0] = loan.id;
-        return loanIds;
-
+        return loan.id;
     }
 
     function repay(Store.State storage state, uint32 loanId, uint256 amount) internal {

@@ -81,5 +81,7 @@ library Store {
         mapping (uint16 => mapping (address => uint)) balances;
 
         PoolState pool;
+
+        mapping (bytes32 => bool) usedOpenMarginRequests;
     }
 }
