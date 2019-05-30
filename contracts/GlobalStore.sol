@@ -19,13 +19,16 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./lib/SafeMath.sol";
 import "./lib/Store.sol";
 import { Types } from "./lib/Types.sol";
 import "./lib/Events.sol";
+
 /**
  * Global state store
  */
 contract GlobalStore {
+    using SafeMath for uint256;
     Store.State state;
 
     // Setter Methods
@@ -37,7 +40,14 @@ contract GlobalStore {
      * @param loanAmount             Debt Amount of liquidated loan, unmodifiable
      * @param collateralAssetAmounts Assets Amounts for auction
      */
-    function createAuction(uint32 loanID, uint256 loanAmount, uint256[] memory collateralAssetAmounts)
+    function createAuction(
+        uint32 loanID,
+        address borrower,
+        uint256 loanAmount,
+        uint256 loanUSDValue,
+        uint256 totalLoansUSDValue,
+        uint256[] memory collateralAssetAmounts
+    )
         internal
     {
         uint32 id = state.auctionsCount++;
@@ -46,13 +56,14 @@ contract GlobalStore {
             id: id,
             startBlockNumber: uint32(block.number),
             loanID: loanID,
+            borrower: borrower,
             totalLoanAmount: loanAmount
         });
 
         state.allAuctions[id] = auction;
 
         for (uint256 i = 0; i < collateralAssetAmounts.length; i++ ) {
-            state.allAuctions[id].assetAmounts[i] = collateralAssetAmounts[i];
+            state.allAuctions[id].assetAmounts[i] = loanUSDValue.mul(collateralAssetAmounts[i]).div(totalLoansUSDValue);
         }
 
         Events.logAuctionCreate(id);

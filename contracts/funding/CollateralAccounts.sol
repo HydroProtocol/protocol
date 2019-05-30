@@ -26,7 +26,7 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import { Types, Loan, Asset } from "../lib/Types.sol";
 
-contract CollateralAccounts is GlobalStore, Consts {
+contract CollateralAccounts is Consts, GlobalStore {
     using SafeMath for uint256;
     using Loan for Types.Loan;
     using Asset for Types.Asset;
@@ -149,6 +149,9 @@ contract CollateralAccounts is GlobalStore, Consts {
         return details.liquidable;
     }
 
+    /**
+     * Total liquidate a collateral account
+     */
     function liquidateCollateralAccount(uint256 id) public returns (bool) {
         Types.CollateralAccount storage account = state.allCollateralAccounts[id];
         Types.CollateralAccountDetails memory details = getCollateralAccountDetails(id);
@@ -159,16 +162,24 @@ contract CollateralAccounts is GlobalStore, Consts {
 
         // storage changes
         for (uint256 i = 0; i < details.loans.length; i++ ) {
-            createAuction(details.loans[i].id, details.loans[i].amount, details.collateralAssetAmounts);
+            createAuction(
+                details.loans[i].id,
+                account.owner,
+                details.loans[i].amount,
+                details.loanValues[i],
+                details.loansTotalUSDValue,
+                details.collateralAssetAmounts
+            );
+
             removeLoanIDFromCollateralAccount(details.loans[i].id, id);
         }
 
         // confiscate all collaterals
-        // transfer all user collateral to liquidatingAssets;
         for (uint16 i = 0; i < state.assetsCount; i++) {
-            // liquidatingAssets[asset.tokenAddress] = liquidatingAssets[asset.tokenAddress].add(account.assetAmounts[asset.tokenAddress]);
             account.collateralAssetAmounts[i] = 0;
         }
+
+        account.status = Types.CollateralAccountStatus.Liquid;
 
         return true;
     }

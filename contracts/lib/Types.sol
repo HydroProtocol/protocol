@@ -30,7 +30,8 @@ library Types {
 
     enum CollateralAccountStatus {
         Normal,
-        Liquid
+        Liquid,
+        Closed
     }
 
     struct Asset {
@@ -101,10 +102,12 @@ library Types {
 
         uint32 loanID;
 
+        address borrower;
+
         // The amount of loan when the auction is created, and it's unmodifiable.
         uint256 totalLoanAmount;
 
-        // assets under liquidated
+        // assets under liquidated, and it's unmodifiable.
         mapping(uint256 => uint256) assetAmounts;
     }
 }

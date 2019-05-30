@@ -22,6 +22,21 @@ pragma experimental ABIEncoderV2;
 import { Types } from "./Types.sol";
 
 library Store {
+    struct PoolState {
+        uint256 poolAnnualInterest;
+        uint40 poolInterestStartTime;
+
+        // total suppy and borrow
+        mapping (uint16 => uint256) totalSupply;
+        mapping (uint16 => uint256) totalBorrow;
+
+        // assetID => total shares
+        mapping (uint16 => uint256) totalSupplyShares;
+
+        // assetID => user => shares
+        mapping (uint16 => mapping (address => uint256)) supplyShares;
+    }
+
     struct State {
         // count of collateral accounts
         uint32 collateralAccountCount;
@@ -64,5 +79,7 @@ library Store {
          * first key is asset address, second key is user address
          */
         mapping (uint16 => mapping (address => uint)) balances;
+
+        PoolState pool;
     }
 }

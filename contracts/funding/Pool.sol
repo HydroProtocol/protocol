@@ -27,30 +27,17 @@ import "../GlobalStore.sol";
 contract Pool is Consts, GlobalStore {
     using SafeMath for uint256;
 
-    uint256 poolAnnualInterest;
-    uint40 poolInterestStartTime;
-
-    // total suppy and borrow
-    mapping (uint16 => uint256) public totalSupply;
-    mapping (uint16 => uint256) public totalBorrow;
-
-    // assetID => total shares
-    mapping (uint16 => uint256) totalSupplyShares;
-
-    // assetID => user => shares
-    mapping (uint16 => mapping (address => uint256)) supplyShares;
-
     // supply asset
     function supplyPool(uint16 assetID, uint256 amount) public {
 
         require(state.balances[assetID][msg.sender] >= amount, "USER_BALANCE_NOT_ENOUGH");
 
         // first supply
-        if (totalSupply[assetID] == 0){
+        if (state.pool.totalSupply[assetID] == 0){
             state.balances[assetID][msg.sender] -= amount;
-            totalSupply[assetID] = amount;
-            supplyShares[assetID][msg.sender] = amount;
-            totalSupplyShares[assetID] = amount;
+            state.pool.totalSupply[assetID] = amount;
+            state.pool.supplyShares[assetID][msg.sender] = amount;
+            state.pool.totalSupplyShares[assetID] = amount;
             return ;
         }
 
@@ -58,11 +45,11 @@ contract Pool is Consts, GlobalStore {
         _accrueInterest(assetID);
 
         // new supply shares
-        uint256 shares = amount.mul(totalSupplyShares[assetID]).div(totalSupply[assetID]);
+        uint256 shares = amount.mul(state.pool.totalSupplyShares[assetID]).div(state.pool.totalSupply[assetID]);
         state.balances[assetID][msg.sender] -= amount;
-        totalSupply[assetID] = totalSupply[assetID].add(amount);
-        supplyShares[assetID][msg.sender] = supplyShares[assetID][msg.sender].add(shares);
-        totalSupplyShares[assetID] = totalSupplyShares[assetID].add(shares);
+        state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(amount);
+        state.pool.supplyShares[assetID][msg.sender] = state.pool.supplyShares[assetID][msg.sender].add(shares);
+        state.pool.totalSupplyShares[assetID] = state.pool.totalSupplyShares[assetID].add(shares);
 
     }
 
@@ -70,13 +57,13 @@ contract Pool is Consts, GlobalStore {
     // to avoid precision problem, input share amount instead of token amount
     function withdrawPool(uint16 assetID, uint256 sharesAmount) public {
 
-        uint256 assetAmount = sharesAmount.mul(totalSupply[assetID]).div(totalSupplyShares[assetID]);
-        require(sharesAmount <= supplyShares[assetID][msg.sender], "USER_BALANCE_NOT_ENOUGH");
-        require(assetAmount.add(totalBorrow[assetID]) <= totalSupply[assetID], "POOL_BALANCE_NOT_ENOUGH");
+        uint256 assetAmount = sharesAmount.mul(state.pool.totalSupply[assetID]).div(state.pool.totalSupplyShares[assetID]);
+        require(sharesAmount <= state.pool.supplyShares[assetID][msg.sender], "USER_BALANCE_NOT_ENOUGH");
+        require(assetAmount.add(state.pool.totalBorrow[assetID]) <= state.pool.totalSupply[assetID], "POOL_BALANCE_NOT_ENOUGH");
 
-        supplyShares[assetID][msg.sender] -= sharesAmount;
-        totalSupplyShares[assetID] -= sharesAmount;
-        totalSupply[assetID] -= assetAmount;
+        state.pool.supplyShares[assetID][msg.sender] -= sharesAmount;
+        state.pool.totalSupplyShares[assetID] -= sharesAmount;
+        state.pool.totalSupply[assetID] -= assetAmount;
         state.balances[assetID][msg.sender] += assetAmount;
 
     }
@@ -115,8 +102,8 @@ contract Pool is Consts, GlobalStore {
         account.loanIDs.push(loan.id);
 
         // set borrow amount
-        totalBorrow[assetID] += amount;
-        poolAnnualInterest += amount.mul(interestRate).div(INTEREST_RATE_BASE);
+        state.pool.totalBorrow[assetID] += amount;
+        state.pool.poolAnnualInterest += amount.mul(interestRate).div(INTEREST_RATE_BASE);
 
         loanIds[0] = loan.id;
         return loanIds;
@@ -131,11 +118,11 @@ contract Pool is Consts, GlobalStore {
         require(amount <= loan.amount, "REPAY_AMOUNT_TOO_MUCH");
 
         // minus first and add second
-        poolAnnualInterest -= uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
+        state.pool.poolAnnualInterest -= uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
         loan.amount -= amount;
-        poolAnnualInterest += uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
+        state.pool.poolAnnualInterest += uint256(loan.interestRate).mul(loan.amount).div(INTEREST_RATE_BASE);
 
-        totalBorrow[loan.assetID] -= amount;
+        state.pool.totalBorrow[loan.assetID] -= amount;
 
     }
 
@@ -144,8 +131,8 @@ contract Pool is Consts, GlobalStore {
         // 使用计提利息后的supply
         uint256 interest = _getUnpaidInterest(assetID);
 
-        uint256 supply = totalSupply[assetID].add(interest);
-        uint256 borrow = totalBorrow[assetID].add(amount);
+        uint256 supply = state.pool.totalSupply[assetID].add(interest);
+        uint256 borrow = state.pool.totalBorrow[assetID].add(amount);
 
         require(supply >= borrow, "BORROW_EXCEED_LIMITATION");
 
@@ -165,16 +152,16 @@ contract Pool is Consts, GlobalStore {
         uint256 interest = _getUnpaidInterest(assetID);
 
         // accrue interest to supply
-        totalSupply[assetID] = totalSupply[assetID].add(interest);
+        state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(interest);
 
         // update interest time
-        poolInterestStartTime = getBlockTimestamp();
+        state.pool.poolInterestStartTime = getBlockTimestamp();
     }
 
     function _getUnpaidInterest(uint16 assetID) internal view returns(uint256) {
         uint256 interest = uint256(getBlockTimestamp())
-            .sub(poolInterestStartTime)
-            .mul(poolAnnualInterest)
+            .sub(state.pool.poolInterestStartTime)
+            .mul(state.pool.poolAnnualInterest)
             .div(SECONDS_OF_YEAR);
         return interest;
     }

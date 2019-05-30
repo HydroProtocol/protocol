@@ -24,8 +24,6 @@ contract Consts {
     uint256 public constant RELAYER_FEE_RATE_BASE = 10000;
     uint256 public constant SIMULIZED_GAS_COST = 300000;
     uint256 public constant ORACLE_PRICE_BASE = 1000000000000000000;
-
     uint256 public constant LIQUIDATE_RATE_BASE = 100;
-
     address public constant ETHEREUM_TOKEN_ADDRESS = address(0);
 }
