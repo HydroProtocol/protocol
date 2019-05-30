@@ -26,6 +26,8 @@ import "./lib/SafeMath.sol";
 import "./lib/SafeERC20.sol";
 import "./lib/Consts.sol";
 
+import "./funding/Assets.sol";
+
 contract Transfer is GlobalStore {
     using SafeMath for uint256;
 
@@ -98,7 +100,7 @@ contract Transfer is GlobalStore {
     function () external payable {
 
         // deposit ${msg.value} ether for ${msg.sender}
-        deposit(getAssetIDByAddress(Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
+        deposit(Assets.getAssetIDByAddress(state, Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
     }
 
     /** @dev Get a user's asset balance

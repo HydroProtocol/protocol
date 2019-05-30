@@ -19,25 +19,30 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-
-import "../GlobalStore.sol";
 import "./Pool.sol";
-
+import "../lib/Store.sol";
 import "../lib/SafeMath.sol";
 import { Types, Auction } from "../lib/Types.sol";
 import "../lib/Events.sol";
 
-contract Auctions is GlobalStore {
+library Auctions {
     using SafeMath for uint256;
     using Auction for Types.Auction;
 
-    function fillAuction(uint256 id) public {
+    function fillAuction(
+        Store.State storage state,
+        uint256 id
+    ) internal {
         Types.Auction storage auction = state.allAuctions[id];
         Types.Loan storage loan = state.allLoans[auction.loanID];
-        fillAuctionWithAmount(id, loan.amount);
+        fillAuctionWithAmount(state, id, loan.amount);
     }
 
-    function fillAuctionWithAmount(uint256 id, uint256 repayAmount) public {
+    function fillAuctionWithAmount(
+        Store.State storage state,
+        uint256 id,
+        uint256 repayAmount
+    ) internal {
         Types.Auction storage auction = state.allAuctions[id];
         Types.Loan storage loan = state.allLoans[auction.loanID];
 
@@ -45,6 +50,7 @@ contract Auctions is GlobalStore {
         Pool.repay(state, loan.id, repayAmount);
 
         uint256 ratio = auction.ratio();
+
         // receive assets
         for (uint16 i = 0; i < state.assetsCount; i++) {
             if (auction.assetAmounts[i] == 0) {
@@ -66,6 +72,60 @@ contract Auctions is GlobalStore {
         if (loan.amount == 0) {
             delete state.allAuctions[id]; // TODO ??
             Events.logAuctionFinished(id);
+        }
+    }
+
+    /**
+     * Create a auction for a loan and save it in global state
+     *
+     * @param loanID                 ID of liquidated loan
+     * @param loanAmount             Debt Amount of liquidated loan, unmodifiable
+     * @param collateralAssetAmounts Assets Amounts for auction
+     */
+    function createAuction(
+        Store.State storage state,
+        uint32 loanID,
+        address borrower,
+        uint256 loanAmount,
+        uint256 loanUSDValue,
+        uint256 totalLoansUSDValue,
+        uint256[] memory collateralAssetAmounts
+    )
+        internal
+    {
+        uint32 id = state.auctionsCount++;
+
+        Types.Auction memory auction = Types.Auction({
+            id: id,
+            startBlockNumber: uint32(block.number),
+            loanID: loanID,
+            borrower: borrower,
+            totalLoanAmount: loanAmount
+        });
+
+        state.allAuctions[id] = auction;
+
+        for (uint256 i = 0; i < collateralAssetAmounts.length; i++ ) {
+            state.allAuctions[id].assetAmounts[i] = loanUSDValue.mul(collateralAssetAmounts[i]).div(totalLoansUSDValue);
+        }
+
+        Events.logAuctionCreate(id);
+    }
+
+    function removeLoanIDFromCollateralAccount(
+        Store.State storage state,
+        uint256 loanID,
+        uint256 accountID
+    ) internal {
+        Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
+
+        for (uint32 i = 0; i < account.loanIDs.length; i++){
+            if (account.loanIDs[i] == loanID) {
+                account.loanIDs[i] = account.loanIDs[account.loanIDs.length-1];
+                delete account.loanIDs[account.loanIDs.length - 1];
+                account.loanIDs.length--;
+                break;
+            }
         }
     }
 }

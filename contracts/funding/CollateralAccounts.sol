@@ -25,6 +25,7 @@ import "../GlobalStore.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../funding/Loans.sol";
+import "../funding/Auctions.sol";
 import { Types, Loan, Asset } from "../lib/Types.sol";
 
 contract CollateralAccounts is GlobalStore {
@@ -164,7 +165,8 @@ contract CollateralAccounts is GlobalStore {
 
         // storage changes
         for (uint256 i = 0; i < details.loans.length; i++ ) {
-            createAuction(
+            Auctions.createAuction(
+                state,
                 details.loans[i].id,
                 account.owner,
                 details.loans[i].amount,
@@ -173,7 +175,7 @@ contract CollateralAccounts is GlobalStore {
                 details.collateralAssetAmounts
             );
 
-            removeLoanIDFromCollateralAccount(details.loans[i].id, id);
+            Auctions.removeLoanIDFromCollateralAccount(state, details.loans[i].id, id);
         }
 
         // confiscate all collaterals

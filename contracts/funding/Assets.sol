@@ -53,4 +53,14 @@ library Assets {
 
         Events.logAssetCreate(asset);
     }
+
+    function getAssetIDByAddress(Store.State storage state, address tokenAddress) internal view returns (uint16 assetID) {
+        for( uint16 i = 0; i < state.assetsCount; i++ ) {
+            if( tokenAddress == state.assets[i].tokenAddress ) {
+                return i;
+            }
+        }
+
+        revert("CAN_NOT_FIND_ASSET_ID");
+    }
 }
