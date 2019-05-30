@@ -79,7 +79,7 @@ contract Pool is Consts, GlobalStore {
 
         // check amount & interest
         uint16 interestRate = getInterestRate(assetID, amount);
-        require(interestRate <= maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
+        require(interestRate > maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
         _accrueInterest(assetID);
 
         // build loan
