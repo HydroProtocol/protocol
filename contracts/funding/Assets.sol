@@ -18,20 +18,18 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "../GlobalStore.sol";
-
-import "../lib/Ownable.sol";
+import "../lib/Store.sol";
 import "../lib/Types.sol";
 import "../lib/Events.sol";
 import "../interfaces/OracleInterface.sol";
 
-contract Assets is Ownable, GlobalStore {
-    modifier onlyAssetNotExist(address tokenAddress) {
-        require(!isAssetExist(tokenAddress), "TOKEN_IS_ALREADY_EXIST");
+library Assets {
+    modifier onlyAssetNotExist(Store.State storage state, address tokenAddress) {
+        require(!isAssetExist(state, tokenAddress), "TOKEN_IS_ALREADY_EXIST");
         _;
     }
 
-    function isAssetExist(address tokenAddress) internal view returns (bool) {
+    function isAssetExist(Store.State storage state, address tokenAddress) internal view returns (bool) {
         for(uint256 i = 0; i < state.assetsCount; i++) {
             if (state.assets[i].tokenAddress == tokenAddress) {
                 return true;
@@ -41,14 +39,13 @@ contract Assets is Ownable, GlobalStore {
         return false;
     }
 
-    function getAllAssetsCount() public view returns (uint256) {
+    function getAllAssetsCount(Store.State storage state) internal view returns (uint256) {
         return state.assetsCount;
     }
 
-    function addAsset(address tokenAddress, uint256 collerateRate, address oracleAddress)
-        public
-        onlyOwner
-        onlyAssetNotExist(tokenAddress)
+    function addAsset(Store.State storage state, address tokenAddress, uint256 collerateRate, address oracleAddress)
+        internal
+        onlyAssetNotExist(state, tokenAddress)
     {
         Types.Asset memory asset = Types.Asset(tokenAddress, collerateRate, OracleInterface(oracleAddress));
         uint256 index = state.assetsCount++;

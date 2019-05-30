@@ -16,23 +16,25 @@
 
 */
 
-pragma solidity 0.5.8;
+pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./lib/Ownable.sol";
+import "./funding/Assets.sol";
 import "./GlobalStore.sol";
-// import "./Funding.sol";
-// import "./HybridExchange.sol";
 
 /**
- * Multi defi features in one contract
- *   1) Exchange (hybird mode, on-chain settlement, off-chain matching)
- *   2) Funding (lending and borrowing)
- *   3) Margin Trading
+ * Only owner can use this contract functions
  */
-contract Defi is
-    GlobalStore
-    // HybridExchange
-    // Funding
-{
-
+contract Operations is Ownable, GlobalStore {
+    function addAsset(
+        address tokenAddress,
+        uint256 collerateRate,
+        address oracleAddress
+    )
+        external
+        onlyOwner
+    {
+        Assets.addAsset(state, tokenAddress, collerateRate, oracleAddress);
+    }
 }
