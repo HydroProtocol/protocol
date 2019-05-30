@@ -129,7 +129,7 @@ library Loan {
      * Get loan interest with given amount and timestamp
      * Result should divide (Consts.INTEREST_RATE_BASE * Consts.SECONDS_OF_YEAR)
      */
-    function interest(Types.Loan memory loan, uint256 amount, uint40 currentTimestamp) public pure returns (uint256) {
+    function interest(Types.Loan memory loan, uint256 amount, uint40 currentTimestamp) internal pure returns (uint256) {
         uint40 timeDelta = currentTimestamp - loan.startAt;
         return amount.mul(loan.interestRate).mul(timeDelta);
     }

@@ -21,12 +21,12 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/Store.sol";
 import "../lib/SafeMath.sol";
-import { Loan, Types } from "../lib/Types.sol";
+import { Types } from "../lib/Types.sol";
 import "../lib/Events.sol";
 
 library Loans {
     using SafeMath for uint256;
-    using Loan for Types.Loan;
+    // using Loan for Types.Loan;
 
     function getByIDs(Store.State storage state, uint32[] memory loanIDs) internal view returns (Types.Loan[] memory loans) {
         loans = new Types.Loan[](loanIDs.length);

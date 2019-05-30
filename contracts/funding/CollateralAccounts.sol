@@ -21,11 +21,11 @@ pragma experimental ABIEncoderV2;
 
 
 import "../lib/Store.sol";
-
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../funding/Loans.sol";
 import "../funding/Auctions.sol";
+
 import { Types, Loan, Asset } from "../lib/Types.sol";
 
 library CollateralAccounts {

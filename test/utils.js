@@ -1,11 +1,8 @@
-const Proxy = artifacts.require('./Proxy.sol');
 const Oracle = artifacts.require('./Oracle.sol');
+const Hydro = artifacts.require('./Hydro.sol');
 const HybridExchange = artifacts.require('./HybridExchange.sol');
 const TestToken = artifacts.require('./helper/TestToken.sol');
-
-const DepositProxy = artifacts.require('./DepositProxy.sol');
 const Funding = artifacts.require('./Funding.sol');
-
 const BigNumber = require('bignumber.js');
 
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
@@ -72,6 +69,13 @@ const getFundingContracts = async () => {
     };
 };
 
+const getHydroContract = async () => {
+    const hydro = await newContract(Hydro);
+    console.log('Hydro address', web3.utils.toChecksumAddress(hydro._address));
+
+    return;
+};
+
 const clone = x => JSON.parse(JSON.stringify(x));
 
 module.exports = {
@@ -79,6 +83,7 @@ module.exports = {
     newContractAt,
     getContracts: getExchangeContracts,
     getFundingContracts,
+    getHydroContract,
     clone,
     setHotAmount
 };

@@ -80,7 +80,7 @@ library Pool {
 
         // check amount & interest
         uint16 interestRate = getInterestRate(state, assetID, amount);
-        require(interestRate > maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
+        require(interestRate <= maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
         _accrueInterest(state, assetID);
 
         // build loan

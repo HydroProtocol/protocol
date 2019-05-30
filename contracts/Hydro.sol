@@ -20,8 +20,9 @@ pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
-import "./Operations.sol";
 import "./ExternalFunctions.sol";
+import "./Operations.sol";
+
 // import "./Funding.sol";
 // import "./HybridExchange.sol";
 

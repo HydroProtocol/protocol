@@ -33,7 +33,7 @@ contract ExternalFunctions is GlobalStore {
     //////////////////////
 
     function getAllAssetsCount()
-        internal
+        external
         view returns (uint256)
     {
         return Assets.getAllAssetsCount(state);
@@ -53,7 +53,13 @@ contract ExternalFunctions is GlobalStore {
 
     function isCollateralAccountLiquidable(
         uint256 accountID
-    ) external view {
-        CollateralAccounts.isCollateralAccountLiquidable(state, accountID);
+    ) external view returns (bool) {
+        return CollateralAccounts.isCollateralAccountLiquidable(state, accountID);
+    }
+
+    function getCollateralAccountDetails(
+        uint256 accountID
+    ) external view returns (Types.CollateralAccountDetails memory) {
+        return CollateralAccounts.getCollateralAccountDetails(state, accountID);
     }
 }

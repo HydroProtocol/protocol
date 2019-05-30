@@ -19,9 +19,9 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./GlobalStore.sol";
 import "./lib/Ownable.sol";
 import "./funding/Assets.sol";
-import "./GlobalStore.sol";
 
 /**
  * Only owner can use this contract functions
