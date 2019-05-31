@@ -34,6 +34,14 @@ import "./lib/Relayer.sol";
  */
 contract ExternalFunctions is GlobalStore {
 
+    ///////////////
+    // Signature //
+    ///////////////
+
+    function isValidSignature(bytes32 hash, address signerAddress, Types.Signature calldata signature) external pure returns (bool) {
+        return Signature.isValidSignature(hash, signerAddress, signature);
+    }
+
     ////////////
     // EIP712 //
     ////////////

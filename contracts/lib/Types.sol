@@ -45,6 +45,25 @@ library Types {
         FULLY_FILLED
     }
 
+    /**
+     * Signature struct contains typical signature data as v, r, and s with the signature
+     * method encoded in as well.
+     */
+    struct Signature {
+        /**
+         * Config contains the following values packed into 32 bytes
+         * ╔════════════════════╤═══════════════════════════════════════════════════════════╗
+         * ║                    │ length(bytes)   desc                                      ║
+         * ╟────────────────────┼───────────────────────────────────────────────────────────╢
+         * ║ v                  │ 1               the v parameter of a signature            ║
+         * ║ signatureMethod    │ 1               SignatureMethod enum value                ║
+         * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
+         */
+        bytes32 config;
+        bytes32 r;
+        bytes32 s;
+    }
+
     struct Asset {
         address tokenAddress;
         uint256 collerateRate;
@@ -165,7 +184,7 @@ library Types {
         uint256 quoteTokenAmount;
         uint256 gasTokenAmount;
         bytes32 data;
-        Signature.OrderSignature signature;
+        Signature signature;
     }
 
 

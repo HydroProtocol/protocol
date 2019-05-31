@@ -19,30 +19,13 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./Types.sol";
+
 library Signature {
 
     enum SignatureMethod {
         EthSign,
         EIP712
-    }
-
-    /**
-     * OrderSignature struct contains typical signature data as v, r, and s with the signature
-     * method encoded in as well.
-     */
-    struct OrderSignature {
-        /**
-         * Config contains the following values packed into 32 bytes
-         * ╔════════════════════╤═══════════════════════════════════════════════════════════╗
-         * ║                    │ length(bytes)   desc                                      ║
-         * ╟────────────────────┼───────────────────────────────────────────────────────────╢
-         * ║ v                  │ 1               the v parameter of a signature            ║
-         * ║ signatureMethod    │ 1               SignatureMethod enum value                ║
-         * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
-         */
-        bytes32 config;
-        bytes32 r;
-        bytes32 s;
     }
 
     /**
@@ -56,7 +39,7 @@ library Signature {
      * @param signature The signature data passed along with the order to validate against
      * @return True if the calculated signature matches the order signature data, false otherwise.
      */
-    function isValidSignature(bytes32 hash, address signerAddress, OrderSignature memory signature)
+    function isValidSignature(bytes32 hash, address signerAddress, Types.Signature memory signature)
         internal
         pure
         returns (bool)

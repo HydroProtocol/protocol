@@ -1,27 +1,34 @@
 const assert = require('assert');
-const { isValidSignature } = require('../../sdk/sdk');
-const { newContract } = require('../utils');
-const TestSignature = artifacts.require('./helper/TestSignature.sol');
-
 const { hashPersonalMessage, ecsign, toBuffer, privateToAddress } = require('ethereumjs-util');
+const { snapshot, revert } = require('../utils/evm');
+const Hydro = artifacts.require('./Hydro.sol');
 
 contract('Signature', accounts => {
-    const privateKey = '0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418';
-    const orderHash = '0xaf802826788065ba466dabccd8bda7cea419e59e0acad67662ad013534eb823b';
-    let address;
-    let contract;
+    let hydro;
+    let snapshotID;
 
     before(async () => {
-        address = bufferToHash(privateToAddress(privateKey));
-        contract = await newContract(TestSignature);
+        hydro = await Hydro.deployed();
     });
+
+    beforeEach(async () => {
+        snapshotID = await snapshot();
+    });
+
+    afterEach(async () => {
+        await revert(snapshotID);
+    });
+    const bufferToHash = buffer => '0x' + buffer.toString('hex');
+    const privateKey = '0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418';
+    const orderHash = '0xaf802826788065ba466dabccd8bda7cea419e59e0acad67662ad013534eb823b';
+    let address = bufferToHash(privateToAddress(privateKey));
 
     const SignatureType = {
         EthSign: '00',
         EIP712: '01',
         INVALID: '02'
     };
-    const bufferToHash = buffer => '0x' + buffer.toString('hex');
+
     const formatSig = (sig, type) => ({
         config: `0x${sig.v.toString(16)}${type}` + '0'.repeat(60),
         r: sig.r,
@@ -32,9 +39,13 @@ contract('Signature', accounts => {
         const sha = hashPersonalMessage(toBuffer(orderHash));
         const sig = ecsign(sha, toBuffer(privateKey));
 
-        const isValid = await contract.methods
-            .isValidSignaturePublic(orderHash, address, formatSig(sig, SignatureType.EthSign))
-            .call();
+        const isValid = await hydro.isValidSignature(
+            orderHash,
+            address,
+            formatSig(sig, SignatureType.EthSign),
+            {}
+        );
+
         assert(isValid);
     });
 
@@ -42,9 +53,13 @@ contract('Signature', accounts => {
         const sha = toBuffer(orderHash);
         const sig = ecsign(sha, toBuffer(privateKey));
 
-        const isValid = await contract.methods
-            .isValidSignaturePublic(orderHash, address, formatSig(sig, SignatureType.EIP712))
-            .call();
+        const isValid = await hydro.isValidSignature(
+            orderHash,
+            address,
+            formatSig(sig, SignatureType.EIP712),
+            {}
+        );
+
         assert(isValid);
     });
 
@@ -53,9 +68,13 @@ contract('Signature', accounts => {
         const sig = ecsign(sha, toBuffer(privateKey));
 
         const wrongOrderHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
-        const isValid = await contract.methods
-            .isValidSignaturePublic(wrongOrderHash, address, formatSig(sig, SignatureType.EthSign))
-            .call();
+        const isValid = await hydro.isValidSignature(
+            wrongOrderHash,
+            address,
+            formatSig(sig, SignatureType.EthSign),
+            {}
+        );
+
         assert(!isValid);
     });
 
@@ -64,9 +83,13 @@ contract('Signature', accounts => {
         const sig = ecsign(sha, toBuffer(privateKey));
 
         const wrongOrderHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
-        const isValid = await contract.methods
-            .isValidSignaturePublic(wrongOrderHash, address, formatSig(sig, SignatureType.EIP712))
-            .call();
+        const isValid = await hydro.isValidSignature(
+            wrongOrderHash,
+            address,
+            formatSig(sig, SignatureType.EIP712),
+            {}
+        );
+
         assert(!isValid);
     });
 
@@ -75,11 +98,14 @@ contract('Signature', accounts => {
         const sig = ecsign(sha, toBuffer(privateKey));
 
         try {
-            const isValid = await contract.methods
-                .isValidSignaturePublic(orderHash, address, formatSig(sig, SignatureType.INVALID))
-                .call();
+            await hydro.isValidSignature(
+                orderHash,
+                address,
+                formatSig(sig, SignatureType.INVALID),
+                {}
+            );
         } catch (e) {
-            assert.ok(e.message.match(/revert/));
+            assert.ok(e.message.match(/INVALID_SIGN_METHOD/));
             return;
         }
 
