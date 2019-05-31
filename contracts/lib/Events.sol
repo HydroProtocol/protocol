@@ -152,4 +152,10 @@ library Events {
     function logExchangeMatch(Types.ExchangeMatchResult memory result, Types.ExchangeOrderAddressSet memory addressSet) internal {
         emit ExchangeMatch(addressSet, result);
     }
+
+    event ExchangeOrderCancel(bytes32 indexed orderHash);
+
+    function logExchangeOrderCancel(bytes32 orderHash) internal {
+        emit ExchangeOrderCancel(orderHash);
+    }
 }

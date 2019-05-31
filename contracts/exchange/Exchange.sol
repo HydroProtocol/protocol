@@ -39,8 +39,6 @@ library HybridExchange {
     using ExchangeOrder for Types.ExchangeOrder;
     using ExchangeOrderParam for Types.ExchangeOrderParam;
 
-    event Cancel(bytes32 indexed orderHash);
-
     /**
      * Calculated data about an order object.
      * Generally the filledAmount is specified in base token units, however in the case of a market
@@ -125,7 +123,7 @@ library HybridExchange {
         bytes32 orderHash = order.getHash();
         state.exchange.cancelled[orderHash] = true;
 
-        emit Cancel(orderHash);
+        Events.logExchangeOrderCancel(orderHash);
     }
 
     /**
