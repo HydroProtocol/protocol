@@ -178,4 +178,8 @@ contract ExternalFunctions is GlobalStore {
     function cancelOrder(Types.ExchangeOrder calldata order) external {
         Exchange.cancelOrder(state, order);
     }
+
+    function exchangeMatchOrders(Types.ExchangeMatchParams calldata params) external {
+        Exchange.exchangeMatchOrders(state, params);
+    }
 }
