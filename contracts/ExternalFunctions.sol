@@ -19,6 +19,8 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./exchange/Exchange.sol";
+
 import "./funding/Assets.sol";
 import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
@@ -167,5 +169,13 @@ contract ExternalFunctions is GlobalStore {
     function () external payable {
         // deposit ${msg.value} ether for ${msg.sender}
         Transfer.deposit(state, Assets.getAssetIDByAddress(state, Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
+    }
+
+    //////////////
+    // Exchange //
+    //////////////
+
+    function cancelOrder(Types.ExchangeOrder calldata order) external {
+        Exchange.cancelOrder(state, order);
     }
 }

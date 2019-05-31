@@ -187,6 +187,17 @@ library Types {
         uint256 baseTokenFilledAmount;
         uint256 quoteTokenFilledAmount;
     }
+    /**
+     * @param takerOrderParam A Types.ExchangeOrderParam object representing the order from the taker.
+     * @param makerOrderParams An array of Types.ExchangeOrderParam objects representing orders from a list of makers.
+     * @param orderAddressSet An object containing addresses common across each order.
+     */
+    struct ExchangeMatchParams {
+        ExchangeOrderParam       takerOrderParam;
+        ExchangeOrderParam[]     makerOrderParams;
+        uint256[]                baseTokenFilledAmounts;
+        ExchangeOrderAddressSet  orderAddressSet;
+    }
 }
 
 library Asset {

@@ -30,11 +30,10 @@ import "../lib/Transfer.sol";
 import "../lib/Events.sol";
 import "../funding/Assets.sol";
 
-
 import "./Discount.sol";
 
 
-library HybridExchange {
+library Exchange {
     using SafeMath for uint256;
     using ExchangeOrder for Types.ExchangeOrder;
     using ExchangeOrderParam for Types.ExchangeOrderParam;
@@ -52,42 +51,35 @@ library HybridExchange {
     /**
      * Match taker order to a list of maker orders. Common addresses are passed in
      * separately as an Types.ExchangeOrderAddressSet to reduce call size data and save gas.
-     *
-     * @param takerOrderParam A Types.ExchangeOrderParam object representing the order from the taker.
-     * @param makerOrderParams An array of Types.ExchangeOrderParam objects representing orders from a list of makers.
-     * @param orderAddressSet An object containing addresses common across each order.
      */
-    function matchOrders(
+    function exchangeMatchOrders(
         Store.State storage state,
-        Types.ExchangeOrderParam memory takerOrderParam,
-        Types.ExchangeOrderParam[] memory makerOrderParams,
-        uint256[] memory baseTokenFilledAmounts,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.ExchangeMatchParams memory params
     ) internal {
-        require(Relayer.canMatchOrdersFrom(state, orderAddressSet.relayer), Errors.INVALID_SENDER());
-        require(!takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
+        require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), Errors.INVALID_SENDER());
+        require(!params.takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
 
-        bool isParticipantRelayer = Relayer.isParticipant(state, orderAddressSet.relayer);
-        uint256 takerFeeRate = getTakerFeeRate(state, takerOrderParam, isParticipantRelayer);
-        OrderInfo memory takerOrderInfo = getOrderInfo(state, takerOrderParam, orderAddressSet);
+        bool isParticipantRelayer = Relayer.isParticipant(state, params.orderAddressSet.relayer);
+        uint256 takerFeeRate = getTakerFeeRate(state, params.takerOrderParam, isParticipantRelayer);
+        OrderInfo memory takerOrderInfo = getOrderInfo(state, params.takerOrderParam, params.orderAddressSet);
 
         // Calculate which orders match for settlement.
-        Types.ExchangeMatchResult[] memory results = new Types.ExchangeMatchResult[](makerOrderParams.length);
+        Types.ExchangeMatchResult[] memory results = new Types.ExchangeMatchResult[](params.makerOrderParams.length);
 
-        for (uint256 i = 0; i < makerOrderParams.length; i++) {
-            require(!makerOrderParams[i].isMarketOrder(), Errors.MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER());
-            require(takerOrderParam.isSell() != makerOrderParams[i].isSell(), Errors.INVALID_SIDE());
-            validatePrice(takerOrderParam, makerOrderParams[i]);
+        for (uint256 i = 0; i < params.makerOrderParams.length; i++) {
+            require(!params.makerOrderParams[i].isMarketOrder(), Errors.MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER());
+            require(params.takerOrderParam.isSell() != params.makerOrderParams[i].isSell(), Errors.INVALID_SIDE());
+            validatePrice(params.takerOrderParam, params.makerOrderParams[i]);
 
-            OrderInfo memory makerOrderInfo = getOrderInfo(state, makerOrderParams[i], orderAddressSet);
+            OrderInfo memory makerOrderInfo = getOrderInfo(state, params.makerOrderParams[i], params.orderAddressSet);
 
             results[i] = getMatchResult(
                 state,
-                takerOrderParam,
+                params.takerOrderParam,
                 takerOrderInfo,
-                makerOrderParams[i],
+                params.makerOrderParams[i],
                 makerOrderInfo,
-                baseTokenFilledAmounts[i],
+                params.baseTokenFilledAmounts[i],
                 takerFeeRate,
                 isParticipantRelayer
             );
@@ -99,7 +91,7 @@ library HybridExchange {
         // Update amount filled for this taker order.
         state.exchange.filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
 
-        settleResults(state, results, takerOrderParam, orderAddressSet);
+        settleResults(state, results, params.takerOrderParam, params.orderAddressSet);
     }
 
     /**
