@@ -195,6 +195,10 @@ contract ExternalFunctions is GlobalStore {
         Exchange.cancelOrder(state, order);
     }
 
+    function isOrderCancelled(bytes32 orderHash) external view returns(bool) {
+        return state.exchange.cancelled[orderHash];
+    }
+
     function exchangeMatchOrders(Types.ExchangeMatchParams memory params) public {
         Exchange.exchangeMatchOrders(state, params);
     }

@@ -1,12 +1,22 @@
 const assert = require('assert');
-const { getContracts } = require('../utils');
+const { snapshot, revert } = require('../utils/evm');
 const { generateOrderData, getOrderHash } = require('../../sdk/sdk');
+const Hydro = artifacts.require('./Hydro.sol');
+
 contract('CancelOrder', accounts => {
-    let exchange;
+    let hydro;
+    let snapshotID;
 
     before(async () => {
-        const contracts = await getContracts();
-        exchange = contracts.exchange;
+        hydro = await Hydro.deployed();
+    });
+
+    beforeEach(async () => {
+        snapshotID = await snapshot();
+    });
+
+    afterEach(async () => {
+        await revert(snapshotID);
     });
 
     it('should cancel order', async () => {
@@ -22,12 +32,12 @@ contract('CancelOrder', accounts => {
         };
 
         const hash = getOrderHash(order);
-        let cancelled = await exchange.methods.cancelled(hash).call();
-        assert.equal(false, cancelled);
+        let cancelled = await hydro.isOrderCancelled(hash);
+        assert.equal(cancelled, false);
 
-        await exchange.methods.cancelOrder(order).send({ from: order.trader });
-        cancelled = await exchange.methods.cancelled(hash).call();
-        assert.equal(true, cancelled);
+        await hydro.cancelOrder(order, { from: order.trader });
+        cancelled = await hydro.isOrderCancelled(hash);
+        assert.equal(cancelled, true);
     });
 
     it("should abort when another try to cancel other's order", async () => {
@@ -43,11 +53,11 @@ contract('CancelOrder', accounts => {
         };
 
         const hash = getOrderHash(order);
-        let cancelled = await exchange.methods.cancelled(hash).call();
-        assert.equal(false, cancelled);
+        let cancelled = await hydro.isOrderCancelled(hash);
+        assert.equal(cancelled, false);
 
         try {
-            await exchange.methods.cancelOrder(order).send({ from: accounts[1] });
+            await hydro.cancelOrder(order, { from: accounts[1] });
         } catch (e) {
             assert.ok(e.message.match(/revert/));
             return;
