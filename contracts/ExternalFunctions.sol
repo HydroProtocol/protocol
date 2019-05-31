@@ -25,6 +25,7 @@ import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
 import "./lib/Transfer.sol";
+import "./lib/Relayer.sol";
 
 /**
  * External Functions
@@ -120,12 +121,30 @@ contract ExternalFunctions is GlobalStore {
     ///////////////////////
     // Relayer Functions //
     ///////////////////////
-    // function approveDelegate(address delegate)
-    // function revokeDelegate(address delegate)
-    // function joinIncentiveSystem()
-    // function exitIncentiveSystem()
-    // canMatchOrdersFrom
-    // isParticipant
+
+    function approveDelegate(address delegate) external {
+        Relayer.approveDelegate(state, delegate);
+    }
+
+    function revokeDelegate(address delegate) external {
+        Relayer.revokeDelegate(state, delegate);
+    }
+
+    function joinIncentiveSystem() external {
+        Relayer.joinIncentiveSystem(state);
+    }
+
+    function exitIncentiveSystem() external {
+        Relayer.exitIncentiveSystem(state);
+    }
+
+    function canMatchOrdersFrom(address relayer) external view returns (bool) {
+        return Relayer.canMatchOrdersFrom(state, relayer);
+    }
+
+    function isParticipant(address relayer) external view returns (bool) {
+        return Relayer.isParticipant(state, relayer);
+    }
 
 
     ////////////////////////
