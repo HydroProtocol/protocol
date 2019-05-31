@@ -1,11 +1,15 @@
 const debug = require('debug')('hydro:Asset');
-const { newContract } = require('./index.js');
+const {
+    newContract
+} = require('./index.js');
 const Oracle = artifacts.require('./Oracle.sol');
 const Hydro = artifacts.require('./Hydro.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
 
 const BigNumber = require('bignumber.js');
-BigNumber.config({ EXPONENTIAL_AT: 1000 });
+BigNumber.config({
+    EXPONENTIAL_AT: 1000
+});
 
 const getLastAsset = async () => {
     const hydro = await Hydro.deployed();
@@ -15,25 +19,57 @@ const getLastAsset = async () => {
 
 const depositAsset = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    const assetID = await hydro.getAssetIDByAddress(token.address);
+    const assetID = await hydro.getAssetID(token.address);
     const accounts = await web3.eth.getAccounts();
     const owner = accounts[0];
 
     if (token.symbol == 'ETH') {
-        await hydro.deposit(assetID, amount, { from: user, value: amount });
+        await hydro.deposit(assetID, amount, {
+            from: user,
+            value: amount
+        });
     } else {
-        await token.transfer(user, amount, { from: owner });
-        await token.approve(hydro.address, amount, { from: user });
-        await hydro.deposit(assetID, amount, { from: user });
+        await token.transfer(user, amount, {
+            from: owner
+        });
+        await token.approve(hydro.address, amount, {
+            from: user
+        });
+        await hydro.deposit(assetID, amount, {
+            from: user
+        });
     }
 };
 
+const depositCollateral = async (token, user, amount) => {
+    const hydro = await Hydro.deployed();
+    const assetID = await hydro.getAssetID(token.address);
+    await hydro.depositCollateral(assetID, amount, {
+        from: user
+    });
+};
+
+const depositPool = async (token, user, amount) => {
+    const hydro = await Hydro.deployed();
+    const assetID = await hydro.getAssetID(token.address);
+    await hydro.poolSupply(assetID, amount, {
+        from: user
+    });
+};
+
 const createAsset = async assetConfig => {
+
     const hydro = await Hydro.deployed();
     const accounts = await web3.eth.getAccounts();
     const owner = accounts[0];
 
-    const { initBalances, initCollaterals, oraclePrice } = assetConfig;
+    const {
+        initBalances,
+        initCollaterals,
+        initPool,
+        oraclePrice,
+        collateralRate
+    } = assetConfig;
 
     let token;
 
@@ -64,10 +100,10 @@ const createAsset = async assetConfig => {
         `Token ${token.symbol} price is ${(token.address, await oracle.getPrice(token.address))}`
     );
 
-    await hydro.addAsset(token.address, 1, oracle.address, {
+    await hydro.addAsset(token.address, collateralRate.toString(), oracle.address, {
         from: accounts[0],
-        gasLimit: 10000000
-    }); // TODO 1.5
+        gasLimit: 200000
+    });
 
     if (initBalances) {
         for (let j = 0; j < Object.keys(initBalances).length; j++) {
@@ -82,26 +118,26 @@ const createAsset = async assetConfig => {
             const user = Object.keys(initCollaterals)[j];
             const amount = initCollaterals[user];
             await depositAsset(token, user, amount);
-            //     await funding.methods
-            //         .depositCollateralFromProxy(token.address, user, amount)
-            //         .send({ from: user, gas: 1000000 });
+            await depositCollateral(token, user, amount);
         }
     }
 
-    debug(`Create Asset ${token.symbol} done`);
+    if (initPool) {
+        for (let j = 0; j < Object.keys(initPool).length; j++) {
+            const user = Object.keys(initPool)[j];
+            const amount = initPool[user];
+            await depositAsset(token, user, amount);
+            await depositPool(token, user, amount);
+        }
+    }
 
     return token;
 };
 
 const createAssets = async configs => {
-    // const tokens = await Promise.all(configs.map(config => createAsset(config)));
-    const tokens = [];
+    const tokens = await Promise.all(configs.map(config => createAsset(config)));
 
-    for (let i = 0; i < configs.length; i++) {
-        const token = await createAsset(configs[i]);
-        token.symbol = token.address;
-        tokens.push(token);
-    }
+    tokens.forEach((t, i) => (t.symbol = configs[i]));
 
     return tokens;
 };

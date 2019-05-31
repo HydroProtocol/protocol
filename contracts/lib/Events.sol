@@ -48,17 +48,17 @@ library Events {
     }
 
     // a user deposit tokens to default collateral account
-    event DepositCollateral(address token, address user, uint256 amount);
+    event DepositCollateral(uint16 assetID, address user, uint256 amount);
 
-    function logDepositCollateral(address token, address user, uint256 amount) internal {
-        emit DepositCollateral(token, user, amount);
+    function logDepositCollateral(uint16 assetID, address user, uint256 amount) internal {
+        emit DepositCollateral(assetID, user, amount);
     }
 
     // a user withdraw tokens from default collateral account
-    event WithdrawCollateral(address token, address user, uint256 amount);
+    event WithdrawCollateral(uint16 assetID, address user, uint256 amount);
 
-    function logWithdrawCollateral(address token, address user, uint256 amount) internal {
-        emit WithdrawCollateral(token, user, amount);
+    function logWithdrawCollateral(uint16 assetID, address user, uint256 amount) internal {
+        emit WithdrawCollateral(assetID, user, amount);
     }
 
     ///////////////////

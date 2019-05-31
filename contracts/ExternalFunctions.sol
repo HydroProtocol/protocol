@@ -20,6 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./funding/Assets.sol";
+import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
@@ -34,7 +35,8 @@ contract ExternalFunctions is GlobalStore {
 
     function getAllAssetsCount()
         external
-        view returns (uint256)
+        view
+        returns (uint256)
     {
         return Assets.getAllAssetsCount(state);
     }
@@ -59,23 +61,164 @@ contract ExternalFunctions is GlobalStore {
     // Collateral Account Functions //
     //////////////////////////////////
 
-    function liquidateCollateralAccounts(uint256[] calldata accountIDs) external {
+    function liquidateCollateralAccounts(uint256[] calldata accountIDs)
+        external
+    {
         CollateralAccounts.liquidateCollateralAccounts(state, accountIDs);
     }
 
-    function liquidateCollateralAccount(uint256 accountID) external {
+    function liquidateCollateralAccount(uint256 accountID)
+        external
+    {
         CollateralAccounts.liquidateCollateralAccount(state, accountID);
     }
 
     function isCollateralAccountLiquidable(
         uint256 accountID
-    ) external view returns (bool) {
+    )
+        external
+        view
+        returns (bool)
+    {
         return CollateralAccounts.isCollateralAccountLiquidable(state, accountID);
+    }
+
+    function getUserDefaultAccount(
+        address user
+    )
+        external
+        view
+        returns (uint32)
+    {
+        return uint32(state.userDefaultCollateralAccounts[user]);
     }
 
     function getCollateralAccountDetails(
         uint256 accountID
-    ) external view returns (Types.CollateralAccountDetails memory) {
+    )
+        external
+        view
+        returns (Types.CollateralAccountDetails memory)
+    {
         return CollateralAccounts.getCollateralAccountDetails(state, accountID);
+    }
+
+    function depositCollateral(
+        uint16 assetID,
+        uint256 amount
+    )
+        external
+    {
+        CollateralAccounts.depositCollateral(state, assetID, msg.sender, amount);
+    }
+
+    ////////////////////
+    // Loan Functions //
+    ////////////////////
+
+    function repayLoan(
+        uint32 loanID,
+        uint256 amount
+    )
+        external
+    {
+
+    }
+
+    ////////////////////
+    // Pool Functions //
+    ////////////////////
+
+    function getPoolTotalSupply(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return Pool._getSupplyWithInterest(state, assetID);
+    }
+
+    function getPoolTotalBorrow(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.totalBorrow[assetID];
+    }
+
+    function getPoolTotalShares(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.totalSupplyShares[assetID];
+    }
+
+    function getPoolSharesOf(
+        uint16 assetID,
+        address user
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.supplyShares[assetID][user];
+    }
+
+    function getPoolAnnualInterest(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.poolAnnualInterest[assetID];
+    }
+
+    function getPoolInterestStartTime(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint40)
+    {
+        return state.pool.poolInterestStartTime[assetID];
+    }
+
+    function poolSupply(
+        uint16 assetID,
+        uint256 amount
+    )
+        external
+    {
+        Pool.supply(state, assetID, amount);
+    }
+
+    function borrowFromPool(
+        uint32 collateralAccountId,
+        uint16 assetID,
+        uint256 amount,
+        uint16 maxInterestRate,
+        uint40 minExpiredAt
+    )
+        external
+        returns(uint32 loanId)
+    {
+        require(state.collateralAccountCount > collateralAccountId, "COLLATERAL_ACCOUNT_NOT_EXIST");
+        loanId = Pool.borrowFromPoolInternal(
+            state,
+            collateralAccountId,
+            assetID,
+            amount,
+            maxInterestRate,
+            minExpiredAt
+        );
+        require(!CollateralAccounts.isCollateralAccountLiquidable(state, collateralAccountId), "COLLATERAL_NOT_ENOUGH");
+        return loanId;
     }
 }

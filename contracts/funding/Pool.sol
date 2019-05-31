@@ -65,17 +65,20 @@ library Pool {
     }
 
     // borrow and repay
-    function borrow(
+    function borrowFromPoolInternal(
         Store.State storage state,
         uint32 collateralAccountId,
         uint16 assetID,
         uint256 amount,
         uint16 maxInterestRate,
         uint40 minExpiredAt
-    ) internal returns (uint32[] memory loanIds) {
+    ) internal returns (uint32) {
+
+        require(minExpiredAt > block.timestamp, "EXPIRED_AT_TOO_SMALL");
+        uint40 maxDuration = minExpiredAt - uint40(block.timestamp);
 
         // check amount & interest
-        uint16 interestRate = getInterestRate(state, assetID, amount);
+        uint16 interestRate = getInterestRate(state, assetID, amount, maxDuration);
         require(interestRate <= maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
         _accrueInterest(state, assetID);
 
@@ -100,10 +103,9 @@ library Pool {
 
         // set borrow amount
         state.pool.totalBorrow[assetID] += amount;
-        state.pool.poolAnnualInterest += amount.mul(interestRate).div(Consts.INTEREST_RATE_BASE());
+        state.pool.poolAnnualInterest[assetID] += amount.mul(interestRate).div(Consts.INTEREST_RATE_BASE());
 
-        loanIds[0] = loan.id;
-        return loanIds;
+        return loan.id;
 
     }
 
@@ -115,16 +117,16 @@ library Pool {
         require(amount <= loan.amount, "REPAY_AMOUNT_TOO_MUCH");
 
         // minus first and add second
-        state.pool.poolAnnualInterest -= uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
+        state.pool.poolAnnualInterest[loan.assetID] -= uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
         loan.amount -= amount;
-        state.pool.poolAnnualInterest += uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
+        state.pool.poolAnnualInterest[loan.assetID] += uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
 
         state.pool.totalBorrow[loan.assetID] -= amount;
 
     }
 
     // get interestRate
-    function getInterestRate(Store.State storage state, uint16 assetID, uint256 amount) internal view returns(uint16 interestRate){
+    function getInterestRate(Store.State storage state, uint16 assetID, uint256 amount, uint40 maxDuration) internal view returns(uint16 interestRate){
         // 使用计提利息后的supply
         uint256 interest = _getUnpaidInterest(state, assetID);
 
@@ -139,7 +141,15 @@ library Pool {
         uint256 rate1 = borrowRatio.mul(Consts.INTEREST_RATE_BASE()).mul(2);
         uint256 rate2 = borrowRatio.mul(borrowRatio).mul(5);
 
-        return uint16(rate1.add(rate2).div(Consts.INTEREST_RATE_BASE().mul(10)));
+        // duration penalty
+        uint256 penalty = uint256(maxDuration).mul(Consts.INTEREST_RATE_BASE()).div(Consts.SECONDS_OF_YEAR());
+
+        return uint16(rate1.add(rate2).div(Consts.INTEREST_RATE_BASE().mul(10)).add(penalty));
+    }
+
+    function _getSupplyWithInterest(Store.State storage state, uint16 assetID) internal view returns(uint256) {
+        uint256 interest = _getUnpaidInterest(state, assetID);
+        return state.pool.totalSupply[assetID].add(interest);
     }
 
     // accrue interest to totalSupply
@@ -152,13 +162,13 @@ library Pool {
         state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(interest);
 
         // update interest time
-        state.pool.poolInterestStartTime = uint40(block.timestamp);
+        state.pool.poolInterestStartTime[assetID] = uint40(block.timestamp);
     }
 
     function _getUnpaidInterest(Store.State storage state, uint16 assetID) internal view returns(uint256) {
         uint256 interest = uint256(block.timestamp)
-            .sub(state.pool.poolInterestStartTime)
-            .mul(state.pool.poolAnnualInterest)
+            .sub(state.pool.poolInterestStartTime[assetID])
+            .mul(state.pool.poolAnnualInterest[assetID])
             .div(Consts.SECONDS_OF_YEAR());
 
         return interest;

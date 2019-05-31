@@ -23,8 +23,8 @@ import { Types } from "./Types.sol";
 
 library Store {
     struct PoolState {
-        uint256 poolAnnualInterest;
-        uint40 poolInterestStartTime;
+        mapping (uint16 => uint256) poolAnnualInterest;
+        mapping (uint16 => uint40) poolInterestStartTime;
 
         // total suppy and borrow
         mapping (uint16 => uint256) totalSupply;

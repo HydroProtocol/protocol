@@ -92,7 +92,6 @@ module.exports = {
     newContract,
     newContractAt,
     getContracts: getExchangeContracts,
-    getFundingContracts,
     clone,
     setHotAmount,
     toWei

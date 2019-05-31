@@ -82,5 +82,6 @@ const recover = snapshotID =>
 
 module.exports = {
     recover,
-    snapshot
+    snapshot,
+    updateTimestamp
 };
