@@ -1,53 +1,50 @@
 const assert = require('assert');
-const { getContracts } = require('../utils');
+const { snapshot, revert } = require('../utils/evm');
+const Hydro = artifacts.require('./Hydro.sol');
 
 contract('Relayer', accounts => {
-    let exchange;
+    let hydro;
+    let snapshotID;
+
+    before(async () => {
+        hydro = await Hydro.deployed();
+    });
 
     beforeEach(async () => {
-        const contracts = await getContracts();
-        exchange = contracts.exchange;
+        snapshotID = await snapshot();
+    });
+
+    afterEach(async () => {
+        await revert(snapshotID);
     });
 
     it("relayer can't match other's orders without approve", async () => {
-        const res = await exchange.methods
-            .canMatchOrdersFrom(accounts[1])
-            .call({ from: accounts[0] });
-        assert.equal(false, res);
+        const res = await hydro.canMatchOrdersFrom(accounts[1], { from: accounts[0] });
+        assert.equal(res, false);
     });
 
     it("relayer can match other's orders with approve", async () => {
-        await exchange.methods.approveDelegate(accounts[0]).send({ from: accounts[1] });
-        const res = await exchange.methods
-            .canMatchOrdersFrom(accounts[1])
-            .call({ from: accounts[0] });
-        assert.equal(true, res);
+        await hydro.approveDelegate(accounts[0], { from: accounts[1] });
+        const res = await hydro.canMatchOrdersFrom(accounts[1], { from: accounts[0] });
+        assert.equal(res, true);
 
-        await exchange.methods.revokeDelegate(accounts[0]).send({ from: accounts[1] });
-        const res2 = await exchange.methods
-            .canMatchOrdersFrom(accounts[1])
-            .call({ from: accounts[0] });
-        assert.equal(false, res2);
+        await hydro.revokeDelegate(accounts[0], { from: accounts[1] });
+        const res2 = await hydro.canMatchOrdersFrom(accounts[1], { from: accounts[0] });
+        assert.equal(res2, false);
     });
 
     it('default participant', async () => {
-        let isParticipant = await exchange.methods
-            .isParticipant(accounts[1])
-            .call({ from: accounts[1] });
-        assert.equal(true, isParticipant);
+        let isParticipant = await hydro.isParticipant(accounts[1], { from: accounts[1] });
+        assert.equal(isParticipant, true);
 
         // exit
-        await exchange.methods.exitIncentiveSystem().send({ from: accounts[1] });
-        isParticipant = await exchange.methods
-            .isParticipant(accounts[1])
-            .call({ from: accounts[1] });
-        assert.equal(false, isParticipant);
+        await hydro.exitIncentiveSystem({ from: accounts[1] });
+        isParticipant = await hydro.isParticipant(accounts[1], { from: accounts[1] });
+        assert.equal(isParticipant, false);
 
         // join
-        await exchange.methods.joinIncentiveSystem().send({ from: accounts[1] });
-        isParticipant = await exchange.methods
-            .isParticipant(accounts[1])
-            .call({ from: accounts[1] });
-        assert.equal(true, isParticipant);
+        await hydro.joinIncentiveSystem({ from: accounts[1] });
+        isParticipant = await hydro.isParticipant(accounts[1], { from: accounts[1] });
+        assert.equal(isParticipant, true);
     });
 });
