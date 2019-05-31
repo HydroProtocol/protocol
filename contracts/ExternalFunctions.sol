@@ -24,6 +24,8 @@ import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
+import "./lib/Transfer.sol";
+
 /**
  * External Functions
  */
@@ -113,5 +115,38 @@ contract ExternalFunctions is GlobalStore {
         external
     {
         Pool.supply(state, assetID, amount);
+    }
+
+    ///////////////////////
+    // Relayer Functions //
+    ///////////////////////
+    // function approveDelegate(address delegate)
+    // function revokeDelegate(address delegate)
+    // function joinIncentiveSystem()
+    // function exitIncentiveSystem()
+    // canMatchOrdersFrom
+    // isParticipant
+
+
+    ////////////////////////
+    // Transfer Functions //
+    ////////////////////////
+
+    function deposit(uint16 assetID, uint256 amount) external payable {
+        Transfer.deposit(state, assetID, amount);
+    }
+
+    function withdraw(uint16 assetID, uint256 amount) external {
+        Transfer.withdraw(state, assetID, amount);
+    }
+
+    function balanceOf(uint16 assetID, address user) external view returns (uint256) {
+        return Transfer.balanceOf(state, assetID, user);
+    }
+
+    /** @dev fallback function to allow deposit ether into this contract */
+    function () external payable {
+        // deposit ${msg.value} ether for ${msg.sender}
+        Transfer.deposit(state, Assets.getAssetIDByAddress(state, Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
     }
 }

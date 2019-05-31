@@ -71,6 +71,12 @@ library Events {
         emit AssetCreate(asset);
     }
 
+    event DiscountConfigChange(bytes32 newConfig);
+
+    function logDiscountConfigChange(bytes32 newConfig) internal {
+        emit DiscountConfigChange(newConfig);
+    }
+
     /////////////
     // Auction //
     /////////////
@@ -104,5 +110,46 @@ library Events {
 
     function logLoanCreate(uint256 loanID) internal {
         emit LoanCreate(loanID);
+    }
+
+    /////////////
+    // Relayer //
+    /////////////
+
+    event RelayerApproveDelegate(address indexed relayer, address indexed delegate);
+
+    function logRelayerApproveDelegate(address relayer, address delegate) internal {
+        emit RelayerApproveDelegate(relayer, delegate);
+    }
+
+    event RelayerRevokeDelegate(address indexed relayer, address indexed delegate);
+
+    function logRelayerRevokeDelegate(address relayer, address delegate) internal {
+        emit RelayerRevokeDelegate(relayer, delegate);
+    }
+
+    event RelayerExit(address indexed relayer);
+
+    function logRelayerExit(address relayer) internal {
+        emit RelayerExit(relayer);
+    }
+
+    event RelayerJoin(address indexed relayer);
+
+    function logRelayerJoin(address relayer) internal {
+        emit RelayerJoin(relayer);
+    }
+
+    //////////////
+    // Exchange //
+    //////////////
+
+    event ExchangeMatch(
+        Types.ExchangeOrderAddressSet addressSet,
+        Types.ExchangeMatchResult result
+    );
+
+    function logExchangeMatch(Types.ExchangeMatchResult memory result, Types.ExchangeOrderAddressSet memory addressSet) internal {
+        emit ExchangeMatch(addressSet, result);
     }
 }

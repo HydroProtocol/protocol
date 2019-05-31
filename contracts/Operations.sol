@@ -22,6 +22,7 @@ pragma experimental ABIEncoderV2;
 import "./GlobalStore.sol";
 import "./lib/Ownable.sol";
 import "./funding/Assets.sol";
+import "./exchange/Discount.sol";
 
 /**
  * Only owner can use this contract functions
@@ -36,5 +37,17 @@ contract Operations is Ownable, GlobalStore {
         onlyOwner
     {
         Assets.addAsset(state, tokenAddress, collerateRate, oracleAddress);
+    }
+
+    /**
+     * @param newConfig A data blob representing the new discount config. Details on format above.
+     */
+    function changeDiscountConfig(
+        bytes32 newConfig
+    )
+        external
+        onlyOwner
+    {
+        Discount.changeDiscountConfig(state, newConfig);
     }
 }

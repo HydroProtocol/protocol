@@ -22,7 +22,6 @@ pragma experimental ABIEncoderV2;
 import "./GlobalStore.sol";
 import "./ExternalFunctions.sol";
 import "./Operations.sol";
-import "./Transfer.sol";
 
 // import "./Funding.sol";
 // import "./HybridExchange.sol";
@@ -35,11 +34,20 @@ import "./Transfer.sol";
  */
 contract Hydro is
     GlobalStore,
-    Transfer,
     ExternalFunctions,
     Operations
     // HybridExchange
     // Funding
 {
+
+    // constructor(address _hotTokenAddress) internal {
+    //     hotTokenAddress = _hotTokenAddress;
+    // }
+
+    //     constructor(address hotTokenAddress)
+    //     Discount(hotTokenAddress)
+    //     public
+    // {
+    // }
 
 }

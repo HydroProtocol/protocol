@@ -59,4 +59,25 @@ library Consts {
         return address(0);
     }
 
+    /////////////////////
+    // EXCHANGE CONSTS //
+    /////////////////////
+
+    function EXCHANGE_FEE_RATE_BASE() internal pure returns (uint256) {
+        return 100000;
+    }
+
+    /* Order v2 data is uncompatible with v1. This contract can only handle v2 order. */
+    function SUPPORTED_ORDER_VERSION() internal pure returns (uint256) {
+        return 2;
+    }
+
+    // The base discounted rate is 100% of the current rate, or no discount.
+    function DISCOUNT_RATE_BASE() internal pure returns (uint256) {
+        return 100;
+    }
+
+    function REBATE_RATE_BASE() internal pure returns (uint256) {
+        return 100;
+    }
 }
