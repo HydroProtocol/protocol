@@ -23,12 +23,13 @@ import "./lib/SafeMath.sol";
 import "./lib/Math.sol";
 import "./lib/Signature.sol";
 import "./lib/Relayer.sol";
+import "./lib/Errors.sol";
 
 import "./exchange/Orders.sol";
 import "./exchange/Discount.sol";
-import "./exchange/Errors.sol";
 
-contract HybridExchange is Orders, Relayer, Discount, Errors {
+
+contract HybridExchange is Orders, Relayer, Discount {
     using SafeMath for uint256;
 
     uint256 public constant FEE_RATE_BASE = 100000;
@@ -127,8 +128,8 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
         uint256[] memory baseTokenFilledAmounts,
         OrderAddressSet memory orderAddressSet
     ) public {
-        require(canMatchOrdersFrom(orderAddressSet.relayer), INVALID_SENDER);
-        require(!isMakerOnly(takerOrderParam.data), MAKER_ONLY_ORDER_CANNOT_BE_TAKER);
+        require(canMatchOrdersFrom(orderAddressSet.relayer), Errors.INVALID_SENDER());
+        require(!isMakerOnly(takerOrderParam.data), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
 
         bool isParticipantRelayer = isParticipant(orderAddressSet.relayer);
         uint256 takerFeeRate = getTakerFeeRate(takerOrderParam, isParticipantRelayer);
@@ -138,8 +139,8 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
         MatchResult[] memory results = new MatchResult[](makerOrderParams.length);
 
         for (uint256 i = 0; i < makerOrderParams.length; i++) {
-            require(!isMarketOrder(makerOrderParams[i].data), MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER);
-            require(isSell(takerOrderParam.data) != isSell(makerOrderParams[i].data), INVALID_SIDE);
+            require(!isMarketOrder(makerOrderParams[i].data), Errors.MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER());
+            require(isSell(takerOrderParam.data) != isSell(makerOrderParams[i].data), Errors.INVALID_SIDE());
             validatePrice(takerOrderParam, makerOrderParams[i]);
 
             OrderInfo memory makerOrderInfo = getOrderInfo(makerOrderParams[i], orderAddressSet);
@@ -175,7 +176,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      * @param order The order to be cancelled.
      */
     function cancelOrder(Order memory order) public {
-        require(order.trader == msg.sender, INVALID_TRADER);
+        require(order.trader == msg.sender, Errors.INVALID_TRADER());
 
         bytes32 orderHash = getOrderHash(order);
         cancelled[orderHash] = true;
@@ -196,7 +197,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
         view
         returns (OrderInfo memory orderInfo)
     {
-        require(getOrderVersion(orderParam.data) == SUPPORTED_ORDER_VERSION, ORDER_VERSION_NOT_SUPPORTED);
+        require(getOrderVersion(orderParam.data) == SUPPORTED_ORDER_VERSION, Errors.ORDER_VERSION_NOT_SUPPORTED());
 
         Order memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
         orderInfo.orderHash = getOrderHash(order);
@@ -213,10 +214,10 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
             status = uint8(OrderStatus.CANCELLED);
         }
 
-        require(status == uint8(OrderStatus.FILLABLE), ORDER_IS_NOT_FILLABLE);
+        require(status == uint8(OrderStatus.FILLABLE), Errors.ORDER_IS_NOT_FILLABLE());
         require(
             Signature.isValidSignature(orderInfo.orderHash, orderParam.trader, orderParam.signature),
-            INVALID_ORDER_SIGNATURE
+            Errors.INVALID_ORDER_SIGNATURE()
         );
 
         return orderInfo;
@@ -278,7 +279,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
     {
         uint256 left = takerOrderParam.quoteTokenAmount.mul(makerOrderParam.baseTokenAmount);
         uint256 right = takerOrderParam.baseTokenAmount.mul(makerOrderParam.quoteTokenAmount);
-        require(isSell(takerOrderParam.data) ? left <= right : left >= right, INVALID_MATCH);
+        require(isSell(takerOrderParam.data) ? left <= right : left >= right, Errors.INVALID_MATCH());
     }
 
     /**
@@ -320,14 +321,14 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
 
         if(!isMarketBuy(takerOrderParam.data)) {
             takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.baseTokenAmount, TAKER_ORDER_OVER_MATCH);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.baseTokenAmount, Errors.TAKER_ORDER_OVER_MATCH());
         } else {
             takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.quoteTokenFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteTokenAmount, TAKER_ORDER_OVER_MATCH);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteTokenAmount, Errors.TAKER_ORDER_OVER_MATCH());
         }
 
         makerOrderInfo.filledAmount = makerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
-        require(makerOrderInfo.filledAmount <= makerOrderParam.baseTokenAmount, MAKER_ORDER_OVER_MATCH);
+        require(makerOrderInfo.filledAmount <= makerOrderParam.baseTokenAmount, Errors.MAKER_ORDER_OVER_MATCH());
 
         result.maker = makerOrderParam.trader;
         result.taker = takerOrderParam.trader;
@@ -662,7 +663,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
         }
 
         if (result == 0) {
-            revert(TRANSFER_FROM_FAILED);
+            revert(Errors.TRANSFER_FROM_FAILED());
         }
     }
 
