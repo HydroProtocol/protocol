@@ -34,6 +34,22 @@ import "./lib/Relayer.sol";
  */
 contract ExternalFunctions is GlobalStore {
 
+    ////////////
+    // EIP712 //
+    ////////////
+
+    function DOMAIN_SEPARATOR() external pure returns (bytes32) {
+        return EIP712.DOMAIN_SEPARATOR();
+    }
+
+    // function DOMAIN_SEPARATOR() external view returns (bytes) {
+    //     return EIP712.DOMAIN_SEPARATOR
+    // }
+
+    // function EIP712_ORDER_TYPE() external view returns (bytes) {
+    //     return EIP712.EIP712_ORDER_TYPE
+    // }
+
     //////////////////////
     // Assets Functions //
     //////////////////////

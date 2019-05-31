@@ -1,28 +1,12 @@
 const assert = require('assert');
-const { getContracts } = require('../utils');
-const { EIP712_DOMAIN_TYPEHASH, EIP712_ORDER_TYPE, getDomainSeparator } = require('../../sdk/sdk');
+const Hydro = artifacts.require('./Hydro.sol');
+const { getDomainSeparator } = require('../../sdk/sdk');
 
-contract('Order', () => {
-    let exchange;
-
-    before(async () => {
-        const contracts = await getContracts();
-        exchange = contracts.exchange;
-    });
-
-    it('domain type hash', async () => {
-        const domainHashInContract = await exchange.methods.EIP712_DOMAIN_TYPEHASH().call();
-        assert.equal(EIP712_DOMAIN_TYPEHASH, domainHashInContract);
-    });
-
+contract('Exchange Hash', () => {
     it('domain separator', async () => {
+        const hydro = await Hydro.deployed();
         const computedDomainSeparator = getDomainSeparator();
-        const domainSeparator = await exchange.methods.DOMAIN_SEPARATOR().call();
+        const domainSeparator = await hydro.DOMAIN_SEPARATOR();
         assert.equal(computedDomainSeparator, domainSeparator);
-    });
-
-    it('order type hash', async () => {
-        const domainHashInContract = await exchange.methods.EIP712_ORDER_TYPE().call();
-        assert.equal(EIP712_ORDER_TYPE, domainHashInContract);
     });
 });
