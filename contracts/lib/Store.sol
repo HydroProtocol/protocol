@@ -22,6 +22,85 @@ pragma experimental ABIEncoderV2;
 import { Types } from "./Types.sol";
 
 library Store {
+
+    struct RelayerState {
+        /**
+        * Mapping of relayerAddress => delegateAddress
+        */
+        mapping (address => mapping (address => bool)) relayerDelegates;
+
+        /**
+        * Mapping of relayerAddress => whether relayer is opted out of the liquidity incentive system
+        */
+        mapping (address => bool) hasExited;
+    }
+
+    struct ExchangeState {
+
+        /**
+        * Calculate and return the rate at which fees will be charged for an address. The discounted
+        * rate depends on how much HOT token is owned by the user. Values returned will be a percentage
+        * used to calculate how much of the fee is paid, so a return value of 100 means there is 0
+        * discount, and a return value of 70 means a 30% rate reduction.
+        *
+        * The discountConfig is defined as such:
+        * ╔═══════════════════╤════════════════════════════════════════════╗
+        * ║                   │ length(bytes)   desc                       ║
+        * ╟───────────────────┼────────────────────────────────────────────╢
+        * ║ count             │ 1               the count of configs       ║
+        * ║ maxDiscountedRate │ 1               the max discounted rate    ║
+        * ║ config            │ 5 each                                     ║
+        * ╚═══════════════════╧════════════════════════════════════════════╝
+        *
+        * The default discount structure as defined in code would give the following result:
+        *
+        * Fee discount table
+        * ╔════════════════════╤══════════╗
+        * ║     HOT BALANCE    │ DISCOUNT ║
+        * ╠════════════════════╪══════════╣
+        * ║     0 <= x < 10000 │     0%   ║
+        * ╟────────────────────┼──────────╢
+        * ║ 10000 <= x < 20000 │    10%   ║
+        * ╟────────────────────┼──────────╢
+        * ║ 20000 <= x < 30000 │    20%   ║
+        * ╟────────────────────┼──────────╢
+        * ║ 30000 <= x < 40000 │    30%   ║
+        * ╟────────────────────┼──────────╢
+        * ║ 40000 <= x         │    40%   ║
+        * ╚════════════════════╧══════════╝
+        *
+        * Breaking down the bytes of 0x043c000027106400004e205a000075305000009c404600000000000000000000
+        *
+        * 0x  04           3c          0000271064  00004e205a  0000753050  00009c4046  0000000000  0000000000;
+        *     ~~           ~~          ~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~  ~~~~~~~~~~
+        *      |            |               |           |           |           |           |           |
+        *    count  maxDiscountedRate       1           2           3           4           5           6
+        *
+        * The first config breaks down as follows:  00002710   64
+        *                                           ~~~~~~~~   ~~
+        *                                               |      |
+        *                                              bar    rate
+        *
+        * Meaning if a user has less than 10000 (0x00002710) HOT, they will pay 100%(0x64) of the
+        * standard fee.
+        *
+        * @param user The user address to calculate a fee discount for.
+        * @return The percentage of the regular fee this user will pay.
+        */
+        bytes32 discountConfig;
+
+        /**
+        * Mapping of orderHash => amount
+        * Generally the amount will be specified in base token units, however in the case of a market
+        * buy order the amount is specified in quote token units.
+        */
+        mapping (bytes32 => uint256) filled;
+        /**
+        * Mapping of orderHash => whether order has been cancelled.
+        */
+        mapping (bytes32 => bool) cancelled;
+    }
+
     struct PoolState {
         mapping (uint16 => uint256) poolAnnualInterest;
         mapping (uint16 => uint40) poolInterestStartTime;
@@ -49,6 +128,8 @@ library Store {
 
         // count of auctions
         uint32 auctionsCount;
+
+        address hotTokenAddress;
 
         // all collateral accounts
         mapping(uint256 => Types.CollateralAccount) allCollateralAccounts;
@@ -80,6 +161,12 @@ library Store {
          */
         mapping (uint16 => mapping (address => uint)) balances;
 
+        mapping (bytes32 => bool) usedOpenMarginRequests;
+
         PoolState pool;
+
+        ExchangeState exchange;
+
+        RelayerState relayer;
     }
 }

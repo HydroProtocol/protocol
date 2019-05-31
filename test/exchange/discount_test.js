@@ -1,47 +1,50 @@
 const assert = require('assert');
-const { getContracts } = require('../utils');
+const { snapshot, revert } = require('../utils/evm');
+const Hydro = artifacts.require('./Hydro.sol');
 
 contract('Discount', accounts => {
-    it('should have discount', async () => {
-        const contracts = await getContracts();
-        const exchange = contracts.exchange;
+    let hydro;
+    let snapshotID;
 
-        // hot contract is deployed by accounts 0, so this account has many tokens.
-        let res = await exchange.methods.getDiscountedRate(accounts[0]).call();
-        assert.equal('60', res);
+    before(async () => {
+        hydro = await Hydro.deployed();
+    });
 
-        // accounts 1 has no hot token.
-        res = await exchange.methods.getDiscountedRate(accounts[1]).call();
-        assert.equal('100', res);
+    beforeEach(async () => {
+        snapshotID = await snapshot();
+    });
+
+    afterEach(async () => {
+        await revert(snapshotID);
     });
 
     it('can change discount', async () => {
-        const contracts = await getContracts();
-        const exchange = contracts.exchange;
-
-        await exchange.methods
-            .changeDiscountConfig(
-                '0x040a000027106400004e205a000075305000009c404600000000000000000000'
-            )
-            .send({ from: accounts[0] });
+        await hydro.changeDiscountConfig(
+            '0x040a000027106400004e205a000075305000009c404600000000000000000000',
+            { from: accounts[0] }
+        );
 
         // hot contract is deployed by accounts 0, so this account has many tokens.
-        const res = await exchange.methods.getDiscountedRate(accounts[0]).call();
+        const res = await hydro.getDiscountedRate(accounts[0]);
         assert.equal('10', res);
     });
 
-    it('cannot change discount without permissions', async () => {
-        const contracts = await getContracts();
-        const exchange = contracts.exchange;
+    it('should have discount', async () => {
+        let res = await hydro.getDiscountedRate(accounts[0]);
+        assert.equal(res.toString(), '60');
 
+        res = await hydro.getDiscountedRate(accounts[1]);
+        assert.equal('100', res);
+    });
+
+    it('cannot change discount without permissions', async () => {
         try {
-            await exchange.methods
-                .changeDiscountConfig(
-                    '0x040a000027106400004e205a000075305000009c404600000000000000000000'
-                )
-                .send({ from: accounts[1] });
+            await hydro.changeDiscountConfig(
+                '0x040a000027106400004e205a000075305000009c404600000000000000000000',
+                { from: accounts[1] }
+            );
         } catch (e) {
-            assert.ok(e.message.match(/revert/));
+            assert.ok(e.message.match(/NOT_OWNER/));
             return;
         }
 

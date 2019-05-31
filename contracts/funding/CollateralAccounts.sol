@@ -54,7 +54,7 @@ library CollateralAccounts {
         Store.State storage state,
         address user,
         uint16 liquidateRate
-    ) internal returns (uint256) {
+    ) internal returns (uint32) {
         uint32 id = state.collateralAccountCount++;
         Types.CollateralAccount memory account;
 
@@ -67,7 +67,14 @@ library CollateralAccounts {
     }
 
     // deposit collateral for default account
-    function depositCollateral(Store.State storage state, uint16 assetID, address user, uint256 amount) internal {
+    function depositDefaultCollateral(
+        Store.State storage state,
+        uint16 assetID,
+        address user,
+        uint256 amount
+    )
+        internal
+    {
         if (amount == 0) {
             return;
         }
@@ -78,6 +85,28 @@ library CollateralAccounts {
         account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
         Events.logDepositCollateral(assetID, user, amount);
     }
+
+        // deposit collateral for default account
+    function depositCollateral(
+        Store.State storage state,
+        uint32 accountID,
+        uint16 assetID,
+        uint256 amount
+    )
+        internal
+    {
+        if (amount == 0) {
+            return;
+        }
+
+        Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
+        state.balances[assetID][account.owner] = state.balances[assetID][account.owner].sub(amount);
+
+        account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
+        Events.logDepositCollateral(assetID, account.owner, amount);
+    }
+
+
 
     /**
      * Get a user's default collateral account asset balance

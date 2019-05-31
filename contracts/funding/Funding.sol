@@ -19,15 +19,15 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./funding/Assets.sol";
-import "./funding/Orders.sol";
-import "./funding/Loans.sol";
+import "./Assets.sol";
+import "./Orders.sol";
+import "./Loans.sol";
 
 contract Funding is Orders {
 
     mapping(address => uint256) inLiquidation;
 
-    constructor(address _proxyAddress, address _oracleAddress) public {}
+    constructor(address _oracleAddress) public {}
 
     // function matchOrders(
     //     Order memory takerOrder,

@@ -41,10 +41,10 @@ const depositAsset = async (token, user, amount) => {
     }
 };
 
-const depositCollateral = async (token, user, amount) => {
+const depositDefaultCollateral = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
     const assetID = await hydro.getAssetID(token.address);
-    await hydro.depositCollateral(assetID, amount, {
+    await hydro.depositDefaultCollateral(assetID, amount, {
         from: user
     });
 };
@@ -118,7 +118,7 @@ const createAsset = async assetConfig => {
             const user = Object.keys(initCollaterals)[j];
             const amount = initCollaterals[user];
             await depositAsset(token, user, amount);
-            await depositCollateral(token, user, amount);
+            await depositDefaultCollateral(token, user, amount);
         }
     }
 

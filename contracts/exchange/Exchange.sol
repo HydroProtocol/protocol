@@ -16,60 +16,27 @@
 
 */
 
-pragma solidity ^0.5.8;
+pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./lib/SafeMath.sol";
-import "./lib/Math.sol";
-import "./lib/Signature.sol";
-import "./lib/Relayer.sol";
+import "../lib/SafeMath.sol";
+import "../lib/Math.sol";
+import "../lib/Signature.sol";
+import "../lib/Relayer.sol";
+import "../lib/Errors.sol";
+import "../lib/Store.sol";
+import "../lib/Types.sol";
+import "../lib/Transfer.sol";
+import "../lib/Events.sol";
+import "../funding/Assets.sol";
 
-import "./exchange/Orders.sol";
-import "./exchange/Discount.sol";
-import "./exchange/Errors.sol";
+import "./Discount.sol";
 
-contract HybridExchange is Orders, Relayer, Discount, Errors {
+
+library Exchange {
     using SafeMath for uint256;
-
-    uint256 public constant FEE_RATE_BASE = 100000;
-
-    /* Order v2 data is uncompatible with v1. This contract can only handle v2 order. */
-    uint256 public constant SUPPORTED_ORDER_VERSION = 2;
-
-    /**
-     * Address of the proxy responsible for asset transfer.
-     */
-    address public proxyAddress;
-
-    /**
-     * Mapping of orderHash => amount
-     * Generally the amount will be specified in base token units, however in the case of a market
-     * buy order the amount is specified in quote token units.
-     */
-    mapping (bytes32 => uint256) public filled;
-    /**
-     * Mapping of orderHash => whether order has been cancelled.
-     */
-    mapping (bytes32 => bool) public cancelled;
-
-    event Cancel(bytes32 indexed orderHash);
-
-    /**
-     * When orders are being matched, they will always contain the exact same base token,
-     * quote token, and relayer. Since excessive call data is very expensive, we choose
-     * to create a stripped down OrderParam struct containing only data that may vary between
-     * Order objects, and separate out the common elements into a set of addresses that will
-     * be shared among all of the OrderParam items. This is meant to eliminate redundancy in
-     * the call data, reducing it's size, and hence saving gas.
-     */
-    struct OrderParam {
-        address trader;
-        uint256 baseTokenAmount;
-        uint256 quoteTokenAmount;
-        uint256 gasTokenAmount;
-        bytes32 data;
-        Signature.OrderSignature signature;
-    }
+    using ExchangeOrder for Types.ExchangeOrder;
+    using ExchangeOrderParam for Types.ExchangeOrderParam;
 
     /**
      * Calculated data about an order object.
@@ -81,87 +48,50 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
         uint256 filledAmount;
     }
 
-    struct OrderAddressSet {
-        address baseToken;
-        address quoteToken;
-        address relayer;
-    }
-
-    struct MatchResult {
-        address maker;
-        address taker;
-        address buyer;
-        uint256 makerFee;
-        uint256 makerRebate;
-        uint256 takerFee;
-        uint256 makerGasFee;
-        uint256 takerGasFee;
-        uint256 baseTokenFilledAmount;
-        uint256 quoteTokenFilledAmount;
-    }
-
-
-    event Match(
-        OrderAddressSet addressSet,
-        MatchResult result
-    );
-
-    constructor(address _proxyAddress, address hotTokenAddress)
-        Discount(hotTokenAddress)
-        public
-    {
-        proxyAddress = _proxyAddress;
-    }
-
     /**
      * Match taker order to a list of maker orders. Common addresses are passed in
-     * separately as an OrderAddressSet to reduce call size data and save gas.
-     *
-     * @param takerOrderParam A OrderParam object representing the order from the taker.
-     * @param makerOrderParams An array of OrderParam objects representing orders from a list of makers.
-     * @param orderAddressSet An object containing addresses common across each order.
+     * separately as an Types.ExchangeOrderAddressSet to reduce call size data and save gas.
      */
-    function matchOrders(
-        OrderParam memory takerOrderParam,
-        OrderParam[] memory makerOrderParams,
-        uint256[] memory baseTokenFilledAmounts,
-        OrderAddressSet memory orderAddressSet
-    ) public {
-        require(canMatchOrdersFrom(orderAddressSet.relayer), INVALID_SENDER);
-        require(!isMakerOnly(takerOrderParam.data), MAKER_ONLY_ORDER_CANNOT_BE_TAKER);
+    function exchangeMatchOrders(
+        Store.State storage state,
+        Types.ExchangeMatchParams memory params
+    ) internal {
+        require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), Errors.INVALID_SENDER());
+        require(!params.takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
 
-        bool isParticipantRelayer = isParticipant(orderAddressSet.relayer);
-        uint256 takerFeeRate = getTakerFeeRate(takerOrderParam, isParticipantRelayer);
-        OrderInfo memory takerOrderInfo = getOrderInfo(takerOrderParam, orderAddressSet);
+        bool isParticipantRelayer = Relayer.isParticipant(state, params.orderAddressSet.relayer);
+        uint256 takerFeeRate = getTakerFeeRate(state, params.takerOrderParam, isParticipantRelayer);
+        OrderInfo memory takerOrderInfo = getOrderInfo(state, params.takerOrderParam, params.orderAddressSet);
 
         // Calculate which orders match for settlement.
-        MatchResult[] memory results = new MatchResult[](makerOrderParams.length);
+        Types.ExchangeMatchResult[] memory results = new Types.ExchangeMatchResult[](params.makerOrderParams.length);
 
-        for (uint256 i = 0; i < makerOrderParams.length; i++) {
-            require(!isMarketOrder(makerOrderParams[i].data), MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER);
-            require(isSell(takerOrderParam.data) != isSell(makerOrderParams[i].data), INVALID_SIDE);
-            validatePrice(takerOrderParam, makerOrderParams[i]);
+        for (uint256 i = 0; i < params.makerOrderParams.length; i++) {
+            require(!params.makerOrderParams[i].isMarketOrder(), Errors.MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER());
+            require(params.takerOrderParam.isSell() != params.makerOrderParams[i].isSell(), Errors.INVALID_SIDE());
+            validatePrice(params.takerOrderParam, params.makerOrderParams[i]);
 
-            OrderInfo memory makerOrderInfo = getOrderInfo(makerOrderParams[i], orderAddressSet);
+            OrderInfo memory makerOrderInfo = getOrderInfo(state, params.makerOrderParams[i], params.orderAddressSet);
 
             results[i] = getMatchResult(
-                takerOrderParam,
+                state,
+                params.takerOrderParam,
                 takerOrderInfo,
-                makerOrderParams[i],
+                params.makerOrderParams[i],
                 makerOrderInfo,
-                baseTokenFilledAmounts[i],
+                params.baseTokenFilledAmounts[i],
                 takerFeeRate,
                 isParticipantRelayer
             );
 
             // Update amount filled for this maker order.
-            filled[makerOrderInfo.orderHash] = makerOrderInfo.filledAmount;
+            state.exchange.filled[makerOrderInfo.orderHash] = makerOrderInfo.filledAmount;
         }
 
         // Update amount filled for this taker order.
-        filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
+        state.exchange.filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
 
-        settleResults(results, takerOrderParam, orderAddressSet);
+        settleResults(state, results, params.takerOrderParam, params.orderAddressSet);
     }
 
     /**
@@ -174,65 +104,74 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      *
      * @param order The order to be cancelled.
      */
-    function cancelOrder(Order memory order) public {
-        require(order.trader == msg.sender, INVALID_TRADER);
+    function cancelOrder(
+        Store.State storage state,
+        Types.ExchangeOrder memory order
+    )
+        internal
+    {
+        require(order.trader == msg.sender, Errors.INVALID_TRADER());
 
-        bytes32 orderHash = getOrderHash(order);
-        cancelled[orderHash] = true;
+        bytes32 orderHash = order.getHash();
+        state.exchange.cancelled[orderHash] = true;
 
-        emit Cancel(orderHash);
+        Events.logExchangeOrderCancel(orderHash);
     }
 
     /**
      * Calculates current state of the order. Will revert transaction if this order is not
      * fillable for any reason, or if the order signature is invalid.
      *
-     * @param orderParam The OrderParam object containing Order data.
+     * @param orderParam The Types.ExchangeOrderParam object containing Order data.
      * @param orderAddressSet An object containing addresses common across each order.
      * @return An OrderInfo object containing the hash and current amount filled
      */
-    function getOrderInfo(OrderParam memory orderParam, OrderAddressSet memory orderAddressSet)
+    function getOrderInfo(
+        Store.State storage state,
+        Types.ExchangeOrderParam memory orderParam,
+        Types.ExchangeOrderAddressSet memory orderAddressSet
+    )
         internal
         view
         returns (OrderInfo memory orderInfo)
     {
-        require(getOrderVersion(orderParam.data) == SUPPORTED_ORDER_VERSION, ORDER_VERSION_NOT_SUPPORTED);
+        require(orderParam.getOrderVersion() == Consts.SUPPORTED_ORDER_VERSION(), Errors.ORDER_VERSION_NOT_SUPPORTED());
 
-        Order memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
-        orderInfo.orderHash = getOrderHash(order);
-        orderInfo.filledAmount = filled[orderInfo.orderHash];
-        uint8 status = uint8(OrderStatus.FILLABLE);
+        Types.ExchangeOrder memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
+        orderInfo.orderHash = order.getHash();
+        orderInfo.filledAmount = state.exchange.filled[orderInfo.orderHash];
+        uint8 status = uint8(Types.ExchangeOrderStatus.FILLABLE);
 
-        if (!isMarketBuy(order.data) && orderInfo.filledAmount >= order.baseTokenAmount) {
-            status = uint8(OrderStatus.FULLY_FILLED);
-        } else if (isMarketBuy(order.data) && orderInfo.filledAmount >= order.quoteTokenAmount) {
-            status = uint8(OrderStatus.FULLY_FILLED);
-        } else if (block.timestamp >= getExpiredAtFromOrderData(order.data)) {
-            status = uint8(OrderStatus.EXPIRED);
-        } else if (cancelled[orderInfo.orderHash]) {
-            status = uint8(OrderStatus.CANCELLED);
+        if (!orderParam.isMarketBuy() && orderInfo.filledAmount >= order.baseTokenAmount) {
+            status = uint8(Types.ExchangeOrderStatus.FULLY_FILLED);
+        } else if (orderParam.isMarketBuy() && orderInfo.filledAmount >= order.quoteTokenAmount) {
+            status = uint8(Types.ExchangeOrderStatus.FULLY_FILLED);
+        } else if (block.timestamp >= orderParam.getExpiredAtFromOrderData()) {
+            status = uint8(Types.ExchangeOrderStatus.EXPIRED);
+        } else if (state.exchange.cancelled[orderInfo.orderHash]) {
+            status = uint8(Types.ExchangeOrderStatus.CANCELLED);
         }
 
-        require(status == uint8(OrderStatus.FILLABLE), ORDER_IS_NOT_FILLABLE);
+        require(status == uint8(Types.ExchangeOrderStatus.FILLABLE), Errors.ORDER_IS_NOT_FILLABLE());
         require(
             Signature.isValidSignature(orderInfo.orderHash, orderParam.trader, orderParam.signature),
-            INVALID_ORDER_SIGNATURE
+            Errors.INVALID_ORDER_SIGNATURE()
         );
 
         return orderInfo;
     }
 
     /**
-     * Reconstruct an Order object from the given OrderParam and OrderAddressSet objects.
+     * Reconstruct an Order object from the given Types.ExchangeOrderParam and Types.ExchangeOrderAddressSet objects.
      *
-     * @param orderParam The OrderParam object containing the Order data.
+     * @param orderParam The Types.ExchangeOrderParam object containing the Order data.
      * @param orderAddressSet An object containing addresses common across each order.
      * @return The reconstructed Order object.
      */
-    function getOrderFromOrderParam(OrderParam memory orderParam, OrderAddressSet memory orderAddressSet)
+    function getOrderFromOrderParam(Types.ExchangeOrderParam memory orderParam, Types.ExchangeOrderAddressSet memory orderAddressSet)
         internal
         pure
-        returns (Order memory order)
+        returns (Types.ExchangeOrder memory order)
     {
         order.trader = orderParam.trader;
         order.baseTokenAmount = orderParam.baseTokenAmount;
@@ -269,34 +208,35 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      *
      * The function will revert the transaction if the orders cannot be matched.
      *
-     * @param takerOrderParam The OrderParam object representing the taker's order data
-     * @param makerOrderParam The OrderParam object representing the maker's order data
+     * @param takerOrderParam The Types.ExchangeOrderParam object representing the taker's order data
+     * @param makerOrderParam The Types.ExchangeOrderParam object representing the maker's order data
      */
-    function validatePrice(OrderParam memory takerOrderParam, OrderParam memory makerOrderParam)
+    function validatePrice(Types.ExchangeOrderParam memory takerOrderParam, Types.ExchangeOrderParam memory makerOrderParam)
         internal
         pure
     {
         uint256 left = takerOrderParam.quoteTokenAmount.mul(makerOrderParam.baseTokenAmount);
         uint256 right = takerOrderParam.baseTokenAmount.mul(makerOrderParam.quoteTokenAmount);
-        require(isSell(takerOrderParam.data) ? left <= right : left >= right, INVALID_MATCH);
+        require(takerOrderParam.isSell() ? left <= right : left >= right, Errors.INVALID_MATCH());
     }
 
     /**
-     * Construct a MatchResult from matching taker and maker order data, which will be used when
+     * Construct a Types.ExchangeMatchResult from matching taker and maker order data, which will be used when
      * settling the orders and transferring token.
      *
-     * @param takerOrderParam The OrderParam object representing the taker's order data
+     * @param takerOrderParam The Types.ExchangeOrderParam object representing the taker's order data
      * @param takerOrderInfo The OrderInfo object representing the current taker order state
-     * @param makerOrderParam The OrderParam object representing the maker's order data
+     * @param makerOrderParam The Types.ExchangeOrderParam object representing the maker's order data
      * @param makerOrderInfo The OrderInfo object representing the current maker order state
      * @param takerFeeRate The rate used to calculate the fee charged to the taker
      * @param isParticipantRelayer Whether this relayer is participating in hot discount
-     * @return MatchResult object containing data that will be used during order settlement.
+     * @return Types.ExchangeMatchResult object containing data that will be used during order settlement.
      */
     function getMatchResult(
-        OrderParam memory takerOrderParam,
+        Store.State storage state,
+        Types.ExchangeOrderParam memory takerOrderParam,
         OrderInfo memory takerOrderInfo,
-        OrderParam memory makerOrderParam,
+        Types.ExchangeOrderParam memory makerOrderParam,
         OrderInfo memory makerOrderInfo,
         uint256 baseTokenFilledAmount,
         uint256 takerFeeRate,
@@ -304,7 +244,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
     )
         internal
         view
-        returns (MatchResult memory result)
+        returns (Types.ExchangeMatchResult memory result)
     {
         result.baseTokenFilledAmount = baseTokenFilledAmount;
         result.quoteTokenFilledAmount = convertBaseToQuote(makerOrderParam, baseTokenFilledAmount);
@@ -318,27 +258,27 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
             result.makerGasFee = makerOrderParam.gasTokenAmount;
         }
 
-        if(!isMarketBuy(takerOrderParam.data)) {
+        if(!takerOrderParam.isMarketBuy()) {
             takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.baseTokenAmount, TAKER_ORDER_OVER_MATCH);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.baseTokenAmount, Errors.TAKER_ORDER_OVER_MATCH());
         } else {
             takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.quoteTokenFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteTokenAmount, TAKER_ORDER_OVER_MATCH);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteTokenAmount, Errors.TAKER_ORDER_OVER_MATCH());
         }
 
         makerOrderInfo.filledAmount = makerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
-        require(makerOrderInfo.filledAmount <= makerOrderParam.baseTokenAmount, MAKER_ORDER_OVER_MATCH);
+        require(makerOrderInfo.filledAmount <= makerOrderParam.baseTokenAmount, Errors.MAKER_ORDER_OVER_MATCH());
 
         result.maker = makerOrderParam.trader;
         result.taker = takerOrderParam.trader;
 
-        if(isSell(takerOrderParam.data)) {
+        if(takerOrderParam.isSell()) {
             result.buyer = result.maker;
         } else {
             result.buyer = result.taker;
         }
 
-        uint256 rebateRate = getMakerRebateRateFromOrderData(makerOrderParam.data);
+        uint256 rebateRate = makerOrderParam.getMakerRebateRateFromOrderData();
 
         if (rebateRate > 0) {
             // If the rebate rate is not zero, maker pays no fees.
@@ -346,43 +286,48 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
 
             // RebateRate will never exceed REBATE_RATE_BASE, so rebateFee will never exceed the fees paid by the taker.
             result.makerRebate = result.quoteTokenFilledAmount.mul(takerFeeRate).mul(rebateRate).div(
-                FEE_RATE_BASE.mul(DISCOUNT_RATE_BASE).mul(REBATE_RATE_BASE)
+                Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE()).mul(Consts.REBATE_RATE_BASE())
             );
         } else {
-            uint256 makerRawFeeRate = getAsMakerFeeRateFromOrderData(makerOrderParam.data);
+            uint256 makerRawFeeRate = makerOrderParam.getAsMakerFeeRateFromOrderData();
             result.makerRebate = 0;
 
             // maker fee will be reduced, but still >= 0
             uint256 makerFeeRate = getFinalFeeRate(
+                state,
                 makerOrderParam.trader,
                 makerRawFeeRate,
                 isParticipantRelayer
             );
 
             result.makerFee = result.quoteTokenFilledAmount.mul(makerFeeRate).div(
-                FEE_RATE_BASE.mul(DISCOUNT_RATE_BASE)
+                Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE())
             );
         }
 
         result.takerFee = result.quoteTokenFilledAmount.mul(takerFeeRate).div(
-            FEE_RATE_BASE.mul(DISCOUNT_RATE_BASE)
+            Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE())
         );
     }
 
     /**
      * Get the rate used to calculate the taker fee.
      *
-     * @param orderParam The OrderParam object representing the taker order data.
+     * @param orderParam The Types.ExchangeOrderParam object representing the taker order data.
      * @param isParticipantRelayer Whether this relayer is participating in hot discount.
      * @return The final potentially discounted rate to use for the taker fee.
      */
-    function getTakerFeeRate(OrderParam memory orderParam, bool isParticipantRelayer)
+    function getTakerFeeRate(
+        Store.State storage state,
+        Types.ExchangeOrderParam memory orderParam,
+        bool isParticipantRelayer
+    )
         internal
         view
         returns(uint256)
     {
-        uint256 rawRate = getAsTakerFeeRateFromOrderData(orderParam.data);
-        return getFinalFeeRate(orderParam.trader, rawRate, isParticipantRelayer);
+        uint256 rawRate = orderParam.getAsTakerFeeRateFromOrderData();
+        return getFinalFeeRate(state, orderParam.trader, rawRate, isParticipantRelayer);
     }
 
     /**
@@ -394,15 +339,20 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      * @param isParticipantRelayer Whether this relayer is participating in hot discount.
      * @return The final potentially discounted rate.
      */
-    function getFinalFeeRate(address trader, uint256 rate, bool isParticipantRelayer)
+    function getFinalFeeRate(
+        Store.State storage state,
+        address trader,
+        uint256 rate,
+        bool isParticipantRelayer
+    )
         internal
         view
         returns(uint256)
     {
         if (isParticipantRelayer) {
-            return rate.mul(getDiscountedRate(trader));
+            return rate.mul(Discount.getDiscountedRate(state, trader));
         } else {
-            return rate.mul(DISCOUNT_RATE_BASE);
+            return rate.mul(Consts.DISCOUNT_RATE_BASE());
         }
     }
 
@@ -410,11 +360,14 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      * Take an amount and convert it from base token units to quote token units based on the price
      * in the order param.
      *
-     * @param orderParam The OrderParam object containing the Order data.
+     * @param orderParam The Types.ExchangeOrderParam object containing the Order data.
      * @param amount An amount of base token.
      * @return The converted amount in quote token units.
      */
-    function convertBaseToQuote(OrderParam memory orderParam, uint256 amount)
+    function convertBaseToQuote(
+        Types.ExchangeOrderParam memory orderParam,
+        uint256 amount
+    )
         internal
         pure
         returns (uint256)
@@ -430,11 +383,11 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      * Take an amount and convert it from quote token units to base token units based on the price
      * in the order param.
      *
-     * @param orderParam The OrderParam object containing the Order data.
+     * @param orderParam The Types.ExchangeOrderParam object containing the Order data.
      * @param amount An amount of quote token.
      * @return The converted amount in base token units.
      */
-    function convertQuoteToBase(OrderParam memory orderParam, uint256 amount)
+    function convertQuoteToBase(Types.ExchangeOrderParam memory orderParam, uint256 amount)
         internal
         pure
         returns (uint256)
@@ -450,26 +403,27 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      * Take a list of matches and settle them with the taker order, transferring tokens all tokens
      * and paying all fees necessary to complete the transaction.
      *
-     * @param results List of MatchResult objects representing each individual trade to settle.
-     * @param takerOrderParam The OrderParam object representing the taker order data.
+     * @param results List of Types.ExchangeMatchResult objects representing each individual trade to settle.
+     * @param takerOrderParam The Types.ExchangeOrderParam object representing the taker order data.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleResults(
-        MatchResult[] memory results,
-        OrderParam memory takerOrderParam,
-        OrderAddressSet memory orderAddressSet
+        Store.State storage state,
+        Types.ExchangeMatchResult[] memory results,
+        Types.ExchangeOrderParam memory takerOrderParam,
+        Types.ExchangeOrderAddressSet memory orderAddressSet
     )
         internal
     {
-        if (isSell(takerOrderParam.data)) {
-            settleTakerSell(results, orderAddressSet);
+        if (takerOrderParam.isSell()) {
+            settleTakerSell(state, results, orderAddressSet);
         } else {
-            settleTakerBuy(results, orderAddressSet);
+            settleTakerBuy(state, results, orderAddressSet);
         }
     }
 
     /**
-     * Settles a sell order given a list of MatchResult objects. A naive approach would be to take
+     * Settles a sell order given a list of Types.ExchangeMatchResult objects. A naive approach would be to take
      * each result, have the taker and maker transfer the appropriate tokens, and then have them
      * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
      * transactions. Additionally the taker would have to have an allowance set for the quote token
@@ -490,14 +444,21 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      * transactions. In this scenario, with n makers there will be 2n + 1 transactions, which will
      * be a significant gas savings over the original method.
      *
-     * @param results A list of MatchResult objects representing each individual trade to settle.
+     * @param results A list of Types.ExchangeMatchResult objects representing each individual trade to settle.
      * @param orderAddressSet An object containing addresses common across each order.
      */
-    function settleTakerSell(MatchResult[] memory results, OrderAddressSet memory orderAddressSet) internal {
+    function settleTakerSell(
+        Store.State storage state,
+        Types.ExchangeMatchResult[] memory results,
+        Types.ExchangeOrderAddressSet memory orderAddressSet
+    )
+        internal
+    {
         uint256 totalTakerQuoteTokenFilledAmount = 0;
 
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
+                state,
                 orderAddressSet.baseToken,
                 results[i].taker,
                 results[i].maker,
@@ -505,6 +466,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
             );
 
             transferFrom(
+                state,
                 orderAddressSet.quoteToken,
                 results[i].maker,
                 orderAddressSet.relayer,
@@ -518,10 +480,11 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
                 results[i].quoteTokenFilledAmount.sub(results[i].takerFee)
             );
 
-            emitMatchEvent(results[i], orderAddressSet);
+            Events.logExchangeMatch(results[i], orderAddressSet);
         }
 
         transferFrom(
+            state,
             orderAddressSet.quoteToken,
             orderAddressSet.relayer,
             results[0].taker,
@@ -530,7 +493,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
     }
 
     /**
-     * Settles a buy order given a list of MatchResult objects. A naive approach would be to take
+     * Settles a buy order given a list of Types.ExchangeMatchResult objects. A naive approach would be to take
      * each result, have the taker and maker transfer the appropriate tokens, and then have them
      * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
      * transactions. Additionally each maker would have to have an allowance set for the quote token
@@ -551,14 +514,21 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
      * this scenario, with n makers there will be 2n + 1 transactions, which will be a significant
      * gas savings over the original method.
      *
-     * @param results A list of MatchResult objects representing each individual trade to settle.
+     * @param results A list of Types.ExchangeMatchResult objects representing each individual trade to settle.
      * @param orderAddressSet An object containing addresses common across each order.
      */
-    function settleTakerBuy(MatchResult[] memory results, OrderAddressSet memory orderAddressSet) internal {
+    function settleTakerBuy(
+        Store.State storage state,
+        Types.ExchangeMatchResult[] memory results,
+        Types.ExchangeOrderAddressSet memory orderAddressSet
+    )
+        internal
+    {
         uint256 totalFee = 0;
 
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
+                state,
                 orderAddressSet.baseToken,
                 results[i].maker,
                 results[i].taker,
@@ -566,6 +536,7 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
             );
 
             transferFrom(
+                state,
                 orderAddressSet.quoteToken,
                 results[i].taker,
                 results[i].maker,
@@ -582,10 +553,11 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
                 add(results[i].takerGasFee).
                 sub(results[i].makerRebate);
 
-            emitMatchEvent(results[i], orderAddressSet);
+            Events.logExchangeMatch(results[i], orderAddressSet);
         }
 
         transferFrom(
+            state,
             orderAddressSet.quoteToken,
             results[0].taker,
             orderAddressSet.relayer,
@@ -594,81 +566,22 @@ contract HybridExchange is Orders, Relayer, Discount, Errors {
     }
 
     /**
-     * A helper function to call the transferFrom function in Proxy.sol with solidity assembly.
-     * Copying the data in order to make an external call can be expensive, but performing the
-     * operations in assembly seems to reduce gas cost.
-     *
-     * The function will revert the transaction if the transfer fails.
-     *
-     * @param token The address of the ERC20 token we will be transferring, 0 for ETH.
-     * @param from The address we will be transferring from.
-     * @param to The address we will be transferring to.
-     * @param value The amount of token we will be transferring.
+     * @param token  The address of the ERC20 token we will be transferring, 0 for ETH.
+     * @param from   The address we will be transferring from.
+     * @param to     The address we will be transferring to.
+     * @param amount The amount of token we will be transferring.
      */
-    function transferFrom(address token, address from, address to, uint256 value) internal {
-        if (value == 0) {
-            return;
-        }
-
-        address proxy = proxyAddress;
-        uint256 result;
-
-        /**
-         * We construct calldata for the `Proxy.transferFrom` ABI.
-         * The layout of this calldata is in the table below.
-         *
-         * ╔════════╤════════╤════════╤═══════════════════╗
-         * ║ Area   │ Offset │ Length │ Contents          ║
-         * ╟────────┼────────┼────────┼───────────────────╢
-         * ║ Header │ 0      │ 4      │ function selector ║
-         * ║ Params │ 4      │ 32     │ token address     ║
-         * ║        │ 36     │ 32     │ from address      ║
-         * ║        │ 68     │ 32     │ to address        ║
-         * ║        │ 100    │ 32     │ amount of token   ║
-         * ╚════════╧════════╧════════╧═══════════════════╝
-         */
-        assembly {
-            // Keep these so we can restore stack memory upon completion
-            let tmp1 := mload(0)
-            let tmp2 := mload(4)
-            let tmp3 := mload(36)
-            let tmp4 := mload(68)
-            let tmp5 := mload(100)
-
-            // keccak256('transferFrom(address,address,address,uint256)') bitmasked to 4 bytes
-            mstore(0, 0x15dacbea00000000000000000000000000000000000000000000000000000000)
-            mstore(4, token)
-            mstore(36, from)
-            mstore(68, to)
-            mstore(100, value)
-
-            // Call Proxy contract transferFrom function using constructed calldata
-            result := call(
-                gas,   // Forward all gas
-                proxy, // Proxy.sol deployment address
-                0,     // Don't send any ETH
-                0,     // Pointer to start of calldata
-                132,   // Length of calldata
-                0,     // Output location
-                0      // We don't expect any output
-            )
-
-            // Restore stack memory
-            mstore(0, tmp1)
-            mstore(4, tmp2)
-            mstore(36, tmp3)
-            mstore(68, tmp4)
-            mstore(100, tmp5)
-        }
-
-        if (result == 0) {
-            revert(TRANSFER_FROM_FAILED);
-        }
-    }
-
-    function emitMatchEvent(MatchResult memory result, OrderAddressSet memory orderAddressSet) internal {
-        emit Match(
-            orderAddressSet, result
-        );
+    function transferFrom(
+        Store.State storage state,
+        address token,
+        address from,
+        address to,
+        uint256 amount
+    )
+        internal
+    {
+        // TODO: allow no assetID token transfer
+        uint16 assetID = Assets.getAssetIDByAddress(state, token);
+        Transfer.transferFrom(state, assetID, from, to, amount);
     }
 }

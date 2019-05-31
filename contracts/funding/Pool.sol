@@ -65,7 +65,7 @@ library Pool {
     }
 
     // borrow and repay
-    function borrowFromPoolInternal(
+    function borrow(
         Store.State storage state,
         uint32 collateralAccountId,
         uint16 assetID,
@@ -106,7 +106,6 @@ library Pool {
         state.pool.poolAnnualInterest[assetID] += amount.mul(interestRate).div(Consts.INTEREST_RATE_BASE());
 
         return loan.id;
-
     }
 
     function repay(Store.State storage state, uint32 loanId, uint256 amount) internal {

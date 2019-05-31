@@ -19,15 +19,36 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./exchange/Exchange.sol";
+
 import "./funding/Assets.sol";
 import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
+import "./lib/Transfer.sol";
+import "./lib/Relayer.sol";
+
 /**
  * External Functions
  */
 contract ExternalFunctions is GlobalStore {
+
+    ////////////
+    // EIP712 //
+    ////////////
+
+    function DOMAIN_SEPARATOR() external pure returns (bytes32) {
+        return EIP712.DOMAIN_SEPARATOR();
+    }
+
+    // function DOMAIN_SEPARATOR() external view returns (bytes) {
+    //     return EIP712.DOMAIN_SEPARATOR
+    // }
+
+    // function EIP712_ORDER_TYPE() external view returns (bytes) {
+    //     return EIP712.EIP712_ORDER_TYPE
+    // }
 
     //////////////////////
     // Assets Functions //
@@ -103,13 +124,13 @@ contract ExternalFunctions is GlobalStore {
         return CollateralAccounts.getCollateralAccountDetails(state, accountID);
     }
 
-    function depositCollateral(
+    function depositDefaultCollateral(
         uint16 assetID,
         uint256 amount
     )
         external
     {
-        CollateralAccounts.depositCollateral(state, assetID, msg.sender, amount);
+        CollateralAccounts.depositDefaultCollateral(state, assetID, msg.sender, amount);
     }
 
     ////////////////////
@@ -210,7 +231,8 @@ contract ExternalFunctions is GlobalStore {
         returns(uint32 loanId)
     {
         require(state.collateralAccountCount > collateralAccountId, "COLLATERAL_ACCOUNT_NOT_EXIST");
-        loanId = Pool.borrowFromPoolInternal(
+
+        loanId = Pool.borrow(
             state,
             collateralAccountId,
             assetID,
@@ -218,7 +240,83 @@ contract ExternalFunctions is GlobalStore {
             maxInterestRate,
             minExpiredAt
         );
+
         require(!CollateralAccounts.isCollateralAccountLiquidable(state, collateralAccountId), "COLLATERAL_NOT_ENOUGH");
         return loanId;
+    }
+
+    ///////////////////////
+    // Relayer Functions //
+    ///////////////////////
+
+    function approveDelegate(address delegate) external {
+        Relayer.approveDelegate(state, delegate);
+    }
+
+    function revokeDelegate(address delegate) external {
+        Relayer.revokeDelegate(state, delegate);
+    }
+
+    function joinIncentiveSystem() external {
+        Relayer.joinIncentiveSystem(state);
+    }
+
+    function exitIncentiveSystem() external {
+        Relayer.exitIncentiveSystem(state);
+    }
+
+    function canMatchOrdersFrom(address relayer) external view returns (bool) {
+        return Relayer.canMatchOrdersFrom(state, relayer);
+    }
+
+    function isParticipant(address relayer) external view returns (bool) {
+        return Relayer.isParticipant(state, relayer);
+    }
+
+
+    ////////////////////////
+    // Transfer Functions //
+    ////////////////////////
+
+    function deposit(uint16 assetID, uint256 amount) external payable {
+        Transfer.deposit(state, assetID, amount);
+    }
+
+    function withdraw(uint16 assetID, uint256 amount) external {
+        Transfer.withdraw(state, assetID, amount);
+    }
+
+    function balanceOf(uint16 assetID, address user) external view returns (uint256) {
+        return Transfer.balanceOf(state, assetID, user);
+    }
+
+    /** @dev fallback function to allow deposit ether into this contract */
+    function () external payable {
+        // deposit ${msg.value} ether for ${msg.sender}
+        Transfer.deposit(state, Assets.getAssetIDByAddress(state, Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
+    }
+
+    //////////////
+    // Exchange //
+    //////////////
+
+    function cancelOrder(Types.ExchangeOrder calldata order) external {
+        Exchange.cancelOrder(state, order);
+    }
+
+    function isOrderCancelled(bytes32 orderHash) external view returns(bool) {
+        return state.exchange.cancelled[orderHash];
+    }
+
+    function exchangeMatchOrders(Types.ExchangeMatchParams memory params) public {
+        Exchange.exchangeMatchOrders(state, params);
+    }
+
+    function getDiscountedRate(address user) external view returns (uint256) {
+        return Discount.getDiscountedRate(state, user);
+    }
+
+    function getHydroTokenAddress() external view returns (address) {
+        return state.hotTokenAddress;
     }
 }

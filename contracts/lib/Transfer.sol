@@ -19,24 +19,27 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./GlobalStore.sol";
+import "./Events.sol";
+import "./SafeMath.sol";
+import "./SafeERC20.sol";
+import "./Consts.sol";
+import "./Store.sol";
 
-import "./lib/Events.sol";
-import "./lib/SafeMath.sol";
-import "./lib/SafeERC20.sol";
-import "./lib/Consts.sol";
-
-import "./funding/Assets.sol";
-
-contract Transfer is GlobalStore {
+library Transfer {
     using SafeMath for uint256;
 
     /** @dev deposit asset
       * @param assetID ID of asset to transfer.
       * @param amount  Amount of asset to transfer.
       */
-    function deposit(uint16 assetID, uint256 amount) public payable {
-        depositFor(assetID, msg.sender, msg.sender, amount);
+    function deposit(
+        Store.State storage state,
+        uint16 assetID,
+        uint256 amount
+    )
+        internal
+    {
+        depositFor(state, assetID, msg.sender, msg.sender, amount);
     }
 
     /** @dev Transfer asset into current contract
@@ -45,7 +48,15 @@ contract Transfer is GlobalStore {
       * @param to      Address of the receiver.
       * @param amount  Amount of asset to transfer.
       */
-    function depositFor(uint16 assetID, address from, address to, uint256 amount) public payable {
+    function depositFor(
+        Store.State storage state,
+        uint16 assetID,
+        address from,
+        address to,
+        uint256 amount
+    )
+        internal
+    {
         if (amount == 0) {
             return;
         }
@@ -66,8 +77,12 @@ contract Transfer is GlobalStore {
       * @param asset   Address of asset to transfer.
       * @param amount  Amount of asset to transfer.
       */
-    function withdraw(uint16 asset, uint256 amount) public {
-        withdrawTo(asset, msg.sender, msg.sender, amount);
+    function withdraw(
+        Store.State storage state,
+        uint16 asset,
+        uint256 amount
+    ) internal {
+        withdrawTo(state, asset, msg.sender, msg.sender, amount);
     }
 
     /** @dev Transfer asset out of current contract
@@ -76,7 +91,15 @@ contract Transfer is GlobalStore {
       * @param to      Address of the receiver.
       * @param amount  Amount of asset to transfer.
       */
-    function withdrawTo(uint16 assetID, address from, address payable to, uint256 amount) public {
+    function withdrawTo(
+        Store.State storage state,
+        uint16 assetID,
+        address from,
+        address payable to,
+        uint256 amount
+    )
+        internal
+    {
         if (amount == 0) {
             return;
         }
@@ -96,17 +119,19 @@ contract Transfer is GlobalStore {
         Events.logWithdraw(assetID, from, to, amount);
     }
 
-    /** @dev fallback function to allow deposit ether into this contract */
-    function () external payable {
-        // deposit ${msg.value} ether for ${msg.sender}
-        deposit(Assets.getAssetIDByAddress(state, Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
-    }
-
     /** @dev Get a user's asset balance
       * @param assetID  ID of asset
       * @param user     Address of user
       */
-    function balanceOf(uint16 assetID, address user) public view returns (uint256) {
+    function balanceOf(
+        Store.State storage state,
+        uint16 assetID,
+        address user
+    )
+        internal
+        view
+        returns (uint256)
+    {
         return state.balances[assetID][user];
     }
 
@@ -116,8 +141,14 @@ contract Transfer is GlobalStore {
       * @param to      Address to transfer asset to.
       * @param amount  Amount of asset to transfer.
       */
-    function transferFrom(uint16 assetID, address from, address to, uint256 amount)
-      internal
+    function transferFrom(
+        Store.State storage state,
+        uint16 assetID,
+        address from,
+        address to,
+        uint256 amount
+    )
+        internal
     {
         // do nothing when amount is zero
         if (amount == 0) {

@@ -16,7 +16,10 @@
 
 */
 
-pragma solidity ^0.5.8;
+pragma solidity 0.5.8;
+
+import "./Store.sol";
+import "./Events.sol";
 
 /**
  * @title Relayer provides two distinct features for relayers.
@@ -28,53 +31,57 @@ pragma solidity ^0.5.8;
  * The delegate scheme allows additional possibilities for smart contract interaction.
  * on behalf of the relayer.
  */
-contract Relayer {
-
-    /**
-     * Mapping of relayerAddress => delegateAddress
-     */
-    mapping (address => mapping (address => bool)) public relayerDelegates;
-
-    /**
-     * Mapping of relayerAddress => whether relayer is opted out of the liquidity incentive system
-     */
-    mapping (address => bool) hasExited;
-
-    event RelayerApproveDelegate(address indexed relayer, address indexed delegate);
-    event RelayerRevokeDelegate(address indexed relayer, address indexed delegate);
-
-    event RelayerExit(address indexed relayer);
-    event RelayerJoin(address indexed relayer);
-
+library Relayer {
     /**
      * Approve an address to match orders on behalf of msg.sender
      */
-    function approveDelegate(address delegate) external {
-        relayerDelegates[msg.sender][delegate] = true;
-        emit RelayerApproveDelegate(msg.sender, delegate);
+    function approveDelegate(
+        Store.State storage state,
+        address delegate
+    )
+        internal
+    {
+        state.relayer.relayerDelegates[msg.sender][delegate] = true;
+        Events.logRelayerApproveDelegate(msg.sender, delegate);
     }
 
     /**
      * Revoke an existing delegate
      */
-    function revokeDelegate(address delegate) external {
-        relayerDelegates[msg.sender][delegate] = false;
-        emit RelayerRevokeDelegate(msg.sender, delegate);
+    function revokeDelegate(
+        Store.State storage state,
+        address delegate
+    )
+        internal
+    {
+        state.relayer.relayerDelegates[msg.sender][delegate] = false;
+        Events.logRelayerRevokeDelegate(msg.sender, delegate);
     }
 
     /**
      * @return true if msg.sender is allowed to match orders which belong to relayer
      */
-    function canMatchOrdersFrom(address relayer) public view returns(bool) {
-        return msg.sender == relayer || relayerDelegates[relayer][msg.sender] == true;
+    function canMatchOrdersFrom(
+        Store.State storage state,
+        address relayer
+    )
+        internal
+        view
+        returns(bool)
+    {
+        return msg.sender == relayer || state.relayer.relayerDelegates[relayer][msg.sender] == true;
     }
 
     /**
      * Join the Hydro incentive system.
      */
-    function joinIncentiveSystem() external {
-        delete hasExited[msg.sender];
-        emit RelayerJoin(msg.sender);
+    function joinIncentiveSystem(
+        Store.State storage state
+    )
+        internal
+    {
+        delete state.relayer.hasExited[msg.sender];
+        Events.logRelayerJoin(msg.sender);
     }
 
     /**
@@ -82,15 +89,26 @@ contract Relayer {
      * For relayers that choose to opt-out, the Hydro Protocol
      * effective becomes a tokenless protocol.
      */
-    function exitIncentiveSystem() external {
-        hasExited[msg.sender] = true;
-        emit RelayerExit(msg.sender);
+    function exitIncentiveSystem(
+        Store.State storage state
+    )
+        internal
+    {
+        state.relayer.hasExited[msg.sender] = true;
+        Events.logRelayerExit(msg.sender);
     }
 
     /**
      * @return true if relayer is participating in the Hydro incentive system.
      */
-    function isParticipant(address relayer) public view returns(bool) {
-        return !hasExited[relayer];
+    function isParticipant(
+        Store.State storage state,
+        address relayer
+    )
+        internal
+        view
+        returns(bool)
+    {
+        return !state.relayer.hasExited[relayer];
     }
 }
