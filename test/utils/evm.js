@@ -1,9 +1,9 @@
-const snapshot = () =>
+const jsonRpcCall = (method, params = []) =>
     new Promise((resolve, reject) => {
         web3.currentProvider.send(
             {
-                method: 'evm_snapshot',
-                params: [],
+                method,
+                params,
                 jsonrpc: '2.0',
                 id: new Date().getTime()
             },
@@ -16,6 +16,9 @@ const snapshot = () =>
             }
         );
     });
+
+const snapshot = () => jsonRpcCall('evm_snapshot');
+const revert = snapshotID => jsonRpcCall('evm_revert', [snapshotID]);
 
 const mineEmptyBlock = async count => {
     const mine = () =>
@@ -65,26 +68,8 @@ const updateTimestamp = timestamp =>
         );
     });
 
-const recover = snapshotID =>
-    new Promise((resolve, reject) => {
-        web3.currentProvider.send(
-            {
-                method: 'evm_revert',
-                params: [snapshotID],
-                jsonrpc: '2.0',
-                id: new Date().getTime()
-            },
-            (error, result) => {
-                if (error) {
-                    reject(error);
-                }
-
-                resolve(result.result);
-            }
-        );
-    });
-
-export const evm = {
-    recover,
+module.exports = {
+    jsonRpcCall,
+    revert,
     snapshot
 };

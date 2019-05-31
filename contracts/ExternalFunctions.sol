@@ -179,7 +179,15 @@ contract ExternalFunctions is GlobalStore {
         Exchange.cancelOrder(state, order);
     }
 
-    function exchangeMatchOrders(Types.ExchangeMatchParams calldata params) external {
+    function exchangeMatchOrders(Types.ExchangeMatchParams memory params) public {
         Exchange.exchangeMatchOrders(state, params);
+    }
+
+    function getDiscountedRate(address user) external view returns (uint256) {
+        return Discount.getDiscountedRate(state, user);
+    }
+
+    function getHydroTokenAddress() external view returns (address) {
+        return state.hotTokenAddress;
     }
 }

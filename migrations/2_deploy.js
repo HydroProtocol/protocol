@@ -1,7 +1,18 @@
 const Hydro = artifacts.require('Hydro');
 const Oracle = artifacts.require('Oracle');
+const HydroToken = artifacts.require('HydroToken');
 
-module.exports = async deployer => {
-    await deployer.deploy(Hydro);
+module.exports = async (deployer, network) => {
+    let hotAddress;
+
+    if (network == 'production') {
+        hotAddress = '0x9af839687f6c94542ac5ece2e317daae355493a1';
+    } else {
+        await deployer.deploy(HydroToken);
+        hot = await HydroToken.deployed();
+        hotAddress = hot.address;
+    }
+
+    await deployer.deploy(Hydro, hotAddress);
     await deployer.deploy(Oracle);
 };

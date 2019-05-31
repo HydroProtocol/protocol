@@ -36,7 +36,6 @@ library Store {
     }
 
     struct ExchangeState {
-        address hotTokenAddress;
 
         /**
         * Calculate and return the rate at which fees will be charged for an address. The discounted
@@ -90,8 +89,6 @@ library Store {
         */
         bytes32 discountConfig;
 
-        // bytes32 discountConfig = 0x043c000027106400004e205a000075305000009c404600000000000000000000;// TODO
-
         /**
         * Mapping of orderHash => amount
         * Generally the amount will be specified in base token units, however in the case of a market
@@ -131,6 +128,8 @@ library Store {
 
         // count of auctions
         uint32 auctionsCount;
+
+        address hotTokenAddress;
 
         // all collateral accounts
         mapping(uint256 => Types.CollateralAccount) allCollateralAccounts;
