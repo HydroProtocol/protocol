@@ -1,16 +1,14 @@
 const Oracle = artifacts.require('./Oracle.sol');
-const Hydro = artifacts.require('./Hydro.sol');
-const HybridExchange = artifacts.require('./HybridExchange.sol');
-const TestToken = artifacts.require('./helper/TestToken.sol');
+const HydroToken = artifacts.require('./HydroToken.sol');
 const Funding = artifacts.require('./Funding.sol');
 const BigNumber = require('bignumber.js');
 
 BigNumber.config({ EXPONENTIAL_AT: 1000 });
 
-const weis = new BigNumber('1000000000000000000');
+const wei = new BigNumber('1000000000000000000');
 
 const toWei = x => {
-    return new BigNumber(x).times(weis).toString();
+    return new BigNumber(x).times(wei).toString();
 };
 
 const newContract = async (contract, ...args) => {
@@ -24,36 +22,17 @@ const newContractAt = (contract, address) => {
     return instance;
 };
 
-const setHotAmount = async (hotContract, user, amount) => {
-    const balance = await hotContract.methods.balanceOf(user).call();
+const setHotAmount = async (user, amount) => {
+    const hot = await HydroToken.deployed();
+    const balance = await hot.balanceOf(user);
     const accounts = await web3.eth.getAccounts();
     const diff = new BigNumber(amount).minus(balance);
 
     if (diff.gt(0)) {
-        await hotContract.methods.transfer(user, diff.toString()).send({ from: accounts[0] });
+        await hot.transfer(user, diff.toString(), { from: accounts[0] });
     } else if (diff.lt(0)) {
-        await hotContract.methods.transfer(accounts[0], diff.abs().toString()).send({ from: user });
+        await hot.transfer(accounts[0], diff.abs().toString(), { from: user });
     }
-};
-
-const getExchangeContracts = async () => {
-    const accounts = await web3.eth.getAccounts();
-    const proxy = await newContract(Proxy);
-    // console.log('Proxy address', web3.utils.toChecksumAddress(proxy._address));
-
-    const hot = await newContract(TestToken, 'HydroToken', 'Hot', 18);
-    // console.log('Hydro Token address', web3.utils.toChecksumAddress(hot._address));
-
-    const exchange = await newContract(HybridExchange, proxy._address, hot._address);
-    // console.log('Dxchange address', web3.utils.toChecksumAddress(exchange._address));
-
-    await proxy.methods.addAddress(exchange._address).send({ from: accounts[0] });
-
-    return {
-        hot,
-        proxy,
-        exchange
-    };
 };
 
 const getFundingContracts = async () => {
@@ -80,9 +59,9 @@ const clone = x => JSON.parse(JSON.stringify(x));
 module.exports = {
     newContract,
     newContractAt,
-    getContracts: getExchangeContracts,
     getFundingContracts,
     clone,
     setHotAmount,
-    toWei
+    toWei,
+    wei
 };

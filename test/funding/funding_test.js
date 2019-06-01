@@ -1,16 +1,10 @@
 const assert = require('assert');
-const { getFundingContracts, newContract } = require('../utils');
+const { getFundingContracts, newContract, toWei, wei } = require('../utils');
 const { generateFundingOrderData, getFundingOrderHash } = require('../../sdk/sdk');
 
 const BigNumber = require('bignumber.js');
 const TestToken = artifacts.require('./helper/TestToken.sol');
 // const { generateOrderData, getOrderHash } = require('../../sdk/sdk');
-
-const weis = new BigNumber('1000000000000000000');
-
-const toWei = x => {
-    return new BigNumber(x).times(weis).toString();
-};
 
 contract('Funding', accounts => {
     let funding, proxy, oracle;

@@ -1,15 +1,14 @@
 const assert = require('assert');
-const TestToken = artifacts.require('./helper/TestToken.sol');
+const Hydro = artifacts.require('./Hydro.sol');
+const HydroToken = artifacts.require('./HydroToken.sol');
 const BigNumber = require('bignumber.js');
-const { newContract, setHotAmount, getContracts, clone } = require('../utils');
+
+const { setHotAmount, clone, toWei, wei } = require('../utils');
+const { revert, snapshot } = require('../utils/evm');
+const { createAsset } = require('../utils/assets');
+
 const { generateOrderData, isValidSignature, getOrderHash } = require('../../sdk/sdk');
 const { fromRpcSig } = require('ethereumjs-util');
-
-const weis = new BigNumber('1000000000000000000');
-
-const toWei = x => {
-    return new BigNumber(x).times(weis).toString();
-};
 
 const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => {
     a = new BigNumber(a);
@@ -32,16 +31,21 @@ const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => 
     }
 };
 
-const infinity = '999999999999999999999999999999999999999999';
-
 contract('Match', async accounts => {
-    let exchange, proxy, hot;
+    let hydro, hot;
+    let snapshotID;
+
+    before(async () => {
+        hot = await HydroToken.deployed();
+        hydro = await Hydro.deployed();
+    });
 
     beforeEach(async () => {
-        const contracts = await getContracts();
-        exchange = contracts.exchange;
-        proxy = contracts.proxy;
-        hot = contracts.hot;
+        snapshotID = await snapshot();
+    });
+
+    afterEach(async () => {
+        await revert(snapshotID);
     });
 
     const relayer = accounts[9];
@@ -50,7 +54,22 @@ contract('Match', async accounts => {
     const u2 = accounts[5];
     const u3 = accounts[6];
 
-    const getOrderSignature = async (order, exchange, baseToken, quoteToken) => {
+    const users = [relayer, u1, u2, u3];
+
+    const getUserKey = u => {
+        switch (u) {
+            case u1:
+                return 'u1';
+            case u2:
+                return 'u2';
+            case [u3]:
+                return 'u3';
+            case relayer:
+                return 'relayer';
+        }
+    };
+
+    const getOrderSignature = async (order, baseToken, quoteToken) => {
         const copyedOrder = JSON.parse(JSON.stringify(order));
         copyedOrder.baseToken = baseToken;
         copyedOrder.quoteToken = quoteToken;
@@ -68,64 +87,24 @@ contract('Match', async accounts => {
         order.orderHash = orderHash;
     };
 
-    const initToken = async (tokenConfig, users) => {
-        const { initBalances } = tokenConfig;
+    const getTokenUsersBalances = async tokens => {
+        const balances = {};
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            const symbol = token.symbol;
+            const assetID = await hydro.getAssetIDByAddress(token.address);
 
-        let token;
+            for (let j = 0; j < Object.keys(users).length; j++) {
+                const user = users[j];
+                const balance = await hydro.balanceOf(assetID.toNumber(), user);
 
-        if (tokenConfig.symbol == 'ETH') {
-            token = {
-                _address: '0x0000000000000000000000000000000000000000',
-                symbol: 'ETH'
-            };
-        } else {
-            token = await newContract(
-                TestToken,
-                tokenConfig.name,
-                tokenConfig.symbol,
-                tokenConfig.decimals,
-                {
-                    from: relayer
-                }
-            );
-            token.symbol = tokenConfig.symbol;
-        }
-
-        for (let j = 0; j < Object.keys(initBalances).length; j++) {
-            const userKey = Object.keys(initBalances)[j];
-            const user = users[userKey];
-            const amount = initBalances[userKey];
-
-            if (tokenConfig.symbol == 'ETH') {
-                await proxy.methods.depositEther().send({ from: user, value: amount });
-            } else {
-                await token.methods.transfer(user, amount).send({ from: relayer });
-                await token.methods.approve(proxy._address, infinity).send({ from: user });
+                balances[`${symbol}-${user}`] = balance;
             }
         }
-
-        return token;
+        return balances;
     };
 
-    const getTokenUsersBalances = async (token, users, balances) => {
-        const symbol = token.symbol;
-
-        for (let i = 0; i < Object.keys(users).length; i++) {
-            const userKey = Object.keys(users)[i];
-            const user = users[userKey];
-            let balance;
-
-            if (symbol == 'ETH') {
-                balance = await proxy.methods.balances(user).call();
-            } else {
-                balance = await token.methods.balanceOf(user).call();
-            }
-
-            balances[`${symbol}-${userKey}`] = balance;
-        }
-    };
-
-    const buildOrder = async (orderParam, exchange, baseTokenAddress, quoteTokenAddress) => {
+    const buildOrder = async (orderParam, baseTokenAddress, quoteTokenAddress) => {
         const order = {
             trader: orderParam.trader,
             relayer: orderParam.relayer,
@@ -144,14 +123,13 @@ contract('Match', async accounts => {
             gasTokenAmount: orderParam.gasTokenAmount
         };
 
-        await getOrderSignature(order, exchange, baseTokenAddress, quoteTokenAddress);
+        await getOrderSignature(order, baseTokenAddress, quoteTokenAddress);
 
         return order;
     };
 
     const matchTest = async config => {
         const {
-            users,
             baseTokenConfig,
             quoteTokenConfig,
             takerOrderParam,
@@ -162,60 +140,48 @@ contract('Match', async accounts => {
             assertFilled
         } = config;
 
-        const balancesBeforeMatch = {};
+        const baseToken = await createAsset(baseTokenConfig);
+        const quoteToken = await createAsset(quoteTokenConfig);
 
-        const baseToken = await initToken(baseTokenConfig, users);
-        const quoteToken = await initToken(quoteTokenConfig, users);
+        const balancesBeforeMatch = await getTokenUsersBalances([baseToken, quoteToken]);
 
-        await getTokenUsersBalances(baseToken, users, balancesBeforeMatch);
-        await getTokenUsersBalances(quoteToken, users, balancesBeforeMatch);
+        const baseTokenAddress = baseToken.address;
+        const quoteTokenAddress = quoteToken.address;
 
-        // approve relayer
-        if (quoteToken.symbol != 'ETH') {
-            await quoteToken.methods.approve(proxy._address, infinity).send({ from: relayer });
-        }
+        const takerOrder = await buildOrder(takerOrderParam, baseTokenAddress, quoteTokenAddress);
 
-        const baseTokenAddress = baseToken._address;
-        const quoteTokenAddress = quoteToken._address;
-
-        const takerOrder = await buildOrder(
-            takerOrderParam,
-            exchange,
-            baseTokenAddress,
-            quoteTokenAddress
-        );
         const makerOrders = [];
         for (let i = 0; i < makerOrdersParams.length; i++) {
             makerOrders.push(
-                await buildOrder(
-                    makerOrdersParams[i],
-                    exchange,
-                    baseTokenAddress,
-                    quoteTokenAddress
-                )
+                await buildOrder(makerOrdersParams[i], baseTokenAddress, quoteTokenAddress)
             );
         }
 
-        const res = await exchange.methods
-            .matchOrders(takerOrder, makerOrders, baseTokenFilledAmounts, {
-                baseToken: baseTokenAddress,
-                quoteToken: quoteTokenAddress,
-                relayer
-            })
-            .send({ from: relayer, gas: 10000000, gasLimit: 10000000 });
-        console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.gasUsed);
+        const res = await hydro.exchangeMatchOrders(
+            {
+                takerOrderParam: takerOrder,
+                makerOrderParams: makerOrders,
+                baseTokenFilledAmounts: baseTokenFilledAmounts,
+                orderAddressSet: {
+                    baseToken: baseTokenAddress,
+                    quoteToken: quoteTokenAddress,
+                    relayer
+                }
+            },
+            { from: relayer, gas: 10000000, gasLimit: 10000000 }
+        );
 
-        const balancesAfterMatch = {};
+        console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.receipt.gasUsed);
 
-        await getTokenUsersBalances(baseToken, users, balancesAfterMatch);
-        await getTokenUsersBalances(quoteToken, users, balancesAfterMatch);
+        const balancesAfterMatch = await getTokenUsersBalances([baseToken, quoteToken]);
+
         for (let i = 0; i < Object.keys(assertDiffs).length; i++) {
             const tokenSymbol = Object.keys(assertDiffs)[i];
 
             for (let j = 0; j < Object.keys(assertDiffs[tokenSymbol]).length; j++) {
-                const userKey = Object.keys(assertDiffs[tokenSymbol])[j];
-                const expectedDiff = assertDiffs[tokenSymbol][userKey];
-                const balanceKey = `${tokenSymbol}-${userKey}`;
+                const user = Object.keys(assertDiffs[tokenSymbol])[j];
+                const expectedDiff = assertDiffs[tokenSymbol][user];
+                const balanceKey = `${tokenSymbol}-${user}`;
                 const actualDiff = new BigNumber(balancesAfterMatch[balanceKey]).minus(
                     balancesBeforeMatch[balanceKey]
                 );
@@ -224,7 +190,7 @@ contract('Match', async accounts => {
                     actualDiff.toString(),
                     expectedDiff,
                     allowPrecisionError,
-                    `${balanceKey}`
+                    `${tokenSymbol}-${getUserKey(user)}`
                 );
             }
         }
@@ -234,7 +200,7 @@ contract('Match', async accounts => {
 
             if (limitTaker && takerOrderParam.type == 'limit') {
                 assertEqual(
-                    await exchange.methods.filled(takerOrder.orderHash).call(),
+                    await hydro.getExchangeOrderFilledAmount(takerOrder.orderHash),
                     limitTaker,
                     allowPrecisionError
                 );
@@ -242,7 +208,7 @@ contract('Match', async accounts => {
 
             if (marketTaker && takerOrderParam.type == 'market') {
                 assertEqual(
-                    await exchange.methods.filled(takerOrder.orderHash).call(),
+                    await hydro.getExchangeOrderFilledAmount(takerOrder.orderHash),
                     marketTaker,
                     allowPrecisionError
                 );
@@ -251,7 +217,7 @@ contract('Match', async accounts => {
             if (makers) {
                 for (let i = 0; i < makers.length; i++) {
                     assertEqual(
-                        await exchange.methods.filled(makerOrders[i].orderHash).call(),
+                        await hydro.getExchangeOrderFilledAmount(makerOrders[i].orderHash),
                         makers[i],
                         allowPrecisionError
                     );
@@ -294,13 +260,12 @@ contract('Match', async accounts => {
     it('taker sell(limit & market), taker full match', async () => {
         const testConfig = {
             baseTokenFilledAmounts: [toWei('10'), toWei('10')],
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(20)
+                    [u1]: toWei(20)
                 }
             },
             quoteTokenConfig: {
@@ -308,8 +273,8 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10),
-                    u3: toWei(10)
+                    [u2]: toWei(10),
+                    [u3]: toWei(10)
                 }
             },
             takerOrderParam: {
@@ -355,16 +320,16 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('-20'),
-                    u2: toWei('10'),
-                    u3: toWei('10'),
-                    relayer: toWei('0')
+                    [u1]: toWei('-20'),
+                    [u2]: toWei('10'),
+                    [u3]: toWei('10'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('3.415'),
-                    u2: toWei('-2.019'),
-                    u3: toWei('-1.918'),
-                    relayer: toWei('0.522')
+                    [u1]: toWei('3.415'),
+                    [u2]: toWei('-2.019'),
+                    [u3]: toWei('-1.918'),
+                    [relayer]: toWei('0.522')
                 }
             },
             assertFilled: {
@@ -393,14 +358,13 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════╝
     it('taker sell(limit & market), maker full match', async () => {
         await limitAndMarketTestMatch({
-            users: { u1, u2, u3, relayer },
             baseTokenFilledAmounts: [toWei('1952')],
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(10000)
+                    [u1]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -408,7 +372,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(5000)
+                    [u2]: toWei(5000)
                 }
             },
             takerOrderParam: {
@@ -441,14 +405,14 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('-1952'),
-                    u2: toWei('1952'),
-                    relayer: toWei('0')
+                    [u1]: toWei('-1952'),
+                    [u2]: toWei('1952'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('70.0352624'),
-                    u2: toWei('-74.66485792'),
-                    relayer: toWei('4.62959552')
+                    [u1]: toWei('70.0352624'),
+                    [u2]: toWei('-74.66485792'),
+                    [relayer]: toWei('4.62959552')
                 }
             },
             assertFilled: {
@@ -483,14 +447,13 @@ contract('Match', async accounts => {
                 limitTaker: toWei('8424.22'),
                 makers: [toWei('1952'), toWei('6472.22')]
             },
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10000),
-                    u3: toWei(10000)
+                    [u2]: toWei(10000),
+                    [u3]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -498,7 +461,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(5000)
+                    [u1]: toWei(5000)
                 }
             },
             takerOrderParam: {
@@ -544,16 +507,16 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('8424.22'),
-                    u2: toWei('-1952'),
-                    u3: toWei('-6472.22'),
-                    relayer: toWei('0')
+                    [u1]: toWei('8424.22'),
+                    [u2]: toWei('-1952'),
+                    [u3]: toWei('-6472.22'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('-332.4507334'),
-                    u2: toWei('71.05584608'),
-                    u3: toWei('242.10341684'),
-                    relayer: toWei('19.29147048')
+                    [u1]: toWei('-332.4507334'),
+                    [u2]: toWei('71.05584608'),
+                    [u3]: toWei('242.10341684'),
+                    [relayer]: toWei('19.29147048')
                 }
             }
         });
@@ -583,30 +546,29 @@ contract('Match', async accounts => {
             baseTokenFilledAmounts: [toWei('1952'), toWei('6525.004396825396825396')],
             assertDiffs: {
                 TT: {
-                    u1: toWei('8477.004396825396825396'),
-                    u2: toWei('-1952'),
-                    u3: toWei('-6525.004396825396825396'),
-                    relayer: toWei('0')
+                    [u1]: toWei('8477.004396825396825396'),
+                    [u2]: toWei('-1952'),
+                    [u3]: toWei('-6525.004396825396825396'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('-334.54574611'),
-                    u2: toWei('71.05584608'),
-                    u3: toWei('244.078714538'),
-                    relayer: toWei('19.411185492')
+                    [u1]: toWei('-334.54574611'),
+                    [u2]: toWei('71.05584608'),
+                    [u3]: toWei('244.078714538'),
+                    [relayer]: toWei('19.411185492')
                 }
             },
             assertFilled: {
                 marketTaker: toWei('318.5197582'),
                 makers: [toWei('1952'), toWei('6525.004396825396825396')]
             },
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10000),
-                    u3: toWei(10000)
+                    [u2]: toWei(10000),
+                    [u3]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -614,7 +576,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(5000)
+                    [u1]: toWei(5000)
                 }
             },
             takerOrderParam: {
@@ -683,13 +645,12 @@ contract('Match', async accounts => {
                 marketTaker: toWei('71.874592'),
                 makers: [toWei('1952')]
             },
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10000)
+                    [u2]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -697,7 +658,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(5000)
+                    [u1]: toWei(5000)
                 }
             },
             takerOrderParam: {
@@ -730,14 +691,14 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('1952'),
-                    u2: toWei('-1952'),
-                    relayer: toWei('0')
+                    [u1]: toWei('1952'),
+                    [u2]: toWei('-1952'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('-75.5683216'),
-                    u2: toWei('71.05584608'),
-                    relayer: toWei('4.51247552')
+                    [u1]: toWei('-75.5683216'),
+                    [u2]: toWei('71.05584608'),
+                    [relayer]: toWei('4.51247552')
                 }
             }
         });
@@ -764,13 +725,12 @@ contract('Match', async accounts => {
                 marketTaker: toWei('71.874592'),
                 makers: [toWei('1952')]
             },
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10000)
+                    [u2]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -778,7 +738,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(5000)
+                    [u1]: toWei(5000)
                 }
             },
             takerOrderParam: {
@@ -811,14 +771,14 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('1952'),
-                    u2: toWei('-1952'),
-                    relayer: toWei('0')
+                    [u1]: toWei('1952'),
+                    [u2]: toWei('-1952'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('-75.5683216'),
-                    u2: toWei('71.05584608'),
-                    relayer: toWei('4.51247552')
+                    [u1]: toWei('-75.5683216'),
+                    [u2]: toWei('71.05584608'),
+                    [relayer]: toWei('4.51247552')
                 }
             }
         });
@@ -840,16 +800,15 @@ contract('Match', async accounts => {
     // ║ relayer │ 0        │  4.51247552   │ (0.036821 * 1952) * (0.05 * 0.9 + 0.01) + 0.2 ║
     // ╚═════════╧══════════╧═══════════════╧═══════════════════════════════════════════════╝
     it('HOT discount', async () => {
-        await setHotAmount(hot, u1, toWei(10000));
+        await setHotAmount(u1, toWei(10000));
         await matchTest({
             baseTokenFilledAmounts: [toWei('1952')],
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10000)
+                    [u2]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -857,7 +816,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(5000)
+                    [u1]: toWei(5000)
                 }
             },
             takerOrderParam: {
@@ -890,14 +849,14 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('1952'),
-                    u2: toWei('-1952'),
-                    relayer: toWei('0')
+                    [u1]: toWei('1952'),
+                    [u2]: toWei('-1952'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('-75.20894864'),
-                    u2: toWei('71.05584608'),
-                    relayer: toWei('4.15310256')
+                    [u1]: toWei('-75.20894864'),
+                    [u2]: toWei('71.05584608'),
+                    [relayer]: toWei('4.15310256')
                 }
             }
         });
@@ -919,16 +878,15 @@ contract('Match', async accounts => {
     // ║ relayer │    0     │ 0.0049986914  │ (0.0008273 * 102) * (0.01 * 0.9 + 0.05) + 0.00002 ║
     // ╚═════════╧══════════╧═══════════════╧═══════════════════════════════════════════════════╝
     it('eth, taker market order sell, taker full match, maker fee discount', async () => {
-        await setHotAmount(hot, u2, toWei(10000));
+        await setHotAmount(u2, toWei(10000));
         await matchTest({
             baseTokenFilledAmounts: [toWei('102')],
-            users: { u1, u2, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(10000)
+                    [u1]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -936,7 +894,7 @@ contract('Match', async accounts => {
                 symbol: 'ETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei('0.5')
+                    [u2]: toWei('0.5')
                 }
             },
             takerOrderParam: {
@@ -969,14 +927,14 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('-102'),
-                    u2: toWei('102'),
-                    relayer: toWei('0')
+                    [u1]: toWei('-102'),
+                    [u2]: toWei('102'),
+                    [relayer]: toWei('0')
                 },
                 ETH: {
-                    u1: toWei('0.08015537'),
-                    u2: toWei('-0.0851540614'),
-                    relayer: toWei('0.0049986914')
+                    [u1]: toWei('0.08015537'),
+                    [u2]: toWei('-0.0851540614'),
+                    [relayer]: toWei('0.0049986914')
                 }
             }
         });
@@ -998,14 +956,13 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧════════════════════════════════════════════╝
     it('Maker Rebate 50%', async () => {
         await limitAndMarketTestMatch({
-            users: { u1, u2, u3, relayer },
             baseTokenFilledAmounts: [toWei('1952')],
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10000)
+                    [u2]: toWei(10000)
                 }
             },
             quoteTokenConfig: {
@@ -1013,7 +970,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(5000)
+                    [u1]: toWei(5000)
                 }
             },
             takerOrderParam: {
@@ -1047,14 +1004,14 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('1952'),
-                    u2: toWei('-1952'),
-                    relayer: toWei('0')
+                    [u1]: toWei('1952'),
+                    [u2]: toWei('-1952'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('-75.5683216'),
-                    u2: toWei('73.5714568'),
-                    relayer: toWei('1.9968648')
+                    [u1]: toWei('-75.5683216'),
+                    [u2]: toWei('73.5714568'),
+                    [relayer]: toWei('1.9968648')
                 }
             }
         });
@@ -1079,13 +1036,12 @@ contract('Match', async accounts => {
     it('Maker Rebate Rate is 100%', async () => {
         const testConfig = {
             baseTokenFilledAmounts: [toWei('10'), toWei('10')],
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(20)
+                    [u1]: toWei(20)
                 }
             },
             quoteTokenConfig: {
@@ -1093,8 +1049,8 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10),
-                    u3: toWei(10)
+                    [u2]: toWei(10),
+                    [u3]: toWei(10)
                 }
             },
             takerOrderParam: {
@@ -1141,16 +1097,16 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('-20'),
-                    u2: toWei('10'),
-                    u3: toWei('10'),
-                    relayer: toWei('0')
+                    [u1]: toWei('-20'),
+                    [u2]: toWei('10'),
+                    [u3]: toWei('10'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('3.415'),
-                    u2: toWei('-1.905'),
-                    u3: toWei('-1.918'),
-                    relayer: toWei('0.408')
+                    [u1]: toWei('3.415'),
+                    [u2]: toWei('-1.905'),
+                    [u3]: toWei('-1.918'),
+                    [relayer]: toWei('0.408')
                 }
             }
         };
@@ -1177,13 +1133,12 @@ contract('Match', async accounts => {
     it('Maker Rebate Rate large than 100%(will be calculated as 100%)', async () => {
         const testConfig = {
             baseTokenFilledAmounts: [toWei('10'), toWei('10')],
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(20)
+                    [u1]: toWei(20)
                 }
             },
             quoteTokenConfig: {
@@ -1191,8 +1146,8 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10),
-                    u3: toWei(10)
+                    [u2]: toWei(10),
+                    [u3]: toWei(10)
                 }
             },
             takerOrderParam: {
@@ -1239,16 +1194,16 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('-20'),
-                    u2: toWei('10'),
-                    u3: toWei('10'),
-                    relayer: toWei('0')
+                    [u1]: toWei('-20'),
+                    [u2]: toWei('10'),
+                    [u3]: toWei('10'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('3.415'),
-                    u2: toWei('-1.905'),
-                    u3: toWei('-1.918'),
-                    relayer: toWei('0.408')
+                    [u1]: toWei('3.415'),
+                    [u2]: toWei('-1.905'),
+                    [u3]: toWei('-1.918'),
+                    [relayer]: toWei('0.408')
                 }
             }
         };
@@ -1260,13 +1215,12 @@ contract('Match', async accounts => {
     it('Invalid taker order will revert', async () => {
         const testConfig = {
             baseTokenFilledAmounts: [toWei('1')],
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(20)
+                    [u1]: toWei(20)
                 }
             },
             quoteTokenConfig: {
@@ -1274,8 +1228,8 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10),
-                    u3: toWei(10)
+                    [u2]: toWei(10),
+                    [u3]: toWei(10)
                 }
             },
             takerOrderParam: {
@@ -1321,13 +1275,12 @@ contract('Match', async accounts => {
     it('Invalid taker order will revert', async () => {
         const testConfig = {
             baseTokenFilledAmounts: [toWei('1')],
-            users: { u1, u2, u3, relayer },
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(20)
+                    [u1]: toWei(20)
                 }
             },
             quoteTokenConfig: {
@@ -1335,8 +1288,8 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10),
-                    u3: toWei(10)
+                    [u2]: toWei(10),
+                    [u3]: toWei(10)
                 }
             },
             takerOrderParam: {
@@ -1380,14 +1333,13 @@ contract('Match', async accounts => {
 
     it('match without fees', async () => {
         const testConfig = {
-            users: { u1, u2, relayer },
             baseTokenFilledAmounts: [toWei('1')],
             baseTokenConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    u1: toWei(20)
+                    [u1]: toWei(20)
                 }
             },
             quoteTokenConfig: {
@@ -1395,7 +1347,7 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    u2: toWei(10)
+                    [u2]: toWei(10)
                 }
             },
             takerOrderParam: {
@@ -1429,14 +1381,14 @@ contract('Match', async accounts => {
             ],
             assertDiffs: {
                 TT: {
-                    u1: toWei('-1'),
-                    u2: toWei('1'),
-                    relayer: toWei('0')
+                    [u1]: toWei('-1'),
+                    [u2]: toWei('1'),
+                    [relayer]: toWei('0')
                 },
                 WETH: {
-                    u1: toWei('1'),
-                    u2: toWei('-1'),
-                    relayer: toWei('0')
+                    [u1]: toWei('1'),
+                    [u2]: toWei('-1'),
+                    [relayer]: toWei('0')
                 }
             }
         };

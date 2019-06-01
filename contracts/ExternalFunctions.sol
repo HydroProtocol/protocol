@@ -218,4 +218,8 @@ contract ExternalFunctions is GlobalStore {
     function getHydroTokenAddress() external view returns (address) {
         return state.hotTokenAddress;
     }
+
+    function getExchangeOrderFilledAmount(bytes32 orderHash) external view returns (uint256) {
+        return state.exchange.filled[orderHash];
+    }
 }
