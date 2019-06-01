@@ -70,20 +70,20 @@ contract ExternalFunctions is GlobalStore {
         return Assets.getAllAssetsCount(state);
     }
 
-    function getAsset(uint16 assetID)
+    function getAssetID(address tokenAddress)
         external
-        view
-        returns (Types.Asset memory)
-    {
-        return Assets.getAsset(state, assetID);
-    }
-
-    function getAssetIDByAddress(address tokenAddress)
-        external
-        view
-        returns (uint16)
+        view returns (uint16 assetID)
     {
         return Assets.getAssetIDByAddress(state, tokenAddress);
+    }
+
+    function getAssetInfo(uint16 assetID)
+        external
+        view returns (address tokenAddress, address oracleAddress, uint256 collateralRate)
+    {
+        Types.Asset storage asset = state.assets[assetID];
+        oracleAddress = address(asset.oracle);
+        return (asset.tokenAddress, address(asset.oracle), asset.collateralRate);
     }
 
     //////////////////////////////////
@@ -112,6 +112,16 @@ contract ExternalFunctions is GlobalStore {
         return CollateralAccounts.isCollateralAccountLiquidable(state, accountID);
     }
 
+    function getUserDefaultAccount(
+        address user
+    )
+        external
+        view
+        returns (uint32)
+    {
+        return uint32(state.userDefaultCollateralAccounts[user]);
+    }
+
     function getCollateralAccountDetails(
         uint256 accountID
     )
@@ -132,8 +142,82 @@ contract ExternalFunctions is GlobalStore {
     }
 
     ////////////////////
+    // Loan Functions //
+    ////////////////////
+
+    function repayLoan(
+        uint32 loanID,
+        uint256 amount
+    )
+        external
+    {
+
+    }
+
+    ////////////////////
     // Pool Functions //
     ////////////////////
+
+    function getPoolTotalSupply(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return Pool._getSupplyWithInterest(state, assetID);
+    }
+
+    function getPoolTotalBorrow(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.totalBorrow[assetID];
+    }
+
+    function getPoolTotalShares(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.totalSupplyShares[assetID];
+    }
+
+    function getPoolSharesOf(
+        uint16 assetID,
+        address user
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.supplyShares[assetID][user];
+    }
+
+    function getPoolAnnualInterest(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint256)
+    {
+        return state.pool.poolAnnualInterest[assetID];
+    }
+
+    function getPoolInterestStartTime(
+        uint16 assetID
+    )
+        external
+        view
+        returns(uint40)
+    {
+        return state.pool.poolInterestStartTime[assetID];
+    }
 
     function poolSupply(
         uint16 assetID,
@@ -142,6 +226,31 @@ contract ExternalFunctions is GlobalStore {
         external
     {
         Pool.supply(state, assetID, amount);
+    }
+
+    function borrowFromPool(
+        uint32 collateralAccountId,
+        uint16 assetID,
+        uint256 amount,
+        uint16 maxInterestRate,
+        uint40 minExpiredAt
+    )
+        external
+        returns(uint32 loanId)
+    {
+        require(state.collateralAccountCount > collateralAccountId, "COLLATERAL_ACCOUNT_NOT_EXIST");
+
+        loanId = Pool.borrow(
+            state,
+            collateralAccountId,
+            assetID,
+            amount,
+            maxInterestRate,
+            minExpiredAt
+        );
+
+        require(!CollateralAccounts.isCollateralAccountLiquidable(state, collateralAccountId), "COLLATERAL_NOT_ENOUGH");
+        return loanId;
     }
 
     ///////////////////////

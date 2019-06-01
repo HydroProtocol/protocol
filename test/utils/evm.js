@@ -1,7 +1,6 @@
 const jsonRpcCall = (method, params = []) =>
     new Promise((resolve, reject) => {
-        web3.currentProvider.send(
-            {
+        web3.currentProvider.send({
                 method,
                 params,
                 jsonrpc: '2.0',
@@ -23,8 +22,7 @@ const revert = snapshotID => jsonRpcCall('evm_revert', [snapshotID]);
 const mineEmptyBlock = async count => {
     const mine = () =>
         new Promise((resolve, reject) => {
-            web3.currentProvider.send(
-                {
+            web3.currentProvider.send({
                     method: 'evm_mine',
                     params: [],
                     jsonrpc: '2.0',
@@ -51,8 +49,7 @@ const mineEmptyBlock = async count => {
 
 const updateTimestamp = timestamp =>
     new Promise((resolve, reject) => {
-        web3.currentProvider.send(
-            {
+        web3.currentProvider.send({
                 method: 'evm_mine',
                 params: [timestamp],
                 jsonrpc: '2.0',
@@ -71,5 +68,6 @@ const updateTimestamp = timestamp =>
 module.exports = {
     jsonRpcCall,
     revert,
-    snapshot
+    snapshot,
+    updateTimestamp
 };

@@ -47,11 +47,11 @@ library Assets {
         return state.assetsCount;
     }
 
-    function addAsset(Store.State storage state, address tokenAddress, uint256 collerateRate, address oracleAddress)
+    function addAsset(Store.State storage state, address tokenAddress, uint256 collateralRate, address oracleAddress)
         internal
         onlyAssetNotExist(state, tokenAddress)
     {
-        Types.Asset memory asset = Types.Asset(tokenAddress, collerateRate, OracleInterface(oracleAddress));
+        Types.Asset memory asset = Types.Asset(tokenAddress, collateralRate, OracleInterface(oracleAddress));
         uint256 index = state.assetsCount++;
         state.assets[index] = asset;
 

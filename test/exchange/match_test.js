@@ -92,7 +92,7 @@ contract('Match', async accounts => {
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
             const symbol = token.symbol;
-            const assetID = await hydro.getAssetIDByAddress(token.address);
+            const assetID = await hydro.getAssetID(token.address);
 
             for (let j = 0; j < Object.keys(users).length; j++) {
                 const user = users[j];

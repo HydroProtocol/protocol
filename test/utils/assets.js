@@ -5,7 +5,9 @@ const Hydro = artifacts.require('./Hydro.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
 
 const BigNumber = require('bignumber.js');
-BigNumber.config({ EXPONENTIAL_AT: 1000 });
+BigNumber.config({
+    EXPONENTIAL_AT: 1000
+});
 
 const getLastAsset = async () => {
     const hydro = await Hydro.deployed();
@@ -15,29 +17,42 @@ const getLastAsset = async () => {
 
 const depositAsset = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    const assetID = await hydro.getAssetIDByAddress(token.address);
+    const assetID = await hydro.getAssetID(token.address);
     const accounts = await web3.eth.getAccounts();
     const owner = accounts[0];
 
     if (token.symbol == 'ETH') {
-        await hydro.deposit(assetID, amount, { from: user, value: amount });
+        await hydro.deposit(assetID, amount, {
+            from: user,
+            value: amount
+        });
     } else {
-        await token.transfer(user, amount, { from: owner });
-        await token.approve(hydro.address, amount, { from: user });
-        await hydro.deposit(assetID, amount, { from: user });
+        await token.transfer(user, amount, {
+            from: owner
+        });
+        await token.approve(hydro.address, amount, {
+            from: user
+        });
+        await hydro.deposit(assetID, amount, {
+            from: user
+        });
     }
 };
 
 const depositDefaultCollateral = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    const assetID = await hydro.getAssetIDByAddress(token.address);
-    await hydro.depositDefaultCollateral(assetID, amount, { from: user });
+    const assetID = await hydro.getAssetID(token.address);
+    await hydro.depositDefaultCollateral(assetID, amount, {
+        from: user
+    });
 };
 
 const depositPool = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    const assetID = await hydro.getAssetIDByAddress(token.address);
-    await hydro.poolSupply(assetID, amount, { from: user });
+    const assetID = await hydro.getAssetID(token.address);
+    await hydro.poolSupply(assetID, amount, {
+        from: user
+    });
 };
 
 const createAsset = async assetConfig => {
@@ -45,7 +60,11 @@ const createAsset = async assetConfig => {
     const accounts = await web3.eth.getAccounts();
     const owner = accounts[0];
 
-    const { initBalances, initCollaterals, oraclePrice, initPool } = assetConfig;
+    const { initBalances, initCollaterals, initPool, oraclePrice } = assetConfig;
+
+    let { collateralRate } = assetConfig;
+
+    collateralRate = collateralRate || 10000;
 
     let token;
 
@@ -76,9 +95,9 @@ const createAsset = async assetConfig => {
         `Token ${token.symbol} price is ${(token.address, await oracle.getPrice(token.address))}`
     );
 
-    await hydro.addAsset(token.address, 1, oracle.address, {
+    await hydro.addAsset(token.address, collateralRate.toString(), oracle.address, {
         from: accounts[0],
-        gasLimit: 10000000
+        gasLimit: 200000
     });
 
     if (initBalances) {
@@ -106,8 +125,6 @@ const createAsset = async assetConfig => {
             await depositPool(token, user, amount);
         }
     }
-
-    debug(`Create Asset ${token.symbol} done`);
 
     return token;
 };

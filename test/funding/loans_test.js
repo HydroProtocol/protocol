@@ -1,8 +1,12 @@
 const Hydro = artifacts.require('./Hydro.sol');
 const assert = require('assert');
 
-const { createAssets } = require('../utils/assets');
-const { toWei } = require('../utils');
+const {
+    createAssets
+} = require('../utils/assets');
+const {
+    toWei
+} = require('../utils');
 
 contract('Loans', accounts => {
     let hydro;
@@ -13,10 +17,10 @@ contract('Loans', accounts => {
     beforeEach(async () => {
         hydro = await Hydro.deployed();
 
-        await createAssets([
-            {
+        await createAssets([{
                 symbol: 'ETH',
                 oraclePrice: toWei('500'),
+                collateralRate: 15000,
                 initBalances: {
                     [u2]: toWei('1')
                 },
@@ -25,10 +29,9 @@ contract('Loans', accounts => {
                 }
             },
             {
-                name: 'USD',
-                oraclePrice: toWei('1'),
                 symbol: 'USD',
-                decimals: 18,
+                oraclePrice: toWei('1'),
+                collateralRate: 15000,
                 initPool: {
                     [u1]: toWei('1000')
                 }

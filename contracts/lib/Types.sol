@@ -66,7 +66,7 @@ library Types {
 
     struct Asset {
         address tokenAddress;
-        uint256 collerateRate;
+        uint256 collateralRate;
         OracleInterface oracle;
     }
 

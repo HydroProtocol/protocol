@@ -3,7 +3,9 @@ const HydroToken = artifacts.require('./HydroToken.sol');
 const Funding = artifacts.require('./Funding.sol');
 const BigNumber = require('bignumber.js');
 
-BigNumber.config({ EXPONENTIAL_AT: 1000 });
+BigNumber.config({
+    EXPONENTIAL_AT: 1000
+});
 
 const wei = new BigNumber('1000000000000000000');
 
