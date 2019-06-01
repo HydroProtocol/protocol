@@ -2,22 +2,13 @@ const Hydro = artifacts.require('./Hydro.sol');
 const assert = require('assert');
 const BigNumber = require('bignumber.js');
 
-const {
-    createAssets
-} = require('../utils/assets');
+const { createAssets } = require('../utils/assets');
 
-const {
-    toWei
-} = require('../utils');
+const { toWei } = require('../utils');
 
-const {
-    toInterest,
-    getInterestRate
-} = require('../utils/interest')
+const { toInterest, getInterestRate } = require('../utils/interest');
 
-const {
-    updateTimestamp
-} = require('../evm')
+const { updateTimestamp } = require('../utils/evm');
 
 contract('Pool', accounts => {
     let hydro;
@@ -27,7 +18,8 @@ contract('Pool', accounts => {
 
     beforeEach(async () => {
         hydro = await Hydro.deployed();
-        await createAssets([{
+        await createAssets([
+            {
                 symbol: 'ETH',
                 oraclePrice: toWei('500'),
                 collateralRate: 15000,
@@ -53,7 +45,7 @@ contract('Pool', accounts => {
                 }
             }
         ]);
-    })
+    });
 
     it('basic borrow', async () => {
         const currentTime = Math.floor(Date.now() / 1000);
@@ -66,34 +58,40 @@ contract('Pool', accounts => {
         assert.equal((await hydro.getPoolSharesOf(USD, u1)).toString(), toWei('1000'));
 
         // first borrow
-        const expiredAt = currentTime + 86400 * 365
+        const expiredAt = currentTime + 86400 * 365;
         const res = await hydro.borrowFromPool(
             u2Default,
             USD,
             toWei('100'),
             toInterest(2),
-            expiredAt, {
+            expiredAt,
+            {
                 from: u2,
                 gas: 500000
             }
         );
 
-        const borrowBlockTime = (await web3.eth.getBlock(res.receipt.blockHash)).timestamp
+        const borrowBlockTime = (await web3.eth.getBlock(res.receipt.blockHash)).timestamp;
         assert.equal((await hydro.getPoolTotalBorrow.call(USD)).toString(), toWei('100'));
-        assert.equal((await hydro.getPoolInterestStartTime.call(USD)).toString(), borrowBlockTime.toString());
+        assert.equal(
+            (await hydro.getPoolInterestStartTime.call(USD)).toString(),
+            borrowBlockTime.toString()
+        );
 
-        const expectAnnualInterest = new BigNumber(getInterestRate(0.1, expiredAt - borrowBlockTime)).multipliedBy(toWei('100')).toString();
+        const expectAnnualInterest = new BigNumber(
+            getInterestRate(0.1, expiredAt - borrowBlockTime)
+        )
+            .multipliedBy(toWei('100'))
+            .toString();
         const contractAnnualInterest = (await hydro.getPoolAnnualInterest.call(USD)).toString();
         assert.equal(expectAnnualInterest, contractAnnualInterest);
 
         // 6 months later
-        console.log(borrowBlockTime)
-        console.log(currentTime + 86400 * 180)
-        console.log(expectAnnualInterest)
-        updateTimestamp(currentTime + 86400 * 180)
-        console.log((await hydro.getPoolTotalSupply(USD)).toNumber());
+        console.log(borrowBlockTime);
+        console.log(currentTime + 86400 * 180);
+        console.log(expectAnnualInterest);
+        updateTimestamp(currentTime + 86400 * 180);
+        console.log((await hydro.getPoolTotalSupply(USD)).toString());
         // const expectedSupply = new BigNumber(expectAnnualInterest).multipliedBy(0.5).
-
     });
-
-})
+});
