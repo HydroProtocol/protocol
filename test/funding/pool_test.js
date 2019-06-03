@@ -10,8 +10,23 @@ const { toInterest, getInterestRate } = require('../utils/interest');
 
 const { updateTimestamp } = require('../utils/evm');
 
+const { snapshot, revert } = require('../utils/evm');
+
 contract('Pool', accounts => {
     let hydro;
+    let snapshotID;
+
+    before(async () => {
+        hydro = await Hydro.deployed();
+    });
+
+    beforeEach(async () => {
+        snapshotID = await snapshot();
+    });
+
+    afterEach(async () => {
+        await revert(snapshotID);
+    });
 
     const u1 = accounts[4];
     const u2 = accounts[5];
