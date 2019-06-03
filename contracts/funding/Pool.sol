@@ -29,7 +29,7 @@ library Pool {
 
     // supply asset
     function supply(Store.State storage state, uint16 assetID, uint256 amount) internal {
-        require(state.balances[assetID][msg.sender] >= amount, "USER_BALANCE_NOT_ENOUGH");
+        require(state.balances[msg.sender][assetID] >= amount, "USER_BALANCE_NOT_ENOUGH");
 
         uint256 shares;
 
@@ -43,7 +43,7 @@ library Pool {
         _accrueInterest(state, assetID);
 
         // new supply shares
-        state.balances[assetID][msg.sender] -= amount;
+        state.balances[msg.sender][assetID] -= amount;
         state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(amount);
         state.pool.supplyShares[assetID][msg.sender] = state.pool.supplyShares[assetID][msg.sender].add(shares);
         state.pool.totalSupplyShares[assetID] = state.pool.totalSupplyShares[assetID].add(shares);
@@ -60,7 +60,7 @@ library Pool {
         state.pool.supplyShares[assetID][msg.sender] -= sharesAmount;
         state.pool.totalSupplyShares[assetID] -= sharesAmount;
         state.pool.totalSupply[assetID] -= assetAmount;
-        state.balances[assetID][msg.sender] += assetAmount;
+        state.balances[msg.sender][assetID] += assetAmount;
 
     }
 

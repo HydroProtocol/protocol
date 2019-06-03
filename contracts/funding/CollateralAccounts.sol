@@ -79,7 +79,7 @@ library CollateralAccounts {
             return;
         }
 
-        state.balances[assetID][user] = state.balances[assetID][user].sub(amount);
+        state.balances[user][assetID] = state.balances[user][assetID].sub(amount);
         Types.CollateralAccount storage account = findOrCreateDefaultCollateralAccount(state, user);
 
         account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
@@ -100,7 +100,7 @@ library CollateralAccounts {
         }
 
         Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
-        state.balances[assetID][account.owner] = state.balances[assetID][account.owner].sub(amount);
+        state.balances[account.owner][assetID] = state.balances[account.owner][assetID].sub(amount);
 
         account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
         Events.logDepositCollateral(assetID, account.owner, amount);

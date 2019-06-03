@@ -69,7 +69,7 @@ library Transfer {
             require(amount == msg.value, "Wrong amount");
         }
 
-        state.balances[assetID][to] = state.balances[assetID][to].add(amount);
+        state.balances[to][assetID] = state.balances[to][assetID].add(amount);
         Events.logDeposit(assetID, from, to, amount);
     }
 
@@ -104,11 +104,11 @@ library Transfer {
             return;
         }
 
-        require(state.balances[assetID][from] >= amount, "BALANCE_NOT_ENOUGH");
+        require(state.balances[from][assetID] >= amount, "BALANCE_NOT_ENOUGH");
 
         Types.Asset storage asset = state.assets[assetID];
 
-        state.balances[assetID][from] = state.balances[assetID][from].sub(amount);
+        state.balances[from][assetID] = state.balances[from][assetID].sub(amount);
 
         if (asset.tokenAddress == Consts.ETHEREUM_TOKEN_ADDRESS()) {
             to.transfer(amount);
@@ -132,7 +132,7 @@ library Transfer {
         view
         returns (uint256)
     {
-        return state.balances[assetID][user];
+        return state.balances[user][assetID];
     }
 
     /** @dev Invoking internal funds transfer.
@@ -155,10 +155,10 @@ library Transfer {
             return;
         }
 
-        require(state.balances[assetID][from] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
+        require(state.balances[from][assetID] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
-        state.balances[assetID][from] = state.balances[assetID][from].sub(amount);
-        state.balances[assetID][to] = state.balances[assetID][to].add(amount);
+        state.balances[from][assetID] = state.balances[from][assetID].sub(amount);
+        state.balances[to][assetID] = state.balances[to][assetID].add(amount);
 
         Events.logTransfer(assetID, from, to, amount);
     }

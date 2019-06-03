@@ -159,7 +159,7 @@ library Store {
          *
          * first key is asset address, second key is user address
          */
-        mapping (uint16 => mapping (address => uint)) balances;
+        mapping (address => mapping ( uint16 => uint)) balances;
 
         mapping (bytes32 => bool) usedOpenMarginRequests;
 

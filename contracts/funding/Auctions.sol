@@ -61,10 +61,10 @@ library Auctions {
             uint256 amountLeft = auction.assetAmounts[i].mul(100 - ratio).mul(repayAmount).div(auction.totalLoanAmount.mul(100));
 
             // bidder receive collateral
-            state.balances[i][msg.sender] = state.balances[i][msg.sender].add(amountToTake);
+            state.balances[msg.sender][i] = state.balances[msg.sender][i].add(amountToTake);
 
             // left part goes to auction.owner (borrower)
-            state.balances[i][auction.borrower] = state.balances[i][auction.borrower].add(amountLeft);
+            state.balances[auction.borrower][i] = state.balances[auction.borrower][i].add(amountLeft);
         }
 
         Events.logFillAuction(id, repayAmount);
