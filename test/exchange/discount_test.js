@@ -1,21 +1,13 @@
+require('../hooks');
+
 const assert = require('assert');
-const { snapshot, revert } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 
 contract('Discount', accounts => {
     let hydro;
-    let snapshotID;
 
     before(async () => {
         hydro = await Hydro.deployed();
-    });
-
-    beforeEach(async () => {
-        snapshotID = await snapshot();
-    });
-
-    afterEach(async () => {
-        await revert(snapshotID);
     });
 
     it('can change discount', async () => {

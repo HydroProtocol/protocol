@@ -1,23 +1,15 @@
+require('../hooks');
 const assert = require('assert');
 const { hashPersonalMessage, ecsign, toBuffer, privateToAddress } = require('ethereumjs-util');
-const { snapshot, revert } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 
 contract('Signature', accounts => {
     let hydro;
-    let snapshotID;
 
     before(async () => {
         hydro = await Hydro.deployed();
     });
 
-    beforeEach(async () => {
-        snapshotID = await snapshot();
-    });
-
-    afterEach(async () => {
-        await revert(snapshotID);
-    });
     const bufferToHash = buffer => '0x' + buffer.toString('hex');
     const privateKey = '0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418';
     const orderHash = '0xaf802826788065ba466dabccd8bda7cea419e59e0acad67662ad013534eb823b';

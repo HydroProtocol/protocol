@@ -1,3 +1,5 @@
+require('../hooks');
+
 const Hydro = artifacts.require('./Hydro.sol');
 const assert = require('assert');
 
@@ -12,8 +14,8 @@ contract('Assets', accounts => {
         assert.equal(await hydro.getAllAssetsCount.call(), 0);
     });
 
-    const tokenAddress = "0x0000000000000000000000000000000000000001";
-    const oracleAddress = "0x0000000000000000000000000000000000000002";
+    const tokenAddress = '0x0000000000000000000000000000000000000001';
+    const oracleAddress = '0x0000000000000000000000000000000000000002';
     const collateralRate = 15000;
 
     it('owner can add asset', async () => {
@@ -26,9 +28,9 @@ contract('Assets', accounts => {
         const assetID = await hydro.getAssetID.call(tokenAddress);
         assert.equal(assetID, 0);
         const assetInfo = await hydro.getAssetInfo.call(assetID);
-        assert.equal(assetInfo["tokenAddress"], tokenAddress);
-        assert.equal(assetInfo["oracleAddress"], oracleAddress);
-        assert.equal(assetInfo["collateralRate"].toNumber(), collateralRate);
+        assert.equal(assetInfo['tokenAddress'], tokenAddress);
+        assert.equal(assetInfo['oracleAddress'], oracleAddress);
+        assert.equal(assetInfo['collateralRate'].toNumber(), collateralRate);
     });
 
     it('only onwner can add asset', async () => {
@@ -38,10 +40,11 @@ contract('Assets', accounts => {
                 gas: 200000
             });
         } catch (e) {
-            assert.equal(await hydro.getAllAssetsCount.call(), 1);
+            assert.equal(await hydro.getAllAssetsCount.call(), 0);
             assert.ok(e.message.match(/NOT_OWNER/));
             return;
         }
+
         assert(false, 'Should never get here');
     });
 
@@ -51,11 +54,17 @@ contract('Assets', accounts => {
                 from: accounts[0],
                 gas: 200000
             });
+
+            await hydro.addAsset(tokenAddress, collateralRate, oracleAddress, {
+                from: accounts[0],
+                gas: 200000
+            });
         } catch (e) {
             assert.equal(await hydro.getAllAssetsCount.call(), 1);
             assert.ok(e.message.match(/TOKEN_IS_ALREADY_EXIST/));
             return;
         }
+
         assert(false, 'Should never get here');
     });
 });

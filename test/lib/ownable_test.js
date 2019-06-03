@@ -1,21 +1,12 @@
+require('../hooks');
 const assert = require('assert');
-const { snapshot, revert } = require('./utils/evm');
-const Hydro = artifacts.require('./Hydro.sol');
+const Hydro = artifacts.require('Hydro.sol');
 
 contract('Ownable', accounts => {
     let hydro;
-    let snapshotID;
 
     before(async () => {
         hydro = await Hydro.deployed();
-    });
-
-    beforeEach(async () => {
-        snapshotID = await snapshot();
-    });
-
-    afterEach(async () => {
-        await revert(snapshotID);
     });
 
     it('should return true when caller is owner', async () => {

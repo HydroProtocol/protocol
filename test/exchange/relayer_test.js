@@ -1,21 +1,11 @@
+require('../hooks');
 const assert = require('assert');
-const { snapshot, revert } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 
 contract('Relayer', accounts => {
     let hydro;
-    let snapshotID;
-
     before(async () => {
         hydro = await Hydro.deployed();
-    });
-
-    beforeEach(async () => {
-        snapshotID = await snapshot();
-    });
-
-    afterEach(async () => {
-        await revert(snapshotID);
     });
 
     it("relayer can't match other's orders without approve", async () => {
