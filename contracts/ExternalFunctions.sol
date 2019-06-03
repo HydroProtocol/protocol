@@ -23,6 +23,7 @@ import "./exchange/Exchange.sol";
 
 import "./funding/Assets.sol";
 import "./funding/Pool.sol";
+import "./funding/Margin.sol";
 import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
@@ -89,6 +90,14 @@ contract ExternalFunctions is GlobalStore {
     //////////////////////////////////
     // Collateral Account Functions //
     //////////////////////////////////
+
+    function getCollateralAccountsCount()
+        external
+        view
+        returns (uint256)
+    {
+        return state.collateralAccountCount;
+    }
 
     function liquidateCollateralAccounts(uint256[] calldata accountIDs)
         external
@@ -317,7 +326,7 @@ contract ExternalFunctions is GlobalStore {
     }
 
     function exchangeMatchOrders(Types.ExchangeMatchParams memory params) public {
-        Exchange.exchangeMatchOrders(state, params);
+        Exchange.exchangeMatchOrders(state, params, state.balances[params.takerOrderParam.trader]);
     }
 
     function getDiscountedRate(address user) external view returns (uint256) {
@@ -330,5 +339,13 @@ contract ExternalFunctions is GlobalStore {
 
     function getExchangeOrderFilledAmount(bytes32 orderHash) external view returns (uint256) {
         return state.exchange.filled[orderHash];
+    }
+
+    ////////////
+    // Margin //
+    ////////////
+
+    function openMargin(Margin.OpenMarginRequest memory openRequest, Types.ExchangeMatchParams memory params) public {
+        Margin.openMargin(state, openRequest, params);
     }
 }

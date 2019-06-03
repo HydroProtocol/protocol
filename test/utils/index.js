@@ -58,6 +58,10 @@ const getFundingContracts = async () => {
 
 const clone = x => JSON.parse(JSON.stringify(x));
 
+const pp = obj => {
+    console.log(JSON.stringify(obj, null, 2));
+};
+
 module.exports = {
     newContract,
     newContractAt,
@@ -65,5 +69,6 @@ module.exports = {
     clone,
     setHotAmount,
     toWei,
-    wei
+    wei,
+    pp
 };

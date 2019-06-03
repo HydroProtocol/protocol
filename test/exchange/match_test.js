@@ -62,7 +62,7 @@ contract('Match', async accounts => {
                 return 'u1';
             case u2:
                 return 'u2';
-            case [u3]:
+            case u3:
                 return 'u3';
             case relayer:
                 return 'relayer';

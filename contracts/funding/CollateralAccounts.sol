@@ -142,7 +142,9 @@ library CollateralAccounts {
             uint256 amount = account.collateralAssetAmounts[i];
 
             details.collateralAssetAmounts[i] = amount;
-            details.collateralsTotalUSDlValue = details.collateralsTotalUSDlValue.add(asset.getPrice().mul(amount));
+            details.collateralsTotalUSDlValue = details.collateralsTotalUSDlValue.add(
+                asset.getPrice().mul(amount).div(Consts.ORACLE_PRICE_BASE())
+            );
         }
 
         details.loans = Loans.getByIDs(state, account.loanIDs);
@@ -161,7 +163,7 @@ library CollateralAccounts {
 
             Types.Asset storage asset = state.assets[details.loans[i].assetID];
 
-            details.loanValues[i] = asset.getPrice().mul(details.loans[i].amount.add(totalInterest));
+            details.loanValues[i] = asset.getPrice().mul(details.loans[i].amount.add(totalInterest)).div(Consts.ORACLE_PRICE_BASE());
             details.loansTotalUSDValue = details.loansTotalUSDValue.add(details.loanValues[i]);
         }
 

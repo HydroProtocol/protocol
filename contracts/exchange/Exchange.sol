@@ -54,7 +54,8 @@ library Exchange {
      */
     function exchangeMatchOrders(
         Store.State storage state,
-        Types.ExchangeMatchParams memory params
+        Types.ExchangeMatchParams memory params,
+        mapping(uint16 => uint256) storage takerBalances
     ) internal {
         require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), Errors.INVALID_SENDER());
         require(!params.takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
@@ -91,7 +92,7 @@ library Exchange {
         // Update amount filled for this taker order.
         state.exchange.filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
 
-        settleResults(state, results, params.takerOrderParam, params.orderAddressSet);
+        settleResults(state, results, params.takerOrderParam, params.orderAddressSet, takerBalances);
     }
 
     /**
@@ -411,14 +412,15 @@ library Exchange {
         Store.State storage state,
         Types.ExchangeMatchResult[] memory results,
         Types.ExchangeOrderParam memory takerOrderParam,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.ExchangeOrderAddressSet memory orderAddressSet,
+        mapping(uint16 => uint256) storage takerBalances
     )
         internal
     {
         if (takerOrderParam.isSell()) {
-            settleTakerSell(state, results, orderAddressSet);
+            settleTakerSell(state, results, orderAddressSet, takerBalances);
         } else {
-            settleTakerBuy(state, results, orderAddressSet);
+            settleTakerBuy(state, results, orderAddressSet, takerBalances);
         }
     }
 
@@ -450,7 +452,8 @@ library Exchange {
     function settleTakerSell(
         Store.State storage state,
         Types.ExchangeMatchResult[] memory results,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.ExchangeOrderAddressSet memory orderAddressSet,
+        mapping(uint16 => uint256) storage takerBalances
     )
         internal
     {
@@ -459,21 +462,27 @@ library Exchange {
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
+                takerBalances,
+                state.balances[results[i].maker],
                 orderAddressSet.baseToken,
                 results[i].taker,
                 results[i].maker,
                 results[i].baseTokenFilledAmount
             );
 
+            uint amount = results[i].quoteTokenFilledAmount.
+                    add(results[i].makerFee).
+                    add(results[i].makerGasFee).
+                    sub(results[i].makerRebate);
+
             transferFrom(
                 state,
+                state.balances[results[i].maker],
+                state.balances[orderAddressSet.relayer],
                 orderAddressSet.quoteToken,
                 results[i].maker,
                 orderAddressSet.relayer,
-                results[i].quoteTokenFilledAmount.
-                    add(results[i].makerFee).
-                    add(results[i].makerGasFee).
-                    sub(results[i].makerRebate)
+                amount
             );
 
             totalTakerQuoteTokenFilledAmount = totalTakerQuoteTokenFilledAmount.add(
@@ -485,6 +494,8 @@ library Exchange {
 
         transferFrom(
             state,
+            state.balances[orderAddressSet.relayer],
+            takerBalances,
             orderAddressSet.quoteToken,
             orderAddressSet.relayer,
             results[0].taker,
@@ -520,7 +531,8 @@ library Exchange {
     function settleTakerBuy(
         Store.State storage state,
         Types.ExchangeMatchResult[] memory results,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.ExchangeOrderAddressSet memory orderAddressSet,
+        mapping(uint16 => uint256) storage takerBalances
     )
         internal
     {
@@ -529,21 +541,27 @@ library Exchange {
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
+                state.balances[results[i].maker],
+                takerBalances,
                 orderAddressSet.baseToken,
                 results[i].maker,
                 results[i].taker,
                 results[i].baseTokenFilledAmount
             );
 
+            uint256 amount = results[i].quoteTokenFilledAmount.
+                    sub(results[i].makerFee).
+                    sub(results[i].makerGasFee).
+                    add(results[i].makerRebate);
+
             transferFrom(
                 state,
+                takerBalances,
+                state.balances[results[i].maker],
                 orderAddressSet.quoteToken,
                 results[i].taker,
                 results[i].maker,
-                results[i].quoteTokenFilledAmount.
-                    sub(results[i].makerFee).
-                    sub(results[i].makerGasFee).
-                    add(results[i].makerRebate)
+                amount
             );
 
             totalFee = totalFee.
@@ -558,6 +576,8 @@ library Exchange {
 
         transferFrom(
             state,
+            takerBalances,
+            state.balances[orderAddressSet.relayer],
             orderAddressSet.quoteToken,
             results[0].taker,
             orderAddressSet.relayer,
@@ -573,6 +593,8 @@ library Exchange {
      */
     function transferFrom(
         Store.State storage state,
+        mapping(uint16 => uint256) storage fromBalances,
+        mapping(uint16 => uint256) storage toBalances,
         address token,
         address from,
         address to,
@@ -582,6 +604,17 @@ library Exchange {
     {
         // TODO: allow no assetID token transfer
         uint16 assetID = Assets.getAssetIDByAddress(state, token);
-        Transfer.transferFrom(state, assetID, from, to, amount);
+
+        // do nothing when amount is zero
+        if (amount == 0) {
+            return;
+        }
+
+        require(fromBalances[assetID] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
+
+        fromBalances[assetID] = fromBalances[assetID].sub(amount);
+        toBalances[assetID] = toBalances[assetID].add(amount);
+
+        Events.logTransfer(assetID, from, to, amount);
     }
 }
