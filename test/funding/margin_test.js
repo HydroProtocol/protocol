@@ -228,7 +228,7 @@ contract('Margin', accounts => {
                 relayer
             }
         };
-        console.log(openMarginRequest, exchangeParams);
+        await showStatus();
         const res = await hydro.openMargin(openMarginRequest, exchangeParams, { from: relayer });
         console.log(`        1 Orders, Gas Used:`, res.receipt.gasUsed);
         await showStatus();
