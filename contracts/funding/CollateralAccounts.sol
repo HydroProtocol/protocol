@@ -33,7 +33,7 @@ library CollateralAccounts {
     using Loan for Types.Loan;
     using Asset for Types.Asset;
 
-    function findOrCreateDefaultCollateralAccount(
+    function findOrCreate(
         Store.State storage state,
         address user
     ) internal returns (Types.CollateralAccount storage) {
@@ -42,7 +42,7 @@ library CollateralAccounts {
 
         if (account.owner != user) {
             // default account liquidate rate is 150%
-            id = createCollateralAccount(state, user, 150);
+            id = create(state, user, 150);
             state.userDefaultCollateralAccounts[user] = id;
             account = state.allCollateralAccounts[id];
         }
@@ -50,7 +50,7 @@ library CollateralAccounts {
         return account;
     }
 
-    function createCollateralAccount(
+    function create(
         Store.State storage state,
         address user,
         uint16 liquidateRate
@@ -80,7 +80,7 @@ library CollateralAccounts {
         }
 
         state.balances[user][assetID] = state.balances[user][assetID].sub(amount);
-        Types.CollateralAccount storage account = findOrCreateDefaultCollateralAccount(state, user);
+        Types.CollateralAccount storage account = findOrCreate(state, user);
 
         account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
         Events.logDepositCollateral(assetID, user, amount);
@@ -106,6 +106,24 @@ library CollateralAccounts {
         Events.logDepositCollateral(assetID, account.owner, amount);
     }
 
+    function withdrawCollateral(
+        Store.State storage state,
+        uint32 accountID,
+        uint16 assetID,
+        uint256 amount
+    )
+        internal
+    {
+        if (amount == 0) {
+            return;
+        }
+
+        Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
+        account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].sub(amount);
+        state.balances[account.owner][assetID] = state.balances[account.owner][assetID].add(amount);
+
+        Events.logDepositWithdraw(assetID, account.owner, amount);
+    }
 
 
     /**

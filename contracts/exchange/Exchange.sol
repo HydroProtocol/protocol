@@ -56,7 +56,10 @@ library Exchange {
         Store.State storage state,
         Types.ExchangeMatchParams memory params,
         mapping(uint16 => uint256) storage takerBalances
-    ) internal {
+    )
+        internal
+        returns (Types.ExchangeSettleResult memory)
+    {
         require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), Errors.INVALID_SENDER());
         require(!params.takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
 
@@ -92,7 +95,7 @@ library Exchange {
         // Update amount filled for this taker order.
         state.exchange.filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
 
-        settleResults(state, results, params.takerOrderParam, params.orderAddressSet, takerBalances);
+        return settleResults(state, results, params.takerOrderParam, params.orderAddressSet, takerBalances);
     }
 
     /**
@@ -416,11 +419,12 @@ library Exchange {
         mapping(uint16 => uint256) storage takerBalances
     )
         internal
+        returns (Types.ExchangeSettleResult memory)
     {
         if (takerOrderParam.isSell()) {
-            settleTakerSell(state, results, orderAddressSet, takerBalances);
+            return settleTakerSell(state, results, orderAddressSet, takerBalances);
         } else {
-            settleTakerBuy(state, results, orderAddressSet, takerBalances);
+            return settleTakerBuy(state, results, orderAddressSet, takerBalances);
         }
     }
 
@@ -456,7 +460,11 @@ library Exchange {
         mapping(uint16 => uint256) storage takerBalances
     )
         internal
+        returns (Types.ExchangeSettleResult memory settleResult)
     {
+        settleResult.incomeToken = orderAddressSet.quoteToken;
+        settleResult.outputToken = orderAddressSet.baseToken;
+
         uint256 totalTakerQuoteTokenFilledAmount = 0;
 
         for (uint256 i = 0; i < results.length; i++) {
@@ -470,7 +478,9 @@ library Exchange {
                 results[i].baseTokenFilledAmount
             );
 
-            uint amount = results[i].quoteTokenFilledAmount.
+            settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(results[i].baseTokenFilledAmount);
+
+            uint256 amount = results[i].quoteTokenFilledAmount.
                     add(results[i].makerFee).
                     add(results[i].makerGasFee).
                     sub(results[i].makerRebate);
@@ -501,6 +511,8 @@ library Exchange {
             results[0].taker,
             totalTakerQuoteTokenFilledAmount.sub(results[0].takerGasFee)
         );
+
+        settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(totalTakerQuoteTokenFilledAmount.sub(results[0].takerGasFee));
     }
 
     /**
@@ -535,7 +547,11 @@ library Exchange {
         mapping(uint16 => uint256) storage takerBalances
     )
         internal
+        returns (Types.ExchangeSettleResult memory settleResult)
     {
+        settleResult.incomeToken = orderAddressSet.baseToken;
+        settleResult.outputToken = orderAddressSet.quoteToken;
+
         uint256 totalFee = 0;
 
         for (uint256 i = 0; i < results.length; i++) {
@@ -548,6 +564,8 @@ library Exchange {
                 results[i].taker,
                 results[i].baseTokenFilledAmount
             );
+
+            settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(results[i].baseTokenFilledAmount);
 
             uint256 amount = results[i].quoteTokenFilledAmount.
                     sub(results[i].makerFee).
@@ -563,6 +581,8 @@ library Exchange {
                 results[i].maker,
                 amount
             );
+
+            settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(amount);
 
             totalFee = totalFee.
                 add(results[i].takerFee).
@@ -583,6 +603,8 @@ library Exchange {
             orderAddressSet.relayer,
             totalFee
         );
+
+        settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(totalFee);
     }
 
     /**

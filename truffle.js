@@ -6,7 +6,7 @@ module.exports = {
             host: '127.0.0.1',
             port: 8545,
             network_id: '*',
-            gas: 10000000,
+            gas: 0x1ffffffffffff,
             gasPrice: 1
         },
         production: {
@@ -29,8 +29,8 @@ module.exports = {
             host: 'localhost',
             network_id: '*',
             port: 6545,
-            gas: 0xfffffffffff,
-            gasPrice: 0x01
+            gas: 0x1fffffffffffff,
+            gasPrice: 1
         }
     },
     compilers: {
@@ -43,6 +43,12 @@ module.exports = {
                 }
             }
         }
+
+        // If you have 0.5.8 solc installed locally, you can use the following config to speed up tests.
+        //
+        // solc: {
+        //     version: 'native',
+        // }
     },
     mocha: {
         enableTimeouts: false,

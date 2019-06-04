@@ -54,6 +54,13 @@ library Events {
         emit DepositCollateral(assetID, user, amount);
     }
 
+    // a user deposit tokens to default collateral account
+    event DepositWithdraw(uint16 assetID, address user, uint256 amount);
+
+    function logDepositWithdraw(uint16 assetID, address user, uint256 amount) internal {
+        emit DepositWithdraw(assetID, user, amount);
+    }
+
     // a user withdraw tokens from default collateral account
     event WithdrawCollateral(uint16 assetID, address user, uint256 amount);
 

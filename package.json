@@ -5,7 +5,8 @@
     "exchange_test": "truffle test test/exchange/*.js",
     "funding_test": "truffle test test/funding/*.js",
     "compile": "truffle compile",
-    "coverage": "solidity-coverage"
+    "coverage": "solidity-coverage",
+    "node": "ganache-cli -l 0x1fffffffffffff -g 1  -v --debug  --allowUnlimitedContractSize"
   },
   "dependencies": {
     "bignumber.js": "^7.2.1",
@@ -18,6 +19,7 @@
     "truffle-privatekey-provider": "^0.1.0"
   },
   "devDependencies": {
-    "prettier": "1.17.1"
+    "prettier": "1.17.1",
+    "ethereumjs-abi": "^0.6.7"
   }
 }
