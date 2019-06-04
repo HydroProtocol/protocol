@@ -32,6 +32,11 @@ library Types {
         P2P
     }
 
+    enum CollateralAccountCategory {
+        Lending,
+        Margin
+    }
+
     enum CollateralAccountStatus {
         Normal,
         Liquid,
@@ -99,7 +104,7 @@ library Types {
 
     struct CollateralAccount {
         uint32 id;
-
+        CollateralAccountCategory category;
         CollateralAccountStatus status;
 
         // liquidation rate
@@ -118,6 +123,7 @@ library Types {
     // memory only
     struct CollateralAccountDetails {
         bool       liquidable;
+        CollateralAccountCategory category;
         uint256[]  collateralAssetAmounts;
         Loan[]     loans;
         uint256[]  loanValues;

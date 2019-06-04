@@ -348,4 +348,8 @@ contract ExternalFunctions is GlobalStore {
     function openMargin(Margin.OpenMarginRequest memory openRequest, Types.ExchangeMatchParams memory params) public {
         Margin.open(state, openRequest, params);
     }
+
+    function closeMargin(Margin.CloseMarginRequest memory closeRequest, Types.ExchangeMatchParams memory params) public {
+        Margin.close(state, closeRequest, params);
+    }
 }

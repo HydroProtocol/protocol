@@ -42,7 +42,7 @@ library CollateralAccounts {
 
         if (account.owner != user) {
             // default account liquidate rate is 150%
-            id = create(state, user, 150);
+            id = create(state, user, Types.CollateralAccountCategory.Lending, 150);
             state.userDefaultCollateralAccounts[user] = id;
             account = state.allCollateralAccounts[id];
         }
@@ -53,6 +53,7 @@ library CollateralAccounts {
     function create(
         Store.State storage state,
         address user,
+        Types.CollateralAccountCategory category,
         uint16 liquidateRate
     ) internal returns (uint32) {
         uint32 id = state.collateralAccountCount++;
@@ -61,6 +62,7 @@ library CollateralAccounts {
         account.id = id;
         account.liquidateRate = liquidateRate;
         account.owner = user;
+        account.category = category;
 
         state.allCollateralAccounts[id] = account;
         return id;
@@ -152,6 +154,7 @@ library CollateralAccounts {
         returns (Types.CollateralAccountDetails memory details)
     {
         Types.CollateralAccount storage account = state.allCollateralAccounts[id];
+        details.category = account.category;
         details.collateralAssetAmounts = new uint256[](state.assetsCount);
 
         for (uint16 i = 0; i < state.assetsCount; i++) {
