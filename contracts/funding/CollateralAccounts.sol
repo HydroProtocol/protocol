@@ -33,7 +33,7 @@ library CollateralAccounts {
     using Loan for Types.Loan;
     using Asset for Types.Asset;
 
-    function findOrCreateDefaultCollateralAccount(
+    function findOrCreate(
         Store.State storage state,
         address user
     ) internal returns (Types.CollateralAccount storage) {
@@ -80,7 +80,7 @@ library CollateralAccounts {
         }
 
         state.balances[user][assetID] = state.balances[user][assetID].sub(amount);
-        Types.CollateralAccount storage account = findOrCreateDefaultCollateralAccount(state, user);
+        Types.CollateralAccount storage account = findOrCreate(state, user);
 
         account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
         Events.logDepositCollateral(assetID, user, amount);
