@@ -165,8 +165,11 @@ contract('Margin', accounts => {
             }
         };
         await showStatus();
-        const res = await hydro.openMargin(openMarginRequest, exchangeParams, { from: relayer });
-        console.log(`        1 Orders, Gas Used:`, res.receipt.gasUsed);
+        const res = await hydro.openMargin(openMarginRequest, exchangeParams, {
+            from: relayer,
+            gasLimit: 1000000
+        });
+        console.log(`        1 Orders, Gas Used:`, res.receipt.gasUsed, pp(res));
         await showStatus();
     });
 });

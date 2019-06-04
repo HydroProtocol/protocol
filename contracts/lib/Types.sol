@@ -217,6 +217,13 @@ library Types {
         uint256[]                baseTokenFilledAmounts;
         ExchangeOrderAddressSet  orderAddressSet;
     }
+
+    struct ExchangeSettleResult {
+        address incomeToken;
+        address outputToken;
+        uint256 incomeTokenAmount;
+        uint256 outputTokenAmount;
+    }
 }
 
 library Asset {

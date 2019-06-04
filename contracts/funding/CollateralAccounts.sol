@@ -106,6 +106,24 @@ library CollateralAccounts {
         Events.logDepositCollateral(assetID, account.owner, amount);
     }
 
+    function withdrawCollateral(
+        Store.State storage state,
+        uint32 accountID,
+        uint16 assetID,
+        uint256 amount
+    )
+        internal
+    {
+        if (amount == 0) {
+            return;
+        }
+
+        Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
+        account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].sub(amount);
+        state.balances[account.owner][assetID] = state.balances[account.owner][assetID].add(amount);
+
+        Events.logDepositWithdraw(assetID, account.owner, amount);
+    }
 
 
     /**
