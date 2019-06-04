@@ -42,7 +42,7 @@ library CollateralAccounts {
 
         if (account.owner != user) {
             // default account liquidate rate is 150%
-            id = createCollateralAccount(state, user, 150);
+            id = create(state, user, 150);
             state.userDefaultCollateralAccounts[user] = id;
             account = state.allCollateralAccounts[id];
         }
@@ -50,7 +50,7 @@ library CollateralAccounts {
         return account;
     }
 
-    function createCollateralAccount(
+    function create(
         Store.State storage state,
         address user,
         uint16 liquidateRate

@@ -89,7 +89,7 @@ library Margin {
         internal
     {
         // TODO: use real rate
-        uint32 accountID = CollateralAccounts.createCollateralAccount(
+        uint32 accountID = CollateralAccounts.create(
             state,
             openRequest.trader,
             110
@@ -103,7 +103,7 @@ library Margin {
             openRequest.collateralAmount
         );
 
-        // TODO: p2p check interest Rate and minExpiredAt
+        // TODO: check interest Rate and minExpiredAt in p2p mode
         Pool.borrow(
             state,
             accountID,
@@ -127,7 +127,7 @@ library Margin {
         Store.State storage state,
         OpenMarginRequest memory openRequest,
         uint32 accountID
-    ) internal {
+    ) internal view {
         Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
 
         require(
