@@ -1,4 +1,4 @@
-const { snapshot, revert } = require('./utils/evm');
+const { snapshot, revert } = require('./evm');
 
 let snapshotID;
 

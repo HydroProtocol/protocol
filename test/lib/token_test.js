@@ -1,6 +1,6 @@
 const assert = require('assert');
-const TestToken = artifacts.require('./helper/TestToken.sol');
-const { newContract } = require('./utils');
+const TestToken = artifacts.require('../helper/TestToken.sol');
+const { newContract } = require('../utils');
 
 contract('TestToken', accounts => {
     it('should return correct values', async () => {

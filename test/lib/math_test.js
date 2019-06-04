@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { newContract } = require('./utils');
-const TestMath = artifacts.require('./helper/TestMath.sol');
+const { newContract } = require('../utils');
+const TestMath = artifacts.require('../helper/TestMath.sol');
 
 contract('Math', accounts => {
     let math;

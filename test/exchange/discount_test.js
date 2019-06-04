@@ -1,4 +1,4 @@
-require('../hooks');
+require('../utils/hooks');
 
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
