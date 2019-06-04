@@ -238,6 +238,15 @@ contract ExternalFunctions is GlobalStore {
         Pool.supply(state, assetID, amount);
     }
 
+    function poolWithdraw(
+        uint16 assetID,
+        uint256 sharesAmount
+    )
+        external
+    {
+        Pool.withdraw(state, assetID, amount);
+    }
+
     function borrowFromPool(
         uint32 collateralAccountId,
         uint16 assetID,

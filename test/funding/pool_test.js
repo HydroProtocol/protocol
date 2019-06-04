@@ -1,23 +1,19 @@
+require('../utils/hooks');
 const Hydro = artifacts.require('./Hydro.sol');
 const assert = require('assert');
-
 const { createAssets } = require('../utils/assets');
-
 const { toWei } = require('../utils');
-
 const { toInterest, getInterestRate } = require('../utils/interest');
-
 const { updateTimestamp } = require('../utils/evm');
-
 const { snapshot, revert } = require('../utils/evm');
 
 contract('Pool', accounts => {
     let hydro;
-    let snapshotID;
+    const u1 = accounts[4];
+    const u2 = accounts[5];
 
-    before(async () => {
+    beforeEach(async () => {
         hydro = await Hydro.deployed();
-        snapshotID = await snapshot();
         await createAssets([
             {
                 symbol: 'ETH',
@@ -47,22 +43,15 @@ contract('Pool', accounts => {
         ]);
     });
 
-    afterEach(async () => {
-        await revert(snapshotID);
-    });
-
-    const u1 = accounts[4];
-    const u2 = accounts[5];
-
     /*
     0. u1 first supply
     1. u2 first borrow
     2. 6 months later u2 second borrow
-    3. 3 months later u1 second supply
-    4. u1 withdraw
+    3. 3 months later u1 withdraw supply
+    4. 1 months later u1 second supply
     */
     it('basic borrow', async () => {
-        const initTime = 1560000000;
+        const initTime = 1600000000;
         const USD = 1;
         const u2Default = await hydro.getUserDefaultAccount.call(u2);
 
@@ -121,16 +110,16 @@ contract('Pool', accounts => {
         // total annualInterest = 219.56 + 102.5 = 322.06
         assert.equal((await hydro.getPoolAnnualInterest.call(USD)).toString(), toWei('322.06'));
 
-        // 3 months later second supply
+        // 3 months later withdraw
         await updateTimestamp(initTime + 86400 * 270);
-        await hydro.deposit(1, toWei('500'), { from: u1 });
+        await hydro.poolWithdraw(1, toWei('500'), { from: u1 });
 
         assert.equal(
             (await hydro.getPoolTotalSupply.call(USD)).toString(),
-            '1629959999999999999999'
+            '1129959999999999999999'
         );
-        assert.equal((await hydro.getPoolTotalShares.call(USD)).toString(), toWei('1000'));
-        assert.equal((await hydro.getPoolSharesOf(USD, u1)).toString(), toWei('1000'));
+        // assert.equal((await hydro.getPoolTotalShares.call(USD)).toString(), toWei('1000'));
+        // assert.equal((await hydro.getPoolSharesOf(USD, u1)).toString(), toWei('1000'));
 
         // console.log(currentTime + 86400 * 180)
         // console.log((await web3.eth.getBlock(res.receipt.blockHash)).timestamp)
