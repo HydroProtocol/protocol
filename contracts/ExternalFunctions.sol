@@ -174,7 +174,8 @@ contract ExternalFunctions is GlobalStore {
         view
         returns(uint256)
     {
-        return Pool._getSupplyWithInterest(state, assetID);
+        return state.pool.totalSupply[assetID];
+        // return Pool._getSupplyWithInterest(state, assetID);
     }
 
     function getPoolTotalBorrow(
@@ -235,6 +236,15 @@ contract ExternalFunctions is GlobalStore {
         external
     {
         Pool.supply(state, assetID, amount);
+    }
+
+    function poolWithdraw(
+        uint16 assetID,
+        uint256 sharesAmount
+    )
+        external
+    {
+        Pool.withdraw(state, assetID, amount);
     }
 
     function borrowFromPool(

@@ -19,6 +19,7 @@
     "truffle-privatekey-provider": "^0.1.0"
   },
   "devDependencies": {
+    "prettier": "1.17.1",
     "ethereumjs-abi": "^0.6.7"
   }
 }
