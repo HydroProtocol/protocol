@@ -1,10 +1,8 @@
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
-const HydroToken = artifacts.require('./HydroToken.sol');
 const BigNumber = require('bignumber.js');
-
-const { setHotAmount, clone, toWei, wei } = require('../utils');
-const { revert, snapshot } = require('../utils/evm');
+require('../utils/hooks');
+const { setHotAmount, clone, toWei, wei, getUserKey } = require('../utils');
 const { buildOrder } = require('../utils/order');
 const { createAsset } = require('../utils/assets');
 
@@ -30,20 +28,10 @@ const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => 
 };
 
 contract('Match', async accounts => {
-    let hydro, hot;
-    let snapshotID;
+    let hydro;
 
     before(async () => {
-        hot = await HydroToken.deployed();
         hydro = await Hydro.deployed();
-    });
-
-    beforeEach(async () => {
-        snapshotID = await snapshot();
-    });
-
-    afterEach(async () => {
-        await revert(snapshotID);
     });
 
     const relayer = accounts[9];
@@ -53,19 +41,6 @@ contract('Match', async accounts => {
     const u3 = accounts[6];
 
     const users = [relayer, u1, u2, u3];
-
-    const getUserKey = u => {
-        switch (u) {
-            case u1:
-                return 'u1';
-            case u2:
-                return 'u2';
-            case u3:
-                return 'u3';
-            case relayer:
-                return 'relayer';
-        }
-    };
 
     const getTokenUsersBalances = async tokens => {
         const balances = {};

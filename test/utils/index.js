@@ -62,6 +62,31 @@ const pp = obj => {
     console.log(JSON.stringify(obj, null, 2));
 };
 
+const getUserKey = u => {
+    const accounts = web3.eth.getAccounts();
+    const relayer = accounts[9];
+    const u1 = accounts[4];
+    const u2 = accounts[5];
+    const u3 = accounts[6];
+    const u4 = accounts[7];
+    const u5 = accounts[8];
+
+    switch (u) {
+        case u1:
+            return 'u1';
+        case u2:
+            return 'u2';
+        case u3:
+            return 'u3';
+        case u4:
+            return 'u4';
+        case u5:
+            return 'u5';
+        case relayer:
+            return 'relayer';
+    }
+};
+
 module.exports = {
     newContract,
     newContractAt,
@@ -69,6 +94,7 @@ module.exports = {
     clone,
     setHotAmount,
     toWei,
+    getUserKey,
     wei,
     pp
 };

@@ -9,12 +9,6 @@
 // contract('Funding', accounts => {
 //     let funding, proxy, oracle;
 
-//     const relayer = accounts[9];
-
-//     const u1 = accounts[4];
-//     const u2 = accounts[5];
-//     const u3 = accounts[6];
-
 //     const users = [u1, u2, u3, relayer];
 
 //     beforeEach(async () => {

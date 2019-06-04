@@ -4,7 +4,7 @@ const Hydro = artifacts.require('./Hydro.sol');
 const TestToken = artifacts.require('./helper/TestToken.sol');
 
 const { createAssets } = require('../utils/assets');
-const { toWei, pp } = require('../utils');
+const { toWei, pp, getUserKey } = require('../utils');
 const { buildOrder } = require('../utils/order');
 
 contract('Margin', accounts => {
@@ -19,19 +19,6 @@ contract('Margin', accounts => {
     const u1 = accounts[4];
     const u2 = accounts[5];
     const u3 = accounts[6];
-
-    const getUserKey = u => {
-        switch (u) {
-            case u1:
-                return 'u1';
-            case u2:
-                return 'u2';
-            case u3:
-                return 'u3';
-            case relayer:
-                return 'relayer';
-        }
-    };
 
     const showLoans = (loans, indentation = 0) => {
         const ind = ' '.repeat(indentation);
