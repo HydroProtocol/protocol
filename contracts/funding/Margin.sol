@@ -80,9 +80,6 @@ library Margin {
         bytes32 nonce;
     }
 
-event L(address);
-event T(Types.ExchangeSettleResult);
-
     function open(
         Store.State storage state,
         OpenMarginRequest memory openRequest,
@@ -94,6 +91,7 @@ event T(Types.ExchangeSettleResult);
         uint32 accountID = CollateralAccounts.create(
             state,
             openRequest.trader,
+            Types.CollateralAccountCategory.Margin,
             110
         );
 
@@ -125,7 +123,7 @@ event T(Types.ExchangeSettleResult);
             params,
             state.allCollateralAccounts[accountID].collateralAssetAmounts
         );
-    // emit T(settleResult);
+
         // the exchange must have collateral asset token as income token
         require(
             settleResult.incomeToken == state.assets[openRequest.collateralAssetID].tokenAddress,
@@ -133,11 +131,10 @@ event T(Types.ExchangeSettleResult);
         );
 
         // the exchange must have borrow asset token as output token
-        // emit L(state.assets[openRequest.borrowAssetID].tokenAddress);
-        // require(
-        //     settleResult.outputToken != address(0),
-        //     "WRONG_OUTPUT_TOKEN"
-        // );
+        require(
+            settleResult.outputToken == state.assets[openRequest.borrowAssetID].tokenAddress,
+            "WRONG_OUTPUT_TOKEN"
+        );
 
         // the exchange must spend all borrowed tokens
         require(
@@ -161,7 +158,6 @@ event T(Types.ExchangeSettleResult);
         internal
         view
     {
-
         // account can't be liquidatable
         require(
             !CollateralAccounts.getCollateralAccountDetails(state, accountID).liquidable,
@@ -175,7 +171,7 @@ event T(Types.ExchangeSettleResult);
         uint256 amount;
         uint256 minExchangeAmount;
     }
-
+event X(uint256);
     function close(
         Store.State storage state,
         CloseMarginRequest memory closeRequest,
@@ -183,8 +179,10 @@ event T(Types.ExchangeSettleResult);
     )
         internal
     {
-        // TODO: check liquiditing.
+        Types.CollateralAccount storage account = state.allCollateralAccounts[closeRequest.accountID];
+        require(account.category == Types.CollateralAccountCategory.Margin, "NOT_MARGIN_COLLATERAL_ACCOUNT");
 
+        // TODO allow liquidatble ?
         Types.CollateralAccountDetails memory details = CollateralAccounts.getCollateralAccountDetails(state, closeRequest.accountID);
 
         // close ratio
@@ -196,33 +194,36 @@ event T(Types.ExchangeSettleResult);
             state, params, state.allCollateralAccounts[closeRequest.accountID].collateralAssetAmounts);
 
         // the exchange must have collateral asset token as income token
-        // require(
-        //     settleResult.incomeToken == state.assets[openRequest.collateralAssetID].tokenAddress,
-        //     "WRONG_INCOME_TOKEN"
-        // );
+        require(
+            settleResult.incomeToken == state.assets[state.allLoans[account.loanIDs[0]].assetID].tokenAddress,
+            "WRONG_INCOME_TOKEN"
+        );
 
-        // // the exchange must have borrow asset token as output token
-        // require(
-        //     settleResult.outputToken == state.assets[openRequest.borrowAssetID].tokenAddress,
-        //     "WRONG_OUTPUT_TOKEN"
-        // );
+        // the exchange must have borrow asset token as output token
+        require(
+            settleResult.outputToken == state.assets[closeRequest.assetID].tokenAddress,
+            "WRONG_OUTPUT_TOKEN"
+        );
 
-        // // the exchange must spend all borrowed tokens
-        // require(
-        //     settleResult.outputTokenAmount == openRequest.borrowAmount,
-        //     "BORROWED_AMOUNT_MUST_BE_TRADED"
-        // );
+        // the exchange must spend all borrowed tokens
+        require(
+            settleResult.outputTokenAmount == closeRequest.amount,
+            "CLOSED_AMOUNT_MUST_BE_TRADED"
+        );
 
-        // // the exchange must get enough income tokens
-        // require(
-        //     settleResult.incomeTokenAmount >= openRequest.minExchangeAmount,
-        //     "EXCHANGE_SLIPPAGE_TOO_BIG"
-        // );
+        // the exchange must get enough income tokens
+        require(
+            settleResult.incomeTokenAmount >= closeRequest.minExchangeAmount,
+            "EXCHANGE_SLIPPAGE_TOO_BIG"
+        );
 
         uint256 repayAmount = details.loansTotalUSDValue.mul(settleResult.incomeTokenAmount).div(details.collateralsTotalUSDlValue);
+
+        // TODO what to do if the result is negative?
         uint256 withdrawAmount = settleResult.incomeTokenAmount.sub(repayAmount);
 
-        Types.CollateralAccount storage account = state.allCollateralAccounts[closeRequest.accountID];
+        emit X(repayAmount);
+        emit X(withdrawAmount);
 
         // TODO loan repay
         Pool.repay(state, account.loanIDs[0], repayAmount);
@@ -230,10 +231,10 @@ event T(Types.ExchangeSettleResult);
         CollateralAccounts.withdrawCollateral(
             state,
             closeRequest.accountID,
-            closeRequest.assetID,
+            state.allLoans[account.loanIDs[0]].assetID,
             withdrawAmount
         );
 
-        validateAccount(state, closeRequest.accountID);
+        // validateAccount(state, closeRequest.accountID);
     }
 }

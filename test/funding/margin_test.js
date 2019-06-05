@@ -84,7 +84,7 @@ contract('Margin', accounts => {
                 symbol: 'ETH',
                 name: 'ETH',
                 decimals: 18,
-                oraclePrice: toWei('500'),
+                oraclePrice: toWei('100'),
                 collateralRate: 15000,
                 initBalances: {
                     [u1]: toWei('10'),
@@ -164,12 +164,170 @@ contract('Margin', accounts => {
                 relayer
             }
         };
-        await showStatus();
+        // await showStatus();
         const res = await hydro.openMargin(openMarginRequest, exchangeParams, {
             from: relayer,
             gasLimit: 1000000
         });
         console.log(`        1 Orders, Gas Used:`, res.receipt.gasUsed, pp(res));
+        // await showStatus();
+    });
+
+    it.only('partial margin close', async () => {
+        const [baseToken, quoteToken] = await createAssets([
+            {
+                symbol: 'ETH',
+                name: 'ETH',
+                decimals: 18,
+                oraclePrice: toWei('100'),
+                collateralRate: 15000,
+                initBalances: {
+                    [u1]: toWei('10'),
+                    [u2]: toWei('1')
+                }
+            },
+            {
+                symbol: 'USD',
+                name: 'USD',
+                decimals: 18,
+                oraclePrice: toWei('1'),
+                collateralRate: 15000,
+                initBalances: {
+                    [u1]: toWei('1000')
+                },
+                initPool: {
+                    [u1]: toWei('1000')
+                }
+            }
+        ]);
+
+        const openMarginRequest = {
+            borrowAssetID: 1, // USD
+            collateralAssetID: 0, // ETH
+            maxInterestRate: 65535,
+            minExpiredAt: 3500000000,
+            liquidationRate: 120,
+            expiredAt: 3500000000,
+            trader: u2,
+            minExchangeAmount: toWei('1'),
+            borrowAmount: toWei('300'),
+            collateralAmount: toWei('1'),
+            nonce: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        };
+
+        const openExchangeParams = {
+            takerOrderParam: await buildOrder(
+                {
+                    trader: u2,
+                    relayer,
+                    version: 2,
+                    side: 'buy',
+                    type: 'market',
+                    expiredAtSeconds: 3500000000,
+                    asMakerFeeRate: 0,
+                    asTakerFeeRate: 0,
+                    baseTokenAmount: toWei('0'),
+                    quoteTokenAmount: toWei('300'),
+                    gasTokenAmount: toWei('0')
+                },
+                baseToken.address,
+                quoteToken.address
+            ),
+            makerOrderParams: [
+                await buildOrder(
+                    {
+                        trader: u1,
+                        relayer,
+                        version: 2,
+                        side: 'sell',
+                        type: 'limit',
+                        expiredAtSeconds: 3500000000,
+                        asMakerFeeRate: 0,
+                        asTakerFeeRate: 0,
+                        baseTokenAmount: toWei('3'),
+                        quoteTokenAmount: toWei('300'),
+                        gasTokenAmount: toWei('0')
+                    },
+                    baseToken.address,
+                    quoteToken.address
+                )
+            ],
+            baseTokenFilledAmounts: [toWei('3')],
+            orderAddressSet: {
+                baseToken: baseToken.address,
+                quoteToken: quoteToken.address,
+                relayer
+            }
+        };
+        await showStatus();
+        const res = await hydro.openMargin(openMarginRequest, openExchangeParams, {
+            from: relayer,
+            gasLimit: 1000000
+        });
+        console.log(`        1 Orders, Gas Used:`, res.receipt.gasUsed, pp(res));
+        await showStatus();
+
+        // uint32 accountID;
+        // uint16 assetID;
+        // uint256 amount;
+        // uint256 minExchangeAmount;
+
+        const closeMarginRequest = {
+            accountID: 0,
+            assetID: 0, // ETH
+            amount: toWei('1'),
+            minExchangeAmount: toWei('100')
+        };
+
+        const closeExchangeParams = {
+            takerOrderParam: await buildOrder(
+                {
+                    trader: u2,
+                    relayer,
+                    version: 2,
+                    side: 'sell',
+                    type: 'market',
+                    expiredAtSeconds: 3500000000,
+                    asMakerFeeRate: 0,
+                    asTakerFeeRate: 0,
+                    baseTokenAmount: toWei('1'),
+                    quoteTokenAmount: toWei('0'),
+                    gasTokenAmount: toWei('0')
+                },
+                baseToken.address,
+                quoteToken.address
+            ),
+            makerOrderParams: [
+                await buildOrder(
+                    {
+                        trader: u1,
+                        relayer,
+                        version: 2,
+                        side: 'buy',
+                        type: 'limit',
+                        expiredAtSeconds: 3500000000,
+                        asMakerFeeRate: 0,
+                        asTakerFeeRate: 0,
+                        baseTokenAmount: toWei('1'),
+                        quoteTokenAmount: toWei('100'),
+                        gasTokenAmount: toWei('0')
+                    },
+                    baseToken.address,
+                    quoteToken.address
+                )
+            ],
+            baseTokenFilledAmounts: [toWei('1')],
+            orderAddressSet: {
+                baseToken: baseToken.address,
+                quoteToken: quoteToken.address,
+                relayer
+            }
+        };
+        const res2 = await hydro.closeMargin(closeMarginRequest, closeExchangeParams, {
+            from: relayer,
+            gasLimit: 1000000
+        });
+        console.log(`        1 Orders, Gas Used:`, res2.receipt.gasUsed, pp(res2));
         await showStatus();
     });
 });
