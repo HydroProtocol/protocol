@@ -9,8 +9,10 @@ const { snapshot, revert } = require('../utils/evm');
 
 contract('Pool', accounts => {
     let hydro;
+    let u2Default;
     const u1 = accounts[4];
     const u2 = accounts[5];
+    const USD = 1;
 
     beforeEach(async () => {
         hydro = await Hydro.deployed();
@@ -41,19 +43,43 @@ contract('Pool', accounts => {
                 }
             }
         ]);
+        u2Default = await hydro.getUserDefaultAccount.call(u2);
+    });
+
+    it('can not borrow more than supply', async () => {
+        try {
+            await hydro.borrowFromPool(
+                u2Default,
+                USD,
+                toWei('2000'),
+                toInterest(2),
+                Math.ceil(new Date().getTime() / 1000) + 86400,
+                {
+                    from: u2,
+                    gas: 500000
+                }
+            );
+        } catch (e) {
+            assert.equal((await hydro.getPoolTotalBorrow.call(USD)).toString(), '0');
+            assert.ok(e.message.match(/BORROW_EXCEED_LIMITATION/));
+            return;
+        }
+    });
+
+    it('can not borrow more than collateral', async()=>{
+        try {
+            await hydro.
+        }
     });
 
     /*
     0. u1 first supply
     1. u2 first borrow
     2. 6 months later u2 second borrow
-    3. 3 months later u1 withdraw supply
-    4. 1 months later u1 second supply
+    3. 6 months later u1 withdraw and supply again
     */
-    it('basic borrow', async () => {
-        const initTime = 1600000000;
-        const USD = 1;
-        const u2Default = await hydro.getUserDefaultAccount.call(u2);
+    it('multi-borrow and withdraw supply', async () => {
+        const initTime = Math.ceil(new Date().getTime() / 1000);
 
         // check init status
         assert.equal((await hydro.getPoolTotalSupply.call(USD)).toString(), toWei('1000'));
@@ -110,38 +136,24 @@ contract('Pool', accounts => {
         // total annualInterest = 219.56 + 102.5 = 322.06
         assert.equal((await hydro.getPoolAnnualInterest.call(USD)).toString(), toWei('322.06'));
 
-        // 3 months later withdraw
-        await updateTimestamp(initTime + 86400 * 270);
-        await hydro.poolWithdraw(1, toWei('500'), { from: u1 });
+        // 6 months later withdraw
+        await updateTimestamp(initTime + 86400 * 360);
+        await hydro.poolWithdraw(USD, toWei('500'), { from: u1 });
 
+        // new interest 158824109589041095890
+        // total supply 1209372054794520547944
         assert.equal(
             (await hydro.getPoolTotalSupply.call(USD)).toString(),
-            '1129959999999999999999'
+            '604686027397260273972'
         );
-        // assert.equal((await hydro.getPoolTotalShares.call(USD)).toString(), toWei('1000'));
-        // assert.equal((await hydro.getPoolSharesOf(USD, u1)).toString(), toWei('1000'));
+        assert.equal((await hydro.getPoolTotalShares.call(USD)).toString(), toWei('500'));
 
-        // console.log(currentTime + 86400 * 180)
-        // console.log((await web3.eth.getBlock(res.receipt.blockHash)).timestamp)
-
-        // borrowBlockTime = (await web3.eth.getBlock(res.receipt.blockHash)).timestamp;
-        // var secondBorrowInterest = new BigNumber(
-        //         getInterestRate(0.2, expiredAt - borrowBlockTime)
-        //     )
-        //     .multipliedBy(toWei('100'))
-        //     .plus(firstBorrowInterest)
-        //     .toString();
-        // contractAnnualInterest = (await hydro.getPoolAnnualInterest.call(
-        //     USD
-        // )).toString();
-        // assert.equal(contractAnnualInterest, secondBorrowInterest);
-
-        // supply more
-        // await depositPool();
-        // console.log(borrowBlockTime);
-        // console.log(currentTime + 86400 * 180);
-        // console.log(expectAnnualInterest);
-        // console.log((await hydro.getPoolTotalSupply(USD)).toString());
-        // const expectedSupply = new BigNumber(expectAnnualInterest).multipliedBy(0.5).
+        // keep block time unchanged and supply
+        await updateTimestamp(initTime + 86400 * 360);
+        await hydro.poolSupply(USD, toWei('100'), { from: u1 });
+        assert.equal(
+            (await hydro.getPoolTotalShares.call(USD)).toString(),
+            '582687539871252102302'
+        );
     });
 });

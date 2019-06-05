@@ -23,154 +23,184 @@ import "../lib/SafeMath.sol";
 import "../lib/Types.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
+import "../lib/Decimal.sol";
+import "../lib/Getters.sol";
 
 library Pool {
     using SafeMath for uint256;
 
-    // supply asset
-    function supply(Store.State storage state, uint16 assetID, uint256 amount) internal {
+    // create new pool
+    function createPool(
+        Store.State storage state,
+        uint16 assetID
+    ) internal {
+        state.pool.borrowIndex[assetID] = Decimal.one();
+        state.pool.supplyIndex[assetID] = Decimal.one();
+        state.pool.indexStartTime[assetID] = block.timestamp;
+    }
+
+    // four asset operation: supply, withdraw, borrow, repay
+    // 1. update index first to get the right logic amount
+    // 2. transfer asset
+    // 3. change logic supply and logic borrow
+    // 4. update interest rate
+
+    function supply(
+        Store.State storage state,
+        uint16 assetID,
+        uint256 amount
+    ) internal {
+
         require(state.balances[msg.sender][assetID] >= amount, "USER_BALANCE_NOT_ENOUGH");
 
-        uint256 shares;
+        // update index
+        _updateIndex(state, assetID);
 
-        if (state.pool.totalSupply[assetID] == 0){
-            shares = amount;
-        } else {
-            shares = amount.mul(state.pool.totalSupplyShares[assetID]).div(state.pool.totalSupply[assetID]);
+        // get logic amount
+        // round floor
+        uint256 logicAmount = Decimal.divFloor(amount, state.pool.supplyIndex[assetID]);
+
+        // transfer asset
+        state.balances[msg.sender][assetID] = state.balances[msg.sender][assetID].sub(amount);
+
+        // update logic amount
+        state.pool.locigSupply[assetID][msg.sender] = state.pool.locigSupply[assetID][msg.sender].add(logicAmount);
+        state.pool.logicTotalSupply[assetID] = state.pool.logicTotalSupply[assetID].add(logicAmount);
+
+        // update interest rate
+        _updateInterestRate(state, assetID);
+    }
+
+    function withdraw(
+        Store.State storage state,
+        uint16 assetID,
+        uint256 amount
+    ) internal {
+
+        // update index
+        _updateIndex(state, assetID);
+
+        // get logic amount
+        // round ceil
+        uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[assetID]);
+        uint256 withdrawAmount = amount;
+        if (state.pool.logicSupply[assetID][msg.sender] < logicAmount) {
+            logicAmount = state.pool.logicSupply[assetID][msg.sender];
+            withdrawAmount = logicAmount.mul(state.pool.supplyIndex[assetID]);
         }
 
-        // accrue interest
-        _accrueInterest(state, assetID);
+        // transfer asset
+        state.balances[msg.sender][assetID] = state.balances[msg.sender][assetID].add(withdrawAmount);
 
-        // new supply shares
-        state.balances[msg.sender][assetID] -= amount;
-        state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(amount);
-        state.pool.supplyShares[assetID][msg.sender] = state.pool.supplyShares[assetID][msg.sender].add(shares);
-        state.pool.totalSupplyShares[assetID] = state.pool.totalSupplyShares[assetID].add(shares);
+        // update logic amount
+        state.pool.logicSupply[assetID][msg.sender] = state.pool.logicSupply[assetID][msg.sender].sub(logicAmount);
+        state.pool.logicTotalSupply[assetID] = state.pool.logicTotalSupply[assetID].sub(logicAmount);
+
+        // update interest rate
+        _updateInterestRate(state, assetID);
     }
 
-    // withdraw asset
-    // to avoid precision problem, input share amount instead of token amount
-    function withdraw(Store.State storage state, uint16 assetID, uint256 sharesAmount) internal {
-
-        uint256 assetAmount = sharesAmount.mul(state.pool.totalSupply[assetID]).div(state.pool.totalSupplyShares[assetID]);
-        require(sharesAmount <= state.pool.supplyShares[assetID][msg.sender], "USER_BALANCE_NOT_ENOUGH");
-        require(assetAmount.add(state.pool.totalBorrow[assetID]) <= state.pool.totalSupply[assetID], "POOL_BALANCE_NOT_ENOUGH");
-
-        state.pool.supplyShares[assetID][msg.sender] -= sharesAmount;
-        state.pool.totalSupplyShares[assetID] -= sharesAmount;
-        state.pool.totalSupply[assetID] -= assetAmount;
-        state.balances[msg.sender][assetID] += assetAmount;
-
-    }
-
-    // borrow and repay
     function borrow(
         Store.State storage state,
-        uint32 collateralAccountId,
+        uint32 accountID,
         uint16 assetID,
-        uint256 amount,
-        uint16 maxInterestRate,
-        uint40 minExpiredAt
-    ) internal returns (uint32) {
+        uint256 amount
+    ) internal {
 
-        require(minExpiredAt > block.timestamp, "EXPIRED_AT_TOO_SMALL");
-        uint40 maxDuration = minExpiredAt - uint40(block.timestamp);
+         // update index
+        _updateIndex(state, assetID);
 
-        // check amount & interest
-        uint16 interestRate = getInterestRate(state, assetID, amount, maxDuration);
-        require(interestRate <= maxInterestRate, "INTEREST_RATE_EXCEED_LIMITATION");
-        _accrueInterest(state, assetID);
+        // get logic amount
+        uint256 logicAmount = Decimal.divCeil(amount, state.pool.borrowIndex[assetID]);
 
-        // build loan
-        Types.Loan memory loan = Types.Loan(
-            state.loansCount++,
-            assetID,
-            collateralAccountId,
-            uint40(block.timestamp),
-            minExpiredAt,
-            interestRate,
-            Types.LoanSource.Pool,
-            amount
-        );
+        // transfer assets
+        state.accountBalances[accountID][assetID] = state.accountBalances[accountID][assetID].add(amount);
 
-        // record global loan
-        state.allLoans[loan.id] = loan;
+        // update logic amount
+        state.pool.logicBorrow[assetID][accountID] = state.pool.logicBorrow[assetID][accountID].add(logicAmount);
+        state.pool.logicTotalBorrow[assetID] = state.pool.logicTotalBorrow[assetID].add(logicAmount);
 
-        // record collateral account loan
-        Types.CollateralAccount storage account = state.allCollateralAccounts[collateralAccountId];
-        account.loanIDs.push(loan.id);
+        require(isAccountSafe(accountID), "ACCOUNT_NOT_SAFE");
 
-        // set borrow amount
-        state.pool.totalBorrow[assetID] += amount;
-        state.pool.poolAnnualInterest[assetID] += amount.mul(interestRate).div(Consts.INTEREST_RATE_BASE());
-
-        return loan.id;
+        // update interest rate
+        _updateInterestRate(state, assetID);
     }
 
-    function repay(Store.State storage state, uint32 loanId, uint256 amount) internal {
+    function repay(
+        Store.State storage state,
+        uint16 assetID,
+        uint32 accountID,
+        uint256 amount
+    ) internal {
 
-        Types.Loan storage loan = state.allLoans[loanId];
-        require(loan.source==Types.LoanSource.Pool, "LOAN_NOT_CREATED_BY_POOL");
+        // update index
+        _updateIndex(state, assetID);
 
-        require(amount <= loan.amount, "REPAY_AMOUNT_TOO_MUCH");
+        // get logic amount
+        uint256 logicAmount = Decimal.divFloor(amount, state.pool.borrowIndex[assetID]);
+        uint256 repayAmount = amount;
+        // repay all logic amount greater than debt
+        if (state.pool.logicBorrow[assetID][accountID] < logicAmount){
+            logicAmount = state.pool.logicBorrow[assetID][accountID];
+            repayAmount = Decimal.mul(logicAmount, state.pool.borrowIndex[assetID]);
+        }
 
-        // minus first and add second
-        state.pool.poolAnnualInterest[loan.assetID] -= uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
-        loan.amount -= amount;
-        state.pool.poolAnnualInterest[loan.assetID] += uint256(loan.interestRate).mul(loan.amount).div(Consts.INTEREST_RATE_BASE());
+        // transfer assets
+        state.accountBalances[accountID][assetID] = state.accountBalances[accountID][assetID].sub(repayAmount);
 
-        state.pool.totalBorrow[loan.assetID] -= amount;
+        // update logic amount
+        state.pool.logicBorrow[assetID][accountID] = state.pool.logicBorrow[assetID][accountID].sub(logicAmount);
+        state.pool.logicTotalBorrow[assetID] = state.pool.logicTotalBorrow[assetID].sub(logicAmount);
 
+        // update interest rate
+        _updateInterestRate(state, assetID);
+    }
+
+
+    function _updateInterestRate(
+        Store.State storage state,
+        uint16 assetID
+    ) internal{
+        (uint256 borrowInterestRate, uint256 supplyInterestRate) = _getInterestRate(state, assetID);
+        state.pool.borrowAnnualInterestRate = borrowInterestRate;
+        state.pool.supplyAnnualInterestRate = supplyInterestRate;
     }
 
     // get interestRate
-    function getInterestRate(Store.State storage state, uint16 assetID, uint256 amount, uint40 maxDuration) internal view returns(uint16 interestRate){
-        // 使用计提利息后的supply
-        uint256 interest = _getUnpaidInterest(state, assetID);
+    function _getInterestRate(
+        Store.State storage state,
+        uint16 assetID
+    )
+        internal
+        view
+        returns(uint256 borrowInterestRate, uint256 supplyInterestRate)
+    {
 
-        uint256 _supply = state.pool.totalSupply[assetID].add(interest);
-        uint256 _borrow = state.pool.totalBorrow[assetID].add(amount);
+        uint256 _supply = Getters._getPoolTotalSupply(state, assetID);
+        uint256 _borrow = Getters._getPoolTotalBorrow(state, assetID);
 
         require(_supply >= _borrow, "BORROW_EXCEED_LIMITATION");
 
-        uint256 borrowRatio = _borrow.mul(Consts.INTEREST_RATE_BASE()).div(_supply);
+        if (supply == 0) {
+            return (0, 0);
+        }
+
+        uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
 
         // 0.2r + 0.5r^2
-        uint256 rate1 = borrowRatio.mul(Consts.INTEREST_RATE_BASE()).mul(2);
-        uint256 rate2 = borrowRatio.mul(borrowRatio).mul(5);
+        uint256 rate1 = borrowRatio.mul(2).div(10);
+        uint256 rate2 = Decimal.mul(borrowRatio, borrowRatio).mul(5).div(10);
+        borrowInterestRate = rate1.add(rate2);
+        supplyInterestRate = borrowInterestRate.mul(_borrow).div(_supply);
 
-        // duration penalty
-        uint256 penalty = uint256(maxDuration).mul(Consts.INTEREST_RATE_BASE()).div(Consts.SECONDS_OF_YEAR());
-
-        return uint16(rate1.add(rate2).div(Consts.INTEREST_RATE_BASE().mul(10)).add(penalty));
+        return (borrowInterestRate, supplyInterestRate);
     }
 
-    function _getSupplyWithInterest(Store.State storage state, uint16 assetID) internal view returns(uint256) {
-        uint256 interest = _getUnpaidInterest(state, assetID);
-        return state.pool.totalSupply[assetID].add(interest);
-    }
-
-    // accrue interest to totalSupply
-    function _accrueInterest(Store.State storage state, uint16 assetID) internal {
-
-        // interest since last update
-        uint256 interest = _getUnpaidInterest(state, assetID);
-
-        // accrue interest to supply
-        state.pool.totalSupply[assetID] = state.pool.totalSupply[assetID].add(interest);
-
-        // update interest time
-        state.pool.poolInterestStartTime[assetID] = uint40(block.timestamp);
-    }
-
-    function _getUnpaidInterest(Store.State storage state, uint16 assetID) internal view returns(uint256) {
-        uint256 interest = uint256(block.timestamp)
-            .sub(state.pool.poolInterestStartTime[assetID])
-            .mul(state.pool.poolAnnualInterest[assetID])
-            .div(Consts.SECONDS_OF_YEAR());
-
-        return interest;
+    function _updateIndex(Store.State storage state, uint16 assetID) internal {
+        (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = Getters._getPoolCurrentIndex(state, assetID);
+        state.pool.supplyIndex[assetID] = currentSupplyIndex;
+        state.pool.borrowIndex[assetID] = currentBorrowIndex;
+        state.pool.indexStartTime[assetID] = block.timestamp;
     }
 
 }

@@ -102,18 +102,22 @@ library Store {
     }
 
     struct PoolState {
-        mapping (uint16 => uint256) poolAnnualInterest;
-        mapping (uint16 => uint40) poolInterestStartTime;
+        mapping (uint16 => uint256) borrowIndex;
+        mapping (uint16 => uint256) supplyIndex;
+        mapping (uint16 => uint256) indexStartTime;
+
+        mapping (uint16 => uint256) borrowAnnualInterestRate;
+        mapping (uint16 => uint256) supplyAnnualInterestRate;
 
         // total suppy and borrow
-        mapping (uint16 => uint256) totalSupply;
-        mapping (uint16 => uint256) totalBorrow;
+        mapping (uint16 => uint256) logicTotalSupply;
+        mapping (uint16 => uint256) logicTotalBorrow;
 
-        // assetID => total shares
-        mapping (uint16 => uint256) totalSupplyShares;
+        // assetID => user => supply
+        mapping (uint16 => mapping (address => uint256)) logicSupply;
 
-        // assetID => user => shares
-        mapping (uint16 => mapping (address => uint256)) supplyShares;
+        // assetID => accountID => borrow
+        mapping (uint16 => mapping (uint32 => uint256)) logicBorrow;
     }
 
     struct State {
