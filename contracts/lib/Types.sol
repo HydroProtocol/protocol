@@ -75,13 +75,6 @@ library Types {
         OracleInterface oracle;
     }
 
-    struct LoanItem {
-        address lender;
-        uint16 interestRate;
-        uint256 amount;
-        bytes32 lenderOrderHash;
-    }
-
     // When someone borrows some asset from a source
     // A Loan is created to record the details
     struct Loan {

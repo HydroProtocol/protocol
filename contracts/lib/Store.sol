@@ -147,9 +147,6 @@ library Store {
         // all loans
         mapping(uint256 => Types.Loan) allLoans;
 
-        // p2p loan items
-        mapping(uint256 => Types.LoanItem[]) loanDetail;
-
         // all auctions
         mapping(uint256 => Types.Auction) allAuctions;
 
