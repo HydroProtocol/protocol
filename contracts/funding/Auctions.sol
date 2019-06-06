@@ -31,7 +31,7 @@ library Auctions {
 
     function fillAuction(
         Store.State storage state,
-        uint256 id
+        uint32 id
     ) internal {
         Types.Auction storage auction = state.auctions[id];
 
@@ -42,7 +42,7 @@ library Auctions {
 
     function fillAuctionWithAmount(
         Store.State storage state,
-        uint256 id,
+        uint32 id,
         uint256 repayAmount
     ) internal {
         // TODO, get debt from pool;
@@ -50,10 +50,16 @@ library Auctions {
 
         Types.Auction storage auction = state.auctions[id];
 
-        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
+        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset];
 
-        // TODO: market ID ???
-        Pool.repay(state, loan.id, repayAmount);
+        Pool.repay(
+            state,
+            state.wallets[msg.sender],
+            auction.debtAsset,
+            repayAmount,
+            auction.marketID,
+            auction.borrower
+        );
 
         uint256 ratio = auction.ratio();
 
@@ -61,16 +67,17 @@ library Auctions {
         uint256 amountLeft = leftCollateralAmount.mul(100 - ratio).mul(repayAmount).div(leftDebtAmount.mul(100));
 
         // bidder receive collateral
-        state.wallets[msg.sender][auction.collateralAsset] = state.wallets[msg.sender][auction.collateralAsset].add(amountToTake);
+        state.wallets[msg.sender].balances[auction.collateralAsset] = state.wallets[msg.sender].balances[auction.collateralAsset].add(amountToTake);
 
         // left part goes to auction collateral owner borrower
-        state.wallets[auction.borrower][auction.collateralAsset] = state.wallets[auction.borrower][auction.collateralAsset].add(amountLeft);
+        state.wallets[auction.borrower].balances[auction.collateralAsset] = state.wallets[auction.borrower].balances[auction.collateralAsset].add(amountLeft);
 
         Events.logFillAuction(id, repayAmount);
 
         // all debts are paid
-        if (leftDebtAmount <= repayAmont) {
+        if (leftDebtAmount <= repayAmount) {
             Events.logAuctionFinished(id);
+            Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
             account.status = Types.CollateralAccountStatus.Normal;
         }
     }
@@ -78,12 +85,10 @@ library Auctions {
     /**
      * Create a auction for a loan and save it in global state
      *
-     * @param loanAmount             Debt Amount of liquidated loan, unmodifiable
-     * @param collateralAssetAmounts Assets Amounts for auction
      */
     function create(
         Store.State storage state,
-        uint32 marketID,
+        uint16 marketID,
         address borrower,
         address debtAsset,
         address collateralAsset
@@ -94,11 +99,11 @@ library Auctions {
 
         Types.Auction memory auction = Types.Auction({
             id: id,
-            marketID: marketID,
             startBlockNumber: uint32(block.number),
+            marketID: marketID,
+            borrower: borrower,
             debtAsset: debtAsset,
-            collateralAsset: collateralAsset,
-            borrower: borrower
+            collateralAsset: collateralAsset
         });
 
         state.auctions[id] = auction;

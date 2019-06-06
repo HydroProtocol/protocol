@@ -28,7 +28,7 @@ import "../lib/Store.sol";
 import "../lib/Types.sol";
 import "../lib/Transfer.sol";
 import "../lib/Events.sol";
-import "../funding/Assets.sol";
+import "../lib/Transfer.sol";
 
 import "./Discount.sol";
 
@@ -46,6 +46,7 @@ library Exchange {
     struct OrderInfo {
         bytes32 orderHash;
         uint256 filledAmount;
+        Types.WalletPath walletPath;
     }
 
     /**
@@ -54,8 +55,7 @@ library Exchange {
      */
     function exchangeMatchOrders(
         Store.State storage state,
-        Types.ExchangeMatchParams memory params,
-        mapping(uint16 => uint256) storage takerBalances
+        Types.ExchangeMatchParams memory params
     )
         internal
         returns (Types.ExchangeSettleResult memory)
@@ -95,7 +95,7 @@ library Exchange {
         // Update amount filled for this taker order.
         state.exchange.filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
 
-        return settleResults(state, results, params.takerOrderParam, params.orderAddressSet, takerBalances);
+        return settleResults(state, results, params.takerOrderParam, params.orderAddressSet);
     }
 
     /**
@@ -161,6 +161,12 @@ library Exchange {
             Signature.isValidSignature(orderInfo.orderHash, orderParam.trader, orderParam.signature),
             Errors.INVALID_ORDER_SIGNATURE()
         );
+
+        orderInfo.walletPath = Types.WalletPath({
+            user: order.trader,
+            category: Types.WalletCategory.Balance,
+            marketID: 0
+        });
 
         return orderInfo;
     }
@@ -252,6 +258,9 @@ library Exchange {
     {
         result.baseTokenFilledAmount = baseTokenFilledAmount;
         result.quoteTokenFilledAmount = convertBaseToQuote(makerOrderParam, baseTokenFilledAmount);
+
+        result.takerWalletPath = takerOrderInfo.walletPath;
+        result.makerWalletPath = makerOrderInfo.walletPath;
 
         // Each order only pays gas once, so only pay gas when nothing has been filled yet.
         if (takerOrderInfo.filledAmount == 0) {
@@ -415,16 +424,15 @@ library Exchange {
         Store.State storage state,
         Types.ExchangeMatchResult[] memory results,
         Types.ExchangeOrderParam memory takerOrderParam,
-        Types.ExchangeOrderAddressSet memory orderAddressSet,
-        mapping(uint16 => uint256) storage takerBalances
+        Types.ExchangeOrderAddressSet memory orderAddressSet
     )
         internal
         returns (Types.ExchangeSettleResult memory)
     {
         if (takerOrderParam.isSell()) {
-            return settleTakerSell(state, results, orderAddressSet, takerBalances);
+            return settleTakerSell(state, results, orderAddressSet);
         } else {
-            return settleTakerBuy(state, results, orderAddressSet, takerBalances);
+            return settleTakerBuy(state, results, orderAddressSet);
         }
     }
 
@@ -456,8 +464,7 @@ library Exchange {
     function settleTakerSell(
         Store.State storage state,
         Types.ExchangeMatchResult[] memory results,
-        Types.ExchangeOrderAddressSet memory orderAddressSet,
-        mapping(uint16 => uint256) storage takerBalances
+        Types.ExchangeOrderAddressSet memory orderAddressSet
     )
         internal
         returns (Types.ExchangeSettleResult memory settleResult)
@@ -466,15 +473,18 @@ library Exchange {
         settleResult.outputToken = orderAddressSet.baseToken;
 
         uint256 totalTakerQuoteTokenFilledAmount = 0;
+        Types.WalletPath memory relayerWalletPath = Types.WalletPath({
+            user: orderAddressSet.relayer,
+            marketID: 0,
+            category: Types.WalletCategory.Balance
+        });
 
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
-                takerBalances,
-                state.balances[results[i].maker],
                 orderAddressSet.baseToken,
-                results[i].taker,
-                results[i].maker,
+                results[i].takerWalletPath,
+                results[i].makerWalletPath,
                 results[i].baseTokenFilledAmount
             );
 
@@ -487,11 +497,9 @@ library Exchange {
 
             transferFrom(
                 state,
-                state.balances[results[i].maker],
-                state.balances[orderAddressSet.relayer],
                 orderAddressSet.quoteToken,
-                results[i].maker,
-                orderAddressSet.relayer,
+                results[i].makerWalletPath,
+                relayerWalletPath,
                 amount
             );
 
@@ -504,11 +512,9 @@ library Exchange {
 
         transferFrom(
             state,
-            state.balances[orderAddressSet.relayer],
-            takerBalances,
             orderAddressSet.quoteToken,
-            orderAddressSet.relayer,
-            results[0].taker,
+            relayerWalletPath,
+            results[0].takerWalletPath,
             totalTakerQuoteTokenFilledAmount.sub(results[0].takerGasFee)
         );
 
@@ -543,8 +549,7 @@ library Exchange {
     function settleTakerBuy(
         Store.State storage state,
         Types.ExchangeMatchResult[] memory results,
-        Types.ExchangeOrderAddressSet memory orderAddressSet,
-        mapping(uint16 => uint256) storage takerBalances
+        Types.ExchangeOrderAddressSet memory orderAddressSet
     )
         internal
         returns (Types.ExchangeSettleResult memory settleResult)
@@ -553,15 +558,18 @@ library Exchange {
         settleResult.outputToken = orderAddressSet.quoteToken;
 
         uint256 totalFee = 0;
+        Types.WalletPath memory relayerWalletPath = Types.WalletPath({
+            user: orderAddressSet.relayer,
+            marketID: 0,
+            category: Types.WalletCategory.Balance
+        });
 
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
-                state.balances[results[i].maker],
-                takerBalances,
                 orderAddressSet.baseToken,
-                results[i].maker,
-                results[i].taker,
+                results[i].makerWalletPath,
+                results[i].takerWalletPath,
                 results[i].baseTokenFilledAmount
             );
 
@@ -574,11 +582,9 @@ library Exchange {
 
             transferFrom(
                 state,
-                takerBalances,
-                state.balances[results[i].maker],
                 orderAddressSet.quoteToken,
-                results[i].taker,
-                results[i].maker,
+                results[i].takerWalletPath,
+                results[i].makerWalletPath,
                 amount
             );
 
@@ -596,11 +602,9 @@ library Exchange {
 
         transferFrom(
             state,
-            takerBalances,
-            state.balances[orderAddressSet.relayer],
             orderAddressSet.quoteToken,
-            results[0].taker,
-            orderAddressSet.relayer,
+            results[0].takerWalletPath,
+            relayerWalletPath,
             totalFee
         );
 
@@ -608,35 +612,16 @@ library Exchange {
     }
 
     /**
-     * @param token  The address of the ERC20 token we will be transferring, 0 for ETH.
-     * @param from   The address we will be transferring from.
-     * @param to     The address we will be transferring to.
-     * @param amount The amount of token we will be transferring.
      */
     function transferFrom(
         Store.State storage state,
-        mapping(uint16 => uint256) storage fromBalances,
-        mapping(uint16 => uint256) storage toBalances,
-        address token,
-        address from,
-        address to,
+        address asset,
+        Types.WalletPath memory fromPath,
+        Types.WalletPath memory toPath,
         uint256 amount
     )
         internal
     {
-        // TODO: allow no assetID token transfer
-        uint16 assetID = Assets.getAssetIDByAddress(state, token);
-
-        // do nothing when amount is zero
-        if (amount == 0) {
-            return;
-        }
-
-        require(fromBalances[assetID] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
-
-        fromBalances[assetID] = fromBalances[assetID].sub(amount);
-        toBalances[assetID] = toBalances[assetID].add(amount);
-
-        Events.logTransfer(assetID, from, to, amount);
+        Transfer.transferFrom(state, asset, fromPath, toPath, amount);
     }
 }

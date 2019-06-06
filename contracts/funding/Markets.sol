@@ -36,8 +36,8 @@ library Markets {
         Store.State storage state,
         Types.Market memory market
     ) {
-        require(state.oracles[market.baseAsset] != address(0), "MARKET_BASE_ASSET_INVALID");
-        require(state.oracles[market.quoteAsset] != address(0), "MARKET_QUOTE_ASSET_INVALID");
+        require(state.oracles[market.baseAsset] != OracleInterface(address(0)), "MARKET_BASE_ASSET_INVALID");
+        require(state.oracles[market.quoteAsset] != OracleInterface(address(0)), "MARKET_QUOTE_ASSET_INVALID");
         _;
     }
 
@@ -87,8 +87,7 @@ library Markets {
         marketNotExist(state, market)
         marketAssetsValid(state, market)
     {
-        uint256 index = state.marketsCount++;
-        state.markets[index] = market;
+        state.markets[state.marketsCount++] = market;
         Events.logMarketCreate(market);
     }
 }
