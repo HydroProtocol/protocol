@@ -33,7 +33,7 @@ library Auctions {
         Store.State storage state,
         uint256 id
     ) internal {
-        Types.Auction storage auction = state.allAuctions[id];
+        Types.Auction storage auction = state.auctions[id];
 
         // TODO, get debt from pool;
         uint256 leftDebtAmount = 0;
@@ -48,7 +48,7 @@ library Auctions {
         // TODO, get debt from pool;
         uint256 leftDebtAmount = 0;
 
-        Types.Auction storage auction = state.allAuctions[id];
+        Types.Auction storage auction = state.auctions[id];
 
         uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
@@ -101,7 +101,7 @@ library Auctions {
             borrower: borrower
         });
 
-        state.allAuctions[id] = auction;
+        state.auctions[id] = auction;
 
         Events.logAuctionCreate(id);
     }

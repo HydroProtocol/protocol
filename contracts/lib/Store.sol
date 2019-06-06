@@ -126,14 +126,14 @@ library Store {
 
         address hotTokenAddress;
 
-        // address => marketID => account
+        // user => marketID => account
         mapping(address => mapping(uint32 => Types.CollateralAccount)) accounts;
 
-        // all supported assets
-        mapping(uint256 => Types.Asset) assets;
+        // all markets
+        mapping(uint32 => Types.Market) markets;
 
         // all auctions
-        mapping(uint256 => Types.Auction) allAuctions;
+        mapping(uint32 => Types.Auction) auctions;
 
         // user balances
         mapping(address => Types.Wallet) wallets;
