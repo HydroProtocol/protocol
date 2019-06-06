@@ -27,55 +27,55 @@ library Events {
     //////////////////
 
     // some assets move into contract
-    event Deposit(uint16 assetID, address from, address to, uint256 amount);
+    event Deposit(address asset, address from, Types.WalletPath toPath, uint256 amount);
 
-    function logDeposit(uint16 assetID, address from, address to, uint256 amount) internal {
-        emit Deposit(assetID, from, to, amount);
+    function logDeposit(address asset, address from, Types.WalletPath memory toPath, uint256 amount) internal {
+        emit Deposit(asset, from, toPath, amount);
     }
 
     // some assets move out of contract
-    event Withdraw(uint16 assetID, address from, address to, uint256 amount);
+    event Withdraw(address asset, Types.WalletPath fromPath, address to, uint256 amount);
 
-    function logWithdraw(uint16 assetID, address from, address to, uint256 amount) internal {
-        emit Withdraw(assetID, from, to, amount);
+    function logWithdraw(address asset, Types.WalletPath memory fromPath, address to, uint256 amount) internal {
+        emit Withdraw(asset, fromPath, to, amount);
     }
 
     // internal assets movement
-    event Transfer(uint16 assetID, address from, address to, uint256 amount);
+    event Transfer(address asset, Types.WalletPath fromPath, Types.WalletPath toPath, uint256 amount);
 
-    function logTransfer(uint16 assetID, address from, address to, uint256 amount) internal {
-        emit Transfer(assetID, from, to, amount);
+    function logTransfer(address asset, Types.WalletPath memory fromPath, Types.WalletPath memory toPath, uint256 amount) internal {
+        emit Transfer(asset, fromPath, toPath, amount);
     }
 
     // a user deposit tokens to default collateral account
-    event DepositCollateral(uint16 assetID, address user, uint256 amount);
+    event DepositCollateral(address asset, address user, uint256 amount);
 
-    function logDepositCollateral(uint16 assetID, address user, uint256 amount) internal {
-        emit DepositCollateral(assetID, user, amount);
+    function logDepositCollateral(address asset, address user, uint256 amount) internal {
+        emit DepositCollateral(asset, user, amount);
     }
 
     // a user deposit tokens to default collateral account
-    event DepositWithdraw(uint16 assetID, address user, uint256 amount);
+    event DepositWithdraw(address asset, address user, uint256 amount);
 
-    function logDepositWithdraw(uint16 assetID, address user, uint256 amount) internal {
-        emit DepositWithdraw(assetID, user, amount);
+    function logDepositWithdraw(address asset, address user, uint256 amount) internal {
+        emit DepositWithdraw(asset, user, amount);
     }
 
     // a user withdraw tokens from default collateral account
-    event WithdrawCollateral(uint16 assetID, address user, uint256 amount);
+    event WithdrawCollateral(address asset, address user, uint256 amount);
 
-    function logWithdrawCollateral(uint16 assetID, address user, uint256 amount) internal {
-        emit WithdrawCollateral(assetID, user, amount);
+    function logWithdrawCollateral(address asset, address user, uint256 amount) internal {
+        emit WithdrawCollateral(asset, user, amount);
     }
 
     ///////////////////
     // Admin Actions //
     ///////////////////
 
-    event AssetCreate(Types.Asset asset);
+    event MarketCreate(Types.Market asset);
 
-    function logAssetCreate(Types.Asset memory asset) internal {
-        emit AssetCreate(asset);
+    function logMarketCreate(Types.Market memory market) internal {
+        emit MarketCreate(market);
     }
 
     event DiscountConfigChange(bytes32 newConfig);

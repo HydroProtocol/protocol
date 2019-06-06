@@ -21,9 +21,8 @@ pragma experimental ABIEncoderV2;
 
 import "./exchange/Exchange.sol";
 
-import "./funding/Assets.sol";
+import "./funding/Markets.sol";
 import "./funding/Pool.sol";
-import "./funding/Margin.sol";
 import "./funding/CollateralAccounts.sol";
 import "./GlobalStore.sol";
 
@@ -60,98 +59,66 @@ contract ExternalFunctions is GlobalStore {
     // }
 
     //////////////////////
-    // Assets Functions //
+    // Markets Functions //
     //////////////////////
 
-    function getAllAssetsCount()
+    function getAllMarketsCount()
         external
         view
         returns (uint256)
     {
-        return Assets.getAllAssetsCount(state);
+        return Markets.getAllMarketsCount(state);
     }
 
-    function getAssetID(address tokenAddress)
+    function getMarket(uint16 marketID)
         external
-        view returns (uint16 assetID)
+        view returns (Types.Market memory)
     {
-        return Assets.getAssetIDByAddress(state, tokenAddress);
-    }
-
-    function getAssetInfo(uint16 assetID)
-        external
-        view returns (address tokenAddress, address oracleAddress, uint256 collateralRate)
-    {
-        Types.Asset storage asset = state.assets[assetID];
-        oracleAddress = address(asset.oracle);
-        return (asset.tokenAddress, address(asset.oracle), asset.collateralRate);
+        return state.markets[marketID];
     }
 
     //////////////////////////////////
     // Collateral Account Functions //
     //////////////////////////////////
 
-    function getCollateralAccountsCount()
-        external
-        view
-        returns (uint256)
-    {
-        return state.collateralAccountCount;
-    }
-
-    function liquidateCollateralAccounts(uint256[] calldata accountIDs)
+    function liquidateAccounts(
+        address[] calldata users,
+        uint16[] calldata marketIDs
+    )
         external
     {
-        CollateralAccounts.liquidateCollateralAccounts(state, accountIDs);
+        CollateralAccounts.liquidateMulti(state, users, marketIDs);
     }
 
-    function liquidateCollateralAccount(uint256 accountID)
+    function liquidateCollateralAccount(
+        address user,
+        uint16 marketID
+    )
         external
     {
-        CollateralAccounts.liquidateCollateralAccount(state, accountID);
+        CollateralAccounts.liquidate(state, user, marketID);
     }
 
-    function isCollateralAccountLiquidable(
-        uint256 accountID
+    function isAccountLiquidable(
+        address user,
+        uint16 marketID
     )
         external
         view
         returns (bool)
     {
-        return CollateralAccounts.isCollateralAccountLiquidable(state, accountID);
+        return CollateralAccounts.getDetails(state, user, marketID).liquidable;
     }
 
-    function getUserDefaultAccount(
-        address user
+    function getAccountDetails(
+     address user,
+        uint16 marketID
     )
         external
         view
-        returns (uint32)
+        returns (Types.CollateralAccountDetails memory details)
     {
-        return uint32(state.userDefaultCollateralAccounts[user]);
-    }
-
-    function getCollateralAccountDetails(
-        uint256 accountID
-    )
-        external
-        view
-        returns (Types.CollateralAccountDetails memory)
-    {
-        return CollateralAccounts.getCollateralAccountDetails(state, accountID);
-    }
-
-    ////////////////////
-    // Loan Functions //
-    ////////////////////
-
-    function repayLoan(
-        uint32 loanID,
-        uint256 amount
-    )
-        external
-    {
-
+        return CollateralAccounts.getDetails(state, user, marketID);
     }
 
     ////////////////////
@@ -215,22 +182,22 @@ contract ExternalFunctions is GlobalStore {
     // Transfer Functions //
     ////////////////////////
 
-    function deposit(uint16 assetID, uint256 amount) external payable {
-        Transfer.deposit(state, assetID, amount);
+    function deposit(address asset, uint256 amount) external payable {
+        Transfer.depositFor(state, asset, msg.sender, WalletPath.getBalancePath(msg.sender), amount);
     }
 
-    function withdraw(uint16 assetID, uint256 amount) external {
-        Transfer.withdraw(state, assetID, amount);
+    function withdraw(address asset, uint256 amount) external {
+        Transfer.withdrawFrom(state, asset, WalletPath.getBalancePath(msg.sender), msg.sender, amount);
     }
 
-    function balanceOf(uint16 assetID, address user) external view returns (uint256) {
-        return Transfer.balanceOf(state, assetID, user);
+    function balanceOf(address asset, address user) external view returns (uint256) {
+        return Transfer.balanceOf(state,  WalletPath.getBalancePath(user), asset);
     }
 
     /** @dev fallback function to allow deposit ether into this contract */
     function () external payable {
         // deposit ${msg.value} ether for ${msg.sender}
-        Transfer.deposit(state, Assets.getAssetIDByAddress(state, Consts.ETHEREUM_TOKEN_ADDRESS()), msg.value);
+        Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, WalletPath.getBalancePath(msg.sender), msg.value);
     }
 
     //////////////
@@ -246,7 +213,7 @@ contract ExternalFunctions is GlobalStore {
     }
 
     function exchangeMatchOrders(Types.ExchangeMatchParams memory params) public {
-        Exchange.exchangeMatchOrders(state, params, state.balances[params.takerOrderParam.trader]);
+        Exchange.exchangeMatchOrders(state, params);
     }
 
     function getDiscountedRate(address user) external view returns (uint256) {
@@ -259,17 +226,5 @@ contract ExternalFunctions is GlobalStore {
 
     function getExchangeOrderFilledAmount(bytes32 orderHash) external view returns (uint256) {
         return state.exchange.filled[orderHash];
-    }
-
-    ////////////
-    // Margin //
-    ////////////
-
-    function openMargin(Margin.OpenMarginRequest memory openRequest, Types.ExchangeMatchParams memory params) public {
-        Margin.open(state, openRequest, params);
-    }
-
-    function closeMargin(Margin.CloseMarginRequest memory closeRequest, Types.ExchangeMatchParams memory params) public {
-        Margin.close(state, closeRequest, params);
     }
 }

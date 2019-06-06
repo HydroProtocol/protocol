@@ -31,65 +31,67 @@ library Auctions {
 
     function fillAuction(
         Store.State storage state,
-        uint256 id
+        uint32 id
     ) internal {
-        Types.Auction storage auction = state.allAuctions[id];
-        Types.Loan storage loan = state.allLoans[auction.loanID];
-        fillAuctionWithAmount(state, id, loan.amount);
+        Types.Auction storage auction = state.auctions[id];
+
+        // TODO, get debt from pool;
+        uint256 leftDebtAmount = 0;
+        fillAuctionWithAmount(state, id, leftDebtAmount);
     }
 
     function fillAuctionWithAmount(
         Store.State storage state,
-        uint256 id,
+        uint32 id,
         uint256 repayAmount
     ) internal {
-        Types.Auction storage auction = state.allAuctions[id];
-        Types.Loan storage loan = state.allLoans[auction.loanID];
+        // TODO, get debt from pool;
+        uint256 leftDebtAmount = 0;
 
-        // TODO repay p2p loan
-        Pool.repay(state, loan.id, repayAmount);
+        Types.Auction storage auction = state.auctions[id];
+
+        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset];
+
+        Pool.repay(
+            state,
+            state.wallets[msg.sender],
+            auction.debtAsset,
+            repayAmount,
+            auction.marketID,
+            auction.borrower
+        );
 
         uint256 ratio = auction.ratio();
 
-        // receive assets
-        for (uint16 i = 0; i < state.assetsCount; i++) {
-            if (auction.assetAmounts[i] == 0) {
-                continue;
-            }
+        uint256 amountToTake = leftCollateralAmount.mul(ratio).mul(repayAmount).div(leftDebtAmount.mul(100));
+        uint256 amountLeft = leftCollateralAmount.mul(100 - ratio).mul(repayAmount).div(leftDebtAmount.mul(100));
 
-            uint256 amountToTake = auction.assetAmounts[i].mul(ratio).mul(repayAmount).div(auction.totalLoanAmount.mul(100));
-            uint256 amountLeft = auction.assetAmounts[i].mul(100 - ratio).mul(repayAmount).div(auction.totalLoanAmount.mul(100));
+        // bidder receive collateral
+        state.wallets[msg.sender].balances[auction.collateralAsset] = state.wallets[msg.sender].balances[auction.collateralAsset].add(amountToTake);
 
-            // bidder receive collateral
-            state.balances[msg.sender][i] = state.balances[msg.sender][i].add(amountToTake);
-
-            // left part goes to auction.owner (borrower)
-            state.balances[auction.borrower][i] = state.balances[auction.borrower][i].add(amountLeft);
-        }
+        // left part goes to auction collateral owner borrower
+        state.wallets[auction.borrower].balances[auction.collateralAsset] = state.wallets[auction.borrower].balances[auction.collateralAsset].add(amountLeft);
 
         Events.logFillAuction(id, repayAmount);
 
-        if (loan.amount == 0) {
-            delete state.allAuctions[id]; // TODO ??
+        // all debts are paid
+        if (leftDebtAmount <= repayAmount) {
             Events.logAuctionFinished(id);
+            Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
+            account.status = Types.CollateralAccountStatus.Normal;
         }
     }
 
     /**
      * Create a auction for a loan and save it in global state
      *
-     * @param loanID                 ID of liquidated loan
-     * @param loanAmount             Debt Amount of liquidated loan, unmodifiable
-     * @param collateralAssetAmounts Assets Amounts for auction
      */
-    function createAuction(
+    function create(
         Store.State storage state,
-        uint32 loanID,
+        uint16 marketID,
         address borrower,
-        uint256 loanAmount,
-        uint256 loanUSDValue,
-        uint256 totalLoansUSDValue,
-        uint256[] memory collateralAssetAmounts
+        address debtAsset,
+        address collateralAsset
     )
         internal
     {
@@ -98,34 +100,14 @@ library Auctions {
         Types.Auction memory auction = Types.Auction({
             id: id,
             startBlockNumber: uint32(block.number),
-            loanID: loanID,
+            marketID: marketID,
             borrower: borrower,
-            totalLoanAmount: loanAmount
+            debtAsset: debtAsset,
+            collateralAsset: collateralAsset
         });
 
-        state.allAuctions[id] = auction;
-
-        for (uint256 i = 0; i < collateralAssetAmounts.length; i++ ) {
-            state.allAuctions[id].assetAmounts[i] = loanUSDValue.mul(collateralAssetAmounts[i]).div(totalLoansUSDValue);
-        }
+        state.auctions[id] = auction;
 
         Events.logAuctionCreate(id);
-    }
-
-    function removeLoanIDFromCollateralAccount(
-        Store.State storage state,
-        uint256 loanID,
-        uint256 accountID
-    ) internal {
-        Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
-
-        for (uint32 i = 0; i < account.loanIDs.length; i++){
-            if (account.loanIDs[i] == loanID) {
-                account.loanIDs[i] = account.loanIDs[account.loanIDs.length-1];
-                delete account.loanIDs[account.loanIDs.length - 1];
-                account.loanIDs.length--;
-                break;
-            }
-        }
     }
 }

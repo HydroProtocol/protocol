@@ -23,8 +23,8 @@ import "./SafeMath.sol";
 import "./EIP712.sol";
 import "./Math.sol";
 import "./Consts.sol";
+import "./Store.sol";
 import "./Signature.sol";
-import "../interfaces/OracleInterface.sol";
 
 library Types {
     enum LoanSource {
@@ -63,24 +63,30 @@ library Types {
         bytes32 s;
     }
 
-    struct Asset {
-        address tokenAddress;
-        OracleInterface oracle;
-    }
-
     struct Wallet {
         mapping(address => uint256) balances;
     }
 
-    struct Market {
-        uint16 baseAssetID;
-        uint16 quoteAssetID;
+    enum WalletCategory {
+        Balance,
+        CollateralAccount
+    }
 
+    struct WalletPath {
+        WalletCategory category;
+        uint32 marketID;
+        address user;
+    }
+
+    struct Market {
         // If the collateralRate is below this rate, the account will be liquidated
         uint16 liquidateRate;
 
         // If the collateralRate is above this rate, the account asset balance can be withdrawed
         uint16 withdrawRate;
+
+        address baseAsset;
+        address quoteAsset;
     }
 
     struct CollateralAccount {
@@ -104,13 +110,13 @@ library Types {
 
         // To calculate the ratio
         uint32 startBlockNumber;
+
+        uint16 marketID;
+
         address borrower;
         address debtAsset;
-        address collateralAsset;
 
-        uint256 debtAmount;
-        uint256 leftDebtAmount;
-        uint256 collateralAmount;
+        address collateralAsset;
     }
 
     struct ExchangeOrder {
@@ -177,6 +183,8 @@ library Types {
         uint256 takerGasFee;
         uint256 baseTokenFilledAmount;
         uint256 quoteTokenFilledAmount;
+        WalletPath makerWalletPath;
+        WalletPath takerWalletPath;
     }
     /**
      * @param takerOrderParam A Types.ExchangeOrderParam object representing the order from the taker.
@@ -198,16 +206,49 @@ library Types {
     }
 }
 
-library Asset {
-    function getPrice(Types.Asset storage asset) internal view returns (uint256) {
-        return asset.oracle.getPrice(asset.tokenAddress);
-    }
-}
-
 library Auction {
     function ratio(Types.Auction memory auction) internal view returns (uint256) {
         uint256 currentRatio = block.number - auction.startBlockNumber;
         return currentRatio < 100 ? currentRatio : 100;
+    }
+}
+
+library WalletPath {
+    function getWallet(Types.WalletPath memory path, Store.State storage state) internal view returns (Types.Wallet storage) {
+        if (path.category == Types.WalletCategory.Balance) {
+            return state.wallets[path.user];
+        } else {
+            return state.accounts[path.user][path.marketID].wallet;
+        }
+    }
+
+    function getBalancePath(
+        address user
+    )
+        internal
+        pure
+        returns (Types.WalletPath memory)
+    {
+        return Types.WalletPath({
+            user: user,
+            category: Types.WalletCategory.Balance,
+            marketID: 0
+        });
+    }
+
+    function getMarketPath(
+        address user,
+        uint16 marketID
+    )
+        internal
+        pure
+        returns (Types.WalletPath memory)
+    {
+        return Types.WalletPath({
+            user: user,
+            category: Types.WalletCategory.CollateralAccount,
+            marketID: marketID
+        });
     }
 }
 

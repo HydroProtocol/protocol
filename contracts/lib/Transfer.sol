@@ -24,142 +24,94 @@ import "./SafeMath.sol";
 import "./SafeERC20.sol";
 import "./Consts.sol";
 import "./Store.sol";
+import "./Types.sol";
 
 library Transfer {
     using SafeMath for uint256;
-
-    /** @dev deposit asset
-      * @param assetID ID of asset to transfer.
-      * @param amount  Amount of asset to transfer.
-      */
-    function deposit(
-        Store.State storage state,
-        uint16 assetID,
-        uint256 amount
-    )
-        internal
-    {
-        depositFor(state, assetID, msg.sender, msg.sender, amount);
-    }
+    using WalletPath for Types.WalletPath;
 
     /** @dev Transfer asset into current contract
-      * @param assetID ID of asset to transfer.
-      * @param from    Address of asset owner.
-      * @param to      Address of the receiver.
-      * @param amount  Amount of asset to transfer.
       */
     function depositFor(
         Store.State storage state,
-        uint16 assetID,
+        address asset,
         address from,
-        address to,
+        Types.WalletPath memory toWalletPath,
         uint256 amount
     )
         internal
     {
-        if (amount == 0) {
-            return;
-        }
-
-        Types.Asset storage asset = state.assets[assetID];
-
-        if (asset.tokenAddress != Consts.ETHEREUM_TOKEN_ADDRESS()) {
-            SafeERC20.safeTransferFrom(asset.tokenAddress, from, address(this), amount);
+        if (asset != Consts.ETHEREUM_TOKEN_ADDRESS()) {
+            SafeERC20.safeTransferFrom(asset, from, address(this), amount);
         } else {
             require(amount == msg.value, "Wrong amount");
         }
 
-        state.balances[to][assetID] = state.balances[to][assetID].add(amount);
-        Events.logDeposit(assetID, from, to, amount);
-    }
-
-    /** @dev withdraw asset
-      * @param asset   Address of asset to transfer.
-      * @param amount  Amount of asset to transfer.
-      */
-    function withdraw(
-        Store.State storage state,
-        uint16 asset,
-        uint256 amount
-    ) internal {
-        withdrawTo(state, asset, msg.sender, msg.sender, amount);
+        Types.Wallet storage toWallet = toWalletPath.getWallet(state);
+        toWallet.balances[asset] = toWallet.balances[asset].add(amount);
+        Events.logDeposit(asset, from, toWalletPath, amount);
     }
 
     /** @dev Transfer asset out of current contract
-      * @param assetID ID of asset to transfer.
-      * @param from    Address of asset owner.
-      * @param to      Address of the receiver.
-      * @param amount  Amount of asset to transfer.
       */
-    function withdrawTo(
+    function withdrawFrom(
         Store.State storage state,
-        uint16 assetID,
-        address from,
+        address asset,
+        Types.WalletPath memory fromWalletPath,
         address payable to,
         uint256 amount
     )
         internal
     {
-        if (amount == 0) {
-            return;
-        }
+        Types.Wallet storage fromWallet = fromWalletPath.getWallet(state);
 
-        require(state.balances[from][assetID] >= amount, "BALANCE_NOT_ENOUGH");
+        require(fromWallet.balances[asset] >= amount, "BALANCE_NOT_ENOUGH");
 
-        Types.Asset storage asset = state.assets[assetID];
+        fromWallet.balances[asset] = fromWallet.balances[asset].sub(amount);
 
-        state.balances[from][assetID] = state.balances[from][assetID].sub(amount);
-
-        if (asset.tokenAddress == Consts.ETHEREUM_TOKEN_ADDRESS()) {
+        if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
             to.transfer(amount);
         } else {
-            SafeERC20.safeTransfer(asset.tokenAddress, to, amount);
+            SafeERC20.safeTransfer(asset, to, amount);
         }
 
-        Events.logWithdraw(assetID, from, to, amount);
+        Events.logWithdraw(asset, fromWalletPath, to, amount);
     }
 
     /** @dev Get a user's asset balance
-      * @param assetID  ID of asset
-      * @param user     Address of user
       */
     function balanceOf(
         Store.State storage state,
-        uint16 assetID,
-        address user
+        Types.WalletPath memory walletPath,
+        address asset
     )
         internal
         view
         returns (uint256)
     {
-        return state.balances[user][assetID];
+        Types.Wallet storage wallet = walletPath.getWallet(state);
+        return wallet.balances[asset];
     }
 
     /** @dev Invoking internal funds transfer.
-      * @param assetID ID of asset to transfer.
-      * @param from    Address to transfer asset from.
-      * @param to      Address to transfer asset to.
-      * @param amount  Amount of asset to transfer.
       */
     function transferFrom(
         Store.State storage state,
-        uint16 assetID,
-        address from,
-        address to,
+        address asset,
+        Types.WalletPath memory fromWalletPath,
+        Types.WalletPath memory toWalletPath,
         uint256 amount
     )
         internal
     {
-        // do nothing when amount is zero
-        if (amount == 0) {
-            return;
-        }
+        Types.Wallet storage fromWallet = fromWalletPath.getWallet(state);
+        Types.Wallet storage toWallet = toWalletPath.getWallet(state);
 
-        require(state.balances[from][assetID] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
+        require(fromWallet.balances[asset] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
-        state.balances[from][assetID] = state.balances[from][assetID].sub(amount);
-        state.balances[to][assetID] = state.balances[to][assetID].add(amount);
+        fromWallet.balances[asset] = fromWallet.balances[asset].sub(amount);
+        toWallet.balances[asset] = toWallet.balances[asset].add(amount);
 
-        Events.logTransfer(assetID, from, to, amount);
+        Events.logTransfer(asset, fromWalletPath, toWalletPath, amount);
     }
 }

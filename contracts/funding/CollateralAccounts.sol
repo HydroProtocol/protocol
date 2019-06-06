@@ -21,56 +21,13 @@ pragma experimental ABIEncoderV2;
 
 
 import "../lib/Store.sol";
-import "../lib/params.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../funding/Auctions.sol";
-
-import { Types, Asset } from "../lib/Types.sol";
+import "../lib/Types.sol";
 
 library CollateralAccounts {
     using SafeMath for uint256;
-    using Asset for Types.Asset;
-
-    // deposit collateral for default account
-    function depositCollateral(
-        Store.State storage state,
-        uint32 accountID,
-        uint16 assetID,
-        uint256 amount
-    )
-        internal
-    {
-        if (amount == 0) {
-            return;
-        }
-
-        Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
-        state.balances[account.owner][assetID] = state.balances[account.owner][assetID].sub(amount);
-
-        account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
-        Events.logDepositCollateral(assetID, account.owner, amount);
-    }
-
-    function withdrawCollateral(
-        Store.State storage state,
-        uint32 accountID,
-        uint16 assetID,
-        uint256 amount
-    )
-        internal
-    {
-        if (amount == 0) {
-            return;
-        }
-
-        Types.CollateralAccount storage account = state.allCollateralAccounts[accountID];
-        account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].sub(amount);
-        state.balances[account.owner][assetID] = state.balances[account.owner][assetID].add(amount);
-
-        Events.logDepositWithdraw(assetID, account.owner, amount);
-    }
-
 
     /**
      * Get a user's default collateral account asset balance
@@ -110,7 +67,7 @@ library CollateralAccounts {
     function liquidateMulti(
         Store.State storage state,
         address[] memory users,
-        uint32[] memory marketIDs
+        uint16[] memory marketIDs
     )
         internal
     {
@@ -125,37 +82,42 @@ library CollateralAccounts {
     function liquidate(
         Store.State storage state,
         address user,
-        uint32 marketID
+        uint16 marketID
     ) internal returns (bool) {
-        Types.CollateralAccount storage account = state.allCollateralAccounts[id];
         Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
         if (!details.liquidable) {
             return false;
         }
 
-        // storage changes
-        for (uint256 i = 0; i < details.loans.length; i++ ) {
-            Auctions.createAuction(
-                state,
-                details.loans[i].id,
-                account.owner,
-                details.loans[i].amount,
-                details.loanValues[i],
-                details.loansTotalUSDValue,
-                details.collateralAssetAmounts
-            );
+        Types.Market storage market = state.markets[marketID];
+        Types.CollateralAccount storage account = state.accounts[user][marketID];
 
-            Auctions.removeLoanIDFromCollateralAccount(state, details.loans[i].id, id);
+        Pool.repay(state, account.wallet, market.baseAsset, account.wallet.balances[market.baseAsset], marketID, user);
+        Pool.repay(state, account.wallet, market.quoteAsset, account.wallet.balances[market.quoteAsset], marketID, user);
+
+        address collateralAsset;
+        address debtAsset;
+
+        if(account.wallet.balances[market.baseAsset] > 0) {
+            // quote asset is debt, base asset is collateral
+            collateralAsset = market.baseAsset;
+            debtAsset = market.quoteAsset;
+        } else {
+            // base asset is debt, quote asset is collateral
+            collateralAsset = market.quoteAsset;
+            debtAsset = market.baseAsset;
         }
 
-        // confiscate all collaterals
-        for (uint16 i = 0; i < state.assetsCount; i++) {
-            account.collateralAssetAmounts[i] = 0;
-        }
+        Auctions.create(
+            state,
+            marketID,
+            user,
+            debtAsset,
+            collateralAsset
+        );
 
         account.status = Types.CollateralAccountStatus.Liquid;
-
         return true;
     }
 }

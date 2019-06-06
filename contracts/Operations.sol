@@ -21,22 +21,21 @@ pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
 import "./lib/Ownable.sol";
-import "./funding/Assets.sol";
+import "./lib/Types.sol";
+import "./funding/Markets.sol";
 import "./exchange/Discount.sol";
 
 /**
  * Only owner can use this contract functions
  */
 contract Operations is Ownable, GlobalStore {
-    function addAsset(
-        address tokenAddress,
-        uint256 collateralRate,
-        address oracleAddress
+    function addMarket(
+        Types.Market calldata market
     )
         external
         onlyOwner
     {
-        Assets.addAsset(state, tokenAddress, collateralRate, oracleAddress);
+        Markets.addMarket(state, market);
     }
 
     /**
