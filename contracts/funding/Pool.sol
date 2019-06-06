@@ -24,6 +24,7 @@ import "../lib/Types.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Decimal.sol";
+import "../lib/InterestModel.sol";
 
 library Pool {
     using SafeMath for uint256;
@@ -76,7 +77,10 @@ library Pool {
         address token,
         uint256 amount,
         address user
-    ) internal {
+    )
+        internal
+        returns(uint256)
+    {
 
         // update index
         _updateIndex(state, token);
@@ -99,6 +103,8 @@ library Pool {
 
         // update interest rate
         _updateInterestRate(state, token);
+
+        return withdrawAmount;
     }
 
     function borrow(
@@ -134,7 +140,10 @@ library Pool {
         uint256 amount,
         uint16 marketID,
         address user
-    ) internal {
+    )
+        internal
+        returns(uint256)
+    {
 
         // update index
         _updateIndex(state, token);
@@ -157,14 +166,16 @@ library Pool {
 
         // update interest rate
         _updateInterestRate(state, token);
+
+        return repayAmount;
     }
 
 
     function _updateInterestRate(
         Store.State storage state,
         address token
-    ) internal{
-        (uint256 borrowInterestRate, uint256 supplyInterestRate) = _getInterestRate(state, token);
+    ) internal {
+        (uint256 borrowInterestRate, uint256 supplyInterestRate) = _getInterestRate(state, token, 0);
         state.pool.borrowAnnualInterestRate[token] = borrowInterestRate;
         state.pool.supplyAnnualInterestRate[token] = supplyInterestRate;
     }
@@ -172,7 +183,8 @@ library Pool {
     // get interestRate
     function _getInterestRate(
         Store.State storage state,
-        address token
+        address token,
+        uint256 extraBorrowAmount
     )
         internal
         view
@@ -180,7 +192,7 @@ library Pool {
     {
 
         uint256 _supply = _getPoolTotalSupply(state, token);
-        uint256 _borrow = _getPoolTotalBorrow(state, token);
+        uint256 _borrow = _getPoolTotalBorrow(state, token).add(extraBorrowAmount);
 
         require(_supply >= _borrow, "BORROW_EXCEED_LIMITATION");
 
@@ -189,11 +201,7 @@ library Pool {
         }
 
         uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
-
-        // 0.2r + 0.5r^2
-        uint256 rate1 = borrowRatio.mul(2).div(10);
-        uint256 rate2 = Decimal.mul(borrowRatio, borrowRatio).mul(5).div(10);
-        borrowInterestRate = rate1.add(rate2);
+        borrowInterestRate = InterestModel.polynomialInterestModel(borrowRatio);
         supplyInterestRate = borrowInterestRate.mul(_borrow).div(_supply);
 
         return (borrowInterestRate, supplyInterestRate);
@@ -211,7 +219,7 @@ library Pool {
         return Decimal.mul(state.PoolState.logicSupply[user][token], currentSupplyIndex);
     }
 
-    function _getPoolBorrow(Store.State storage state, address token, uint32 account) internal view returns (uint256){
+    function _getPoolBorrow(Store.State storage state, address token, address user) internal view returns (uint256){
         (, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, token);
         return Decimal.mul(state.PoolState.logicBorrow[user][token], currentBorrowIndex);
     }
