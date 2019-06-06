@@ -24,7 +24,6 @@ import "./EIP712.sol";
 import "./Math.sol";
 import "./Consts.sol";
 import "./Signature.sol";
-import "../interfaces/OracleInterface.sol";
 
 library Types {
     enum LoanSource {
@@ -63,24 +62,19 @@ library Types {
         bytes32 s;
     }
 
-    struct Asset {
-        address tokenAddress;
-        OracleInterface oracle;
-    }
-
     struct Wallet {
         mapping(address => uint256) balances;
     }
 
     struct Market {
-        uint16 baseAssetID;
-        uint16 quoteAssetID;
-
         // If the collateralRate is below this rate, the account will be liquidated
         uint16 liquidateRate;
 
         // If the collateralRate is above this rate, the account asset balance can be withdrawed
         uint16 withdrawRate;
+
+        address baseAsset;
+        address quoteAsset;
     }
 
     struct CollateralAccount {

@@ -20,6 +20,7 @@ pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
 import { Types } from "./Types.sol";
+import "../interfaces/OracleInterface.sol";
 
 library Store {
 
@@ -124,7 +125,11 @@ library Store {
         // count of auctions
         uint32 auctionsCount;
 
+        uint32 marketsCount;
+
         address hotTokenAddress;
+
+        mapping(address => OracleInterface) oracles;
 
         // user => marketID => account
         mapping(address => mapping(uint32 => Types.CollateralAccount)) accounts;
