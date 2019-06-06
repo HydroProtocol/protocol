@@ -104,12 +104,13 @@ library Types {
 
         // To calculate the ratio
         uint32 startBlockNumber;
+
+        uint16 marketID;
+
         address borrower;
         address debtAsset;
-        address collateralAsset;
 
-        uint256 debtAmount;
-        uint256 leftDebtAmount;
+        address collateralAsset;
         uint256 collateralAmount;
     }
 

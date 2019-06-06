@@ -142,19 +142,6 @@ contract ExternalFunctions is GlobalStore {
     }
 
     ////////////////////
-    // Loan Functions //
-    ////////////////////
-
-    function repayLoan(
-        uint32 loanID,
-        uint256 amount
-    )
-        external
-    {
-
-    }
-
-    ////////////////////
     // Pool Functions //
     ////////////////////
 
