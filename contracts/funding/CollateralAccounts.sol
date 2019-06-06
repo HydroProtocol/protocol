@@ -21,74 +21,18 @@ pragma experimental ABIEncoderV2;
 
 
 import "../lib/Store.sol";
+import "../lib/params.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
-import "../funding/Loans.sol";
 import "../funding/Auctions.sol";
 
-import { Types, Loan, Asset } from "../lib/Types.sol";
+import { Types, Asset } from "../lib/Types.sol";
 
 library CollateralAccounts {
     using SafeMath for uint256;
-    using Loan for Types.Loan;
     using Asset for Types.Asset;
 
-    function findOrCreate(
-        Store.State storage state,
-        address user
-    ) internal returns (Types.CollateralAccount storage) {
-        uint256 id = state.userDefaultCollateralAccounts[user];
-        Types.CollateralAccount storage account = state.allCollateralAccounts[id];
-
-        if (account.owner != user) {
-            // default account liquidate rate is 150%
-            id = create(state, user, Types.CollateralAccountCategory.Lending, 150);
-            state.userDefaultCollateralAccounts[user] = id;
-            account = state.allCollateralAccounts[id];
-        }
-
-        return account;
-    }
-
-    function create(
-        Store.State storage state,
-        address user,
-        Types.CollateralAccountCategory category,
-        uint16 liquidateRate
-    ) internal returns (uint32) {
-        uint32 id = state.collateralAccountCount++;
-        Types.CollateralAccount memory account;
-
-        account.id = id;
-        account.liquidateRate = liquidateRate;
-        account.owner = user;
-        account.category = category;
-
-        state.allCollateralAccounts[id] = account;
-        return id;
-    }
-
     // deposit collateral for default account
-    function depositDefaultCollateral(
-        Store.State storage state,
-        uint16 assetID,
-        address user,
-        uint256 amount
-    )
-        internal
-    {
-        if (amount == 0) {
-            return;
-        }
-
-        state.balances[user][assetID] = state.balances[user][assetID].sub(amount);
-        Types.CollateralAccount storage account = findOrCreate(state, user);
-
-        account.collateralAssetAmounts[assetID] = account.collateralAssetAmounts[assetID].add(amount);
-        Events.logDepositCollateral(assetID, user, amount);
-    }
-
-        // deposit collateral for default account
     function depositCollateral(
         Store.State storage state,
         uint32 accountID,
@@ -131,93 +75,60 @@ library CollateralAccounts {
     /**
      * Get a user's default collateral account asset balance
      */
-    function collateralBalanceOf(
+    function balanceOf(
         Store.State storage state,
-        uint16 assetID,
-        address user
+        address user,
+        uint16 marketID,
+        address asset
     ) internal view returns (uint256) {
-        uint256 id = state.userDefaultCollateralAccounts[user];
-        Types.CollateralAccount storage account = state.allCollateralAccounts[id];
-
-        if (account.owner != user) {
-            return 0;
-        }
-
-        return account.collateralAssetAmounts[assetID];
+        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
+        return wallet.balances[asset];
     }
 
-    function getCollateralAccountDetails(
+    function getDetails(
         Store.State storage state,
-        uint256 id
+        address user,
+        uint32 marketID
     )
         internal view
         returns (Types.CollateralAccountDetails memory details)
     {
-        Types.CollateralAccount storage account = state.allCollateralAccounts[id];
-        details.category = account.category;
-        details.collateralAssetAmounts = new uint256[](state.assetsCount);
+        Types.CollateralAccount storage account = state.accounts[user][marketID];
+        uint256 liquidateRate = state.markets[marketID].liquidateRate;
 
-        for (uint16 i = 0; i < state.assetsCount; i++) {
-            Types.Asset storage asset = state.assets[i];
+        // TODO use real value
+        details.debtsTotalUSDValue = 0;
+        details.balancesTotalUSDValue = 0;
 
-            uint256 amount = account.collateralAssetAmounts[i];
-
-            details.collateralAssetAmounts[i] = amount;
-            details.collateralsTotalUSDlValue = details.collateralsTotalUSDlValue.add(
-                asset.getPrice().mul(amount).div(Consts.ORACLE_PRICE_BASE())
-            );
-        }
-
-        details.loans = Loans.getByIDs(state, account.loanIDs);
-
-        if (details.loans.length <= 0) {
-            return details;
-        }
-
-        details.loanValues = new uint256[](details.loans.length);
-
-        for (uint256 i = 0; i < details.loans.length; i++) {
-
-            uint256 totalInterest = details.loans[i].
-                interest(details.loans[i].amount, uint40(block.timestamp)).
-                div(Consts.INTEREST_RATE_BASE().mul(Consts.SECONDS_OF_YEAR()));
-
-            Types.Asset storage asset = state.assets[details.loans[i].assetID];
-
-            details.loanValues[i] = asset.getPrice().mul(details.loans[i].amount.add(totalInterest)).div(Consts.ORACLE_PRICE_BASE());
-            details.loansTotalUSDValue = details.loansTotalUSDValue.add(details.loanValues[i]);
-        }
-
-        details.liquidable = details.collateralsTotalUSDlValue <
-            details.loansTotalUSDValue.mul(account.liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
-    }
-
-    function liquidateCollateralAccounts(
-        Store.State storage state,
-        uint256[] memory accountIDs
-    ) internal {
-        for( uint256 i = 0; i < accountIDs.length; i++ ) {
-            liquidateCollateralAccount(state, accountIDs[i]);
-        }
-    }
-
-    function isCollateralAccountLiquidable(
-        Store.State storage state,
-        uint256 id
-    ) internal view returns (bool) {
-        Types.CollateralAccountDetails memory details = getCollateralAccountDetails(state, id);
-        return details.liquidable;
+        details.liquidable = details.balancesTotalUSDValue <
+            details.debtsTotalUSDValue.mul(liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
     }
 
     /**
-     * Total liquidate a collateral account
+     * Liquidate multiple collateral account at once
      */
-    function liquidateCollateralAccount(
+    function liquidateMulti(
         Store.State storage state,
-        uint256 id
+        address[] memory users,
+        uint32[] memory marketIDs
+    )
+        internal
+    {
+        for( uint256 i = 0; i < users.length; i++ ) {
+            liquidate(state, users[i], marketIDs[i]);
+        }
+    }
+
+    /**
+     * Liquidate a collateral account
+     */
+    function liquidate(
+        Store.State storage state,
+        address user,
+        uint32 marketID
     ) internal returns (bool) {
         Types.CollateralAccount storage account = state.allCollateralAccounts[id];
-        Types.CollateralAccountDetails memory details = getCollateralAccountDetails(state, id);
+        Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
         if (!details.liquidable) {
             return false;

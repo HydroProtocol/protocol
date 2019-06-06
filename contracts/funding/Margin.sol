@@ -91,7 +91,6 @@ library Margin {
         uint32 accountID = CollateralAccounts.create(
             state,
             openRequest.trader,
-            Types.CollateralAccountCategory.Margin,
             110
         );
 
@@ -171,7 +170,7 @@ library Margin {
         uint256 amount;
         uint256 minExchangeAmount;
     }
-event X(uint256);
+
     function close(
         Store.State storage state,
         CloseMarginRequest memory closeRequest,
@@ -180,7 +179,6 @@ event X(uint256);
         internal
     {
         Types.CollateralAccount storage account = state.allCollateralAccounts[closeRequest.accountID];
-        require(account.category == Types.CollateralAccountCategory.Margin, "NOT_MARGIN_COLLATERAL_ACCOUNT");
 
         // TODO allow liquidatble ?
         Types.CollateralAccountDetails memory details = CollateralAccounts.getCollateralAccountDetails(state, closeRequest.accountID);
@@ -221,9 +219,6 @@ event X(uint256);
 
         // TODO what to do if the result is negative?
         uint256 withdrawAmount = settleResult.incomeTokenAmount.sub(repayAmount);
-
-        emit X(repayAmount);
-        emit X(withdrawAmount);
 
         // TODO loan repay
         Pool.repay(state, account.loanIDs[0], repayAmount);

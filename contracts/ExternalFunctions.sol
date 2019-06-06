@@ -141,15 +141,6 @@ contract ExternalFunctions is GlobalStore {
         return CollateralAccounts.getCollateralAccountDetails(state, accountID);
     }
 
-    function depositDefaultCollateral(
-        uint16 assetID,
-        uint256 amount
-    )
-        external
-    {
-        CollateralAccounts.depositDefaultCollateral(state, assetID, msg.sender, amount);
-    }
-
     ////////////////////
     // Loan Functions //
     ////////////////////

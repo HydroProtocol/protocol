@@ -121,48 +121,22 @@ library Store {
     }
 
     struct State {
-        // count of collateral accounts
-        uint32 collateralAccountCount;
-
-        // count of loans
-        uint32 loansCount;
-
-        // count of assets
-        uint16 assetsCount;
-
         // count of auctions
         uint32 auctionsCount;
 
         address hotTokenAddress;
 
-        // all collateral accounts
-        mapping(uint256 => Types.CollateralAccount) allCollateralAccounts;
-
-        // user default collateral account
-        mapping(address => uint256) userDefaultCollateralAccounts;
+        // address => marketID => account
+        mapping(address => mapping(uint32 => Types.CollateralAccount)) accounts;
 
         // all supported assets
         mapping(uint256 => Types.Asset) assets;
 
-        // all loans
-        mapping(uint256 => Types.Loan) allLoans;
-
         // all auctions
         mapping(uint256 => Types.Auction) allAuctions;
 
-        /**
-         * Free Balances, Can be used to
-         *   1) Common trade
-         *   2) Lend in p2p funding
-         *   3) Margin trade as collateral
-         *   4) Deposit to pool to win interest
-         *   5) Withdraw to your address
-         *
-         * first key is asset address, second key is user address
-         */
-        mapping (address => mapping ( uint16 => uint)) balances;
-
-        mapping (bytes32 => bool) usedOpenMarginRequests;
+        // user balances
+        mapping(address => Types.Wallet) wallets;
 
         PoolState pool;
 

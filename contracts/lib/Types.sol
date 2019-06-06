@@ -32,15 +32,9 @@ library Types {
         P2P
     }
 
-    enum CollateralAccountCategory {
-        Lending,
-        Margin
-    }
-
     enum CollateralAccountStatus {
         Normal,
-        Liquid,
-        Closed
+        Liquid
     }
 
     enum ExchangeOrderStatus {
@@ -71,73 +65,52 @@ library Types {
 
     struct Asset {
         address tokenAddress;
-        uint256 collateralRate;
         OracleInterface oracle;
     }
 
-    // When someone borrows some asset from a source
-    // A Loan is created to record the details
-    struct Loan {
-        uint32 id;
-        uint16 assetID;
-        uint32 collateralAccountID;
-        uint40 startAt;
-        uint40 expiredAt;
+    struct Wallet {
+        mapping(address => uint256) balances;
+    }
 
-        // in pool model, it's the commonn interest rate
-        // in p2p source, it's a average interest rate
-        uint16 interestRate;
+    struct Market {
+        uint16 baseAssetID;
+        uint16 quoteAssetID;
 
-        // pool or p2p
-        LoanSource source;
+        // If the collateralRate is below this rate, the account will be liquidated
+        uint16 liquidateRate;
 
-        // amount of borrowed asset
-        uint256 amount;
+        // If the collateralRate is above this rate, the account asset balance can be withdrawed
+        uint16 withdrawRate;
     }
 
     struct CollateralAccount {
         uint32 id;
-        CollateralAccountCategory category;
+        uint16 marketID;
         CollateralAccountStatus status;
-
-        // liquidation rate
-        uint16 liquidateRate;
-
         address owner;
 
-        // in a margin account, there is only one loan
-        // in a lending account, there will be multi loans
-        uint32[] loanIDs;
-
-        // assetID => assetAmount
-        mapping(uint16 => uint256) collateralAssetAmounts;
+        Wallet wallet;
     }
 
     // memory only
     struct CollateralAccountDetails {
         bool       liquidable;
-        CollateralAccountCategory category;
-        uint256[]  collateralAssetAmounts;
-        Loan[]     loans;
-        uint256[]  loanValues;
-        uint256    loansTotalUSDValue;
-        uint256    collateralsTotalUSDlValue;
+        uint256    debtsTotalUSDValue;
+        uint256    balancesTotalUSDValue;
     }
 
     struct Auction {
         uint32 id;
+
         // To calculate the ratio
         uint32 startBlockNumber;
-
-        uint32 loanID;
-
         address borrower;
+        address debtAsset;
+        address collateralAsset;
 
-        // The amount of loan when the auction is created, and it's unmodifiable.
-        uint256 totalLoanAmount;
-
-        // assets under liquidated, and it's unmodifiable.
-        mapping(uint256 => uint256) assetAmounts;
+        uint256 debtAmount;
+        uint256 leftDebtAmount;
+        uint256 collateralAmount;
     }
 
     struct ExchangeOrder {
@@ -228,23 +201,6 @@ library Types {
 library Asset {
     function getPrice(Types.Asset storage asset) internal view returns (uint256) {
         return asset.oracle.getPrice(asset.tokenAddress);
-    }
-}
-
-library Loan {
-    using SafeMath for uint256;
-
-    function isOverdue(Types.Loan memory loan, uint256 time) internal pure returns (bool) {
-        return loan.expiredAt < time;
-    }
-
-    /**
-     * Get loan interest with given amount and timestamp
-     * Result should divide (Consts.INTEREST_RATE_BASE * Consts.SECONDS_OF_YEAR)
-     */
-    function interest(Types.Loan memory loan, uint256 amount, uint40 currentTimestamp) internal pure returns (uint256) {
-        uint40 timeDelta = currentTimestamp - loan.startAt;
-        return amount.mul(loan.interestRate).mul(timeDelta);
     }
 }
 
