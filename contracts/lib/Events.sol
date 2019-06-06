@@ -153,11 +153,32 @@ library Events {
 
     event ExchangeMatch(
         Types.ExchangeOrderAddressSet addressSet,
-        Types.ExchangeMatchResult result
+        address maker,
+        address taker,
+        address buyer,
+        uint256 makerFee,
+        uint256 makerRebate,
+        uint256 takerFee,
+        uint256 makerGasFee,
+        uint256 takerGasFee,
+        uint256 baseTokenFilledAmount,
+        uint256 quoteTokenFilledAmount
     );
 
     function logExchangeMatch(Types.ExchangeMatchResult memory result, Types.ExchangeOrderAddressSet memory addressSet) internal {
-        emit ExchangeMatch(addressSet, result);
+        emit ExchangeMatch(
+            addressSet,
+            result.maker,
+            result.taker,
+            result.buyer,
+            result.makerFee,
+            result.makerRebate,
+            result.takerFee,
+            result.makerGasFee,
+            result.takerGasFee,
+            result.baseTokenFilledAmount,
+            result.quoteTokenFilledAmount
+        );
     }
 
     event ExchangeOrderCancel(bytes32 indexed orderHash);

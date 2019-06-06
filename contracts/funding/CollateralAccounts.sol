@@ -45,17 +45,26 @@ library CollateralAccounts {
     function getDetails(
         Store.State storage state,
         address user,
-        uint32 marketID
+        uint16 marketID
     )
         internal view
         returns (Types.CollateralAccountDetails memory details)
     {
         Types.CollateralAccount storage account = state.accounts[user][marketID];
+        Types.Market storage market = state.markets[marketID];
+
         uint256 liquidateRate = state.markets[marketID].liquidateRate;
 
-        // TODO use real value
-        details.debtsTotalUSDValue = 0;
-        details.balancesTotalUSDValue = 0;
+        uint256 baseUSDPrice = state.oracles[market.baseAsset].getPrice(market.baseAsset);
+        uint256 quoteUSDPrice = state.oracles[market.quoteAsset].getPrice(market.quoteAsset);
+
+        details.debtsTotalUSDValue = baseUSDPrice.mul(Pool._getPoolBorrow(state, market.baseAsset, user, marketID)).add(
+            quoteUSDPrice.mul(Pool._getPoolBorrow(state, market.quoteAsset, user, marketID))
+        );
+
+        details.balancesTotalUSDValue = baseUSDPrice.mul(account.wallet.balances[market.baseAsset]).add(
+            quoteUSDPrice.mul(account.wallet.balances[market.quoteAsset])
+        );
 
         details.liquidable = details.balancesTotalUSDValue <
             details.debtsTotalUSDValue.mul(liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
