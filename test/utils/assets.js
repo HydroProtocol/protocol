@@ -67,9 +67,9 @@ const depositDefaultCollateral = async (token, user, amount) => {
 
 const depositPool = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    await hydro.poolSupply(token.address, amount, {
-        from: user
-    });
+    // await hydro.poolSupply(token.address, amount, {
+    //     from: user
+    // });
 };
 
 const createAsset = async assetConfig => {
