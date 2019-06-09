@@ -66,10 +66,10 @@ contract('Pool', accounts => {
         }
     });
 
-    it('can not borrow more than collateral', async()=>{
-        try {
-            await hydro.
-        }
+    it('can not borrow more than collateral', async () => {
+        // try {
+        //     await hydro.
+        // }
     });
 
     /*
