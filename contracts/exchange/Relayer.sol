@@ -18,8 +18,8 @@
 
 pragma solidity 0.5.8;
 
-import "./Store.sol";
-import "./Events.sol";
+import "../lib/Store.sol";
+import "../lib/Events.sol";
 
 /**
  * @title Relayer provides two distinct features for relayers.

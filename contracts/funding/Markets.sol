@@ -21,7 +21,7 @@ pragma experimental ABIEncoderV2;
 import "../lib/Store.sol";
 import "../lib/Types.sol";
 import "../lib/Events.sol";
-import "../interfaces/OracleInterface.sol";
+import "../interfaces/IOracle.sol";
 
 library Markets {
 
@@ -37,8 +37,8 @@ library Markets {
         Store.State storage state,
         Types.Market memory market
     ) {
-        require(state.oracles[market.baseAsset] != OracleInterface(address(0)), "MARKET_BASE_ASSET_INVALID");
-        require(state.oracles[market.quoteAsset] != OracleInterface(address(0)), "MARKET_QUOTE_ASSET_INVALID");
+        require(state.oracles[market.baseAsset] != IOracle(address(0)), "MARKET_BASE_ASSET_INVALID");
+        require(state.oracles[market.quoteAsset] != IOracle(address(0)), "MARKET_QUOTE_ASSET_INVALID");
         _;
     }
 

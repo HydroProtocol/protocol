@@ -20,7 +20,7 @@ pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
 import { Types } from "./Types.sol";
-import "../interfaces/OracleInterface.sol";
+import "../interfaces/IOracle.sol";
 
 library Store {
 
@@ -85,8 +85,6 @@ library Store {
         * Meaning if a user has less than 10000 (0x00002710) HOT, they will pay 100%(0x64) of the
         * standard fee.
         *
-        * @param user The user address to calculate a fee discount for.
-        * @return The percentage of the regular fee this user will pay.
         */
         bytes32 discountConfig;
 
@@ -132,7 +130,7 @@ library Store {
 
         address hotTokenAddress;
 
-        mapping(address => OracleInterface) oracles;
+        mapping(address => IOracle) oracles;
 
         // user => marketID => account
         mapping(address => mapping(uint16 => Types.CollateralAccount)) accounts;

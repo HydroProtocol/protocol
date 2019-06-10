@@ -33,7 +33,9 @@ library Auctions {
         Store.State storage state,
         uint16 id,
         uint256 repayAmount
-    ) internal {
+    )
+        internal
+    {
         Types.Auction storage auction = state.auctions[id];
 
         uint256 leftDebtAmount = Pool._getPoolBorrow(state, auction.debtAsset, auction.borrower, auction.marketID);

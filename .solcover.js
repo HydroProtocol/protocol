@@ -5,7 +5,6 @@ module.exports = {
         'helper/TestMath.sol',
         'helper/TestOrder.sol',
         'helper/TestSignature.sol',
-        'helper/TestToken.sol',
-        'helper/WethToken.sol'
+        'helper/TestToken.sol'
     ]
 };
