@@ -17,6 +17,7 @@
 */
 
 pragma solidity ^0.5.8;
+pragma experimental ABIEncoderV2;
 
 import "./Store.sol";
 import "./Transfer.sol";
@@ -51,6 +52,8 @@ library BatchActions {
                 deposit(state, action);
             } else if (actionType == ActionType.Withdraw) {
                 withdraw(state, action);
+            } else if (actionType == ActionType.Transfer) {
+                transfer(state, action);
             }
         }
     }
@@ -73,5 +76,24 @@ library BatchActions {
     {
         (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
         Transfer.withdrawFrom(state, asset, WalletPath.getBalancePath(msg.sender), msg.sender, amount);
+    }
+
+    function transfer(
+        Store.State storage state,
+        Action memory action
+    )
+        internal
+    {
+        (
+            address asset,
+            Types.WalletPath memory fromWalletPath,
+            Types.WalletPath memory toWalletPath,
+            uint256 amount
+        ) = abi.decode(action.encodedParams, (address, Types.WalletPath, Types.WalletPath, uint256));
+
+        require(fromWalletPath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
+        require(toWalletPath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
+
+        Transfer.transferFrom(state, asset, fromWalletPath, toWalletPath, amount);
     }
 }

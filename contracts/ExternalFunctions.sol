@@ -180,6 +180,10 @@ contract ExternalFunctions is GlobalStore {
         return Transfer.balanceOf(state,  WalletPath.getBalancePath(user), asset);
     }
 
+    function marketBalanceOf(uint16 marketID, address asset, address user) external view returns (uint256) {
+        return Transfer.balanceOf(state,  WalletPath.getMarketPath(user, marketID), asset);
+    }
+
     /** @dev fallback function to allow deposit ether into this contract */
     function () external payable {
         // deposit ${msg.value} ether for ${msg.sender}
