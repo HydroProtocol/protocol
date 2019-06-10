@@ -35,8 +35,8 @@ import "./Discount.sol";
 
 library Exchange {
     using SafeMath for uint256;
-    using ExchangeOrder for Types.ExchangeOrder;
-    using ExchangeOrderParam for Types.ExchangeOrderParam;
+    using Order for Types.Order;
+    using OrderParam for Types.OrderParam;
 
     /**
      * Calculated data about an order object.
@@ -51,14 +51,14 @@ library Exchange {
 
     /**
      * Match taker order to a list of maker orders. Common addresses are passed in
-     * separately as an Types.ExchangeOrderAddressSet to reduce call size data and save gas.
+     * separately as an Types.OrderAddressSet to reduce call size data and save gas.
      */
-    function exchangeMatchOrders(
+    function matchOrders(
         Store.State storage state,
-        Types.ExchangeMatchParams memory params
+        Types.MatchParams memory params
     )
         internal
-        returns (Types.ExchangeSettleResult memory)
+        returns (Types.MatchSettleResult memory)
     {
         require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), Errors.INVALID_SENDER());
         require(!params.takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
@@ -68,7 +68,7 @@ library Exchange {
         OrderInfo memory takerOrderInfo = getOrderInfo(state, params.takerOrderParam, params.orderAddressSet);
 
         // Calculate which orders match for settlement.
-        Types.ExchangeMatchResult[] memory results = new Types.ExchangeMatchResult[](params.makerOrderParams.length);
+        Types.MatchResult[] memory results = new Types.MatchResult[](params.makerOrderParams.length);
 
         for (uint256 i = 0; i < params.makerOrderParams.length; i++) {
             require(!params.makerOrderParams[i].isMarketOrder(), Errors.MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER());
@@ -110,7 +110,7 @@ library Exchange {
      */
     function cancelOrder(
         Store.State storage state,
-        Types.ExchangeOrder memory order
+        Types.Order memory order
     )
         internal
     {
@@ -119,21 +119,21 @@ library Exchange {
         bytes32 orderHash = order.getHash();
         state.exchange.cancelled[orderHash] = true;
 
-        Events.logExchangeOrderCancel(orderHash);
+        Events.logOrderCancel(orderHash);
     }
 
     /**
      * Calculates current state of the order. Will revert transaction if this order is not
      * fillable for any reason, or if the order signature is invalid.
      *
-     * @param orderParam The Types.ExchangeOrderParam object containing Order data.
+     * @param orderParam The Types.OrderParam object containing Order data.
      * @param orderAddressSet An object containing addresses common across each order.
      * @return An OrderInfo object containing the hash and current amount filled
      */
     function getOrderInfo(
         Store.State storage state,
-        Types.ExchangeOrderParam memory orderParam,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.OrderParam memory orderParam,
+        Types.OrderAddressSet memory orderAddressSet
     )
         internal
         view
@@ -141,47 +141,43 @@ library Exchange {
     {
         require(orderParam.getOrderVersion() == Consts.SUPPORTED_ORDER_VERSION(), Errors.ORDER_VERSION_NOT_SUPPORTED());
 
-        Types.ExchangeOrder memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
+        Types.Order memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
         orderInfo.orderHash = order.getHash();
         orderInfo.filledAmount = state.exchange.filled[orderInfo.orderHash];
-        uint8 status = uint8(Types.ExchangeOrderStatus.FILLABLE);
+        uint8 status = uint8(Types.OrderStatus.FILLABLE);
 
         if (!orderParam.isMarketBuy() && orderInfo.filledAmount >= order.baseTokenAmount) {
-            status = uint8(Types.ExchangeOrderStatus.FULLY_FILLED);
+            status = uint8(Types.OrderStatus.FULLY_FILLED);
         } else if (orderParam.isMarketBuy() && orderInfo.filledAmount >= order.quoteTokenAmount) {
-            status = uint8(Types.ExchangeOrderStatus.FULLY_FILLED);
+            status = uint8(Types.OrderStatus.FULLY_FILLED);
         } else if (block.timestamp >= orderParam.getExpiredAtFromOrderData()) {
-            status = uint8(Types.ExchangeOrderStatus.EXPIRED);
+            status = uint8(Types.OrderStatus.EXPIRED);
         } else if (state.exchange.cancelled[orderInfo.orderHash]) {
-            status = uint8(Types.ExchangeOrderStatus.CANCELLED);
+            status = uint8(Types.OrderStatus.CANCELLED);
         }
 
-        require(status == uint8(Types.ExchangeOrderStatus.FILLABLE), Errors.ORDER_IS_NOT_FILLABLE());
+        require(status == uint8(Types.OrderStatus.FILLABLE), Errors.ORDER_IS_NOT_FILLABLE());
         require(
             Signature.isValidSignature(orderInfo.orderHash, orderParam.trader, orderParam.signature),
             Errors.INVALID_ORDER_SIGNATURE()
         );
 
-        orderInfo.walletPath = Types.WalletPath({
-            user: order.trader,
-            category: Types.WalletCategory.Balance,
-            marketID: 0
-        });
+        orderInfo.walletPath = orderParam.getWalletPathFromOrderData();
 
         return orderInfo;
     }
 
     /**
-     * Reconstruct an Order object from the given Types.ExchangeOrderParam and Types.ExchangeOrderAddressSet objects.
+     * Reconstruct an Order object from the given Types.OrderParam and Types.OrderAddressSet objects.
      *
-     * @param orderParam The Types.ExchangeOrderParam object containing the Order data.
+     * @param orderParam The Types.OrderParam object containing the Order data.
      * @param orderAddressSet An object containing addresses common across each order.
      * @return The reconstructed Order object.
      */
-    function getOrderFromOrderParam(Types.ExchangeOrderParam memory orderParam, Types.ExchangeOrderAddressSet memory orderAddressSet)
+    function getOrderFromOrderParam(Types.OrderParam memory orderParam, Types.OrderAddressSet memory orderAddressSet)
         internal
         pure
-        returns (Types.ExchangeOrder memory order)
+        returns (Types.Order memory order)
     {
         order.trader = orderParam.trader;
         order.baseTokenAmount = orderParam.baseTokenAmount;
@@ -218,10 +214,10 @@ library Exchange {
      *
      * The function will revert the transaction if the orders cannot be matched.
      *
-     * @param takerOrderParam The Types.ExchangeOrderParam object representing the taker's order data
-     * @param makerOrderParam The Types.ExchangeOrderParam object representing the maker's order data
+     * @param takerOrderParam The Types.OrderParam object representing the taker's order data
+     * @param makerOrderParam The Types.OrderParam object representing the maker's order data
      */
-    function validatePrice(Types.ExchangeOrderParam memory takerOrderParam, Types.ExchangeOrderParam memory makerOrderParam)
+    function validatePrice(Types.OrderParam memory takerOrderParam, Types.OrderParam memory makerOrderParam)
         internal
         pure
     {
@@ -231,22 +227,22 @@ library Exchange {
     }
 
     /**
-     * Construct a Types.ExchangeMatchResult from matching taker and maker order data, which will be used when
+     * Construct a Types.MatchResult from matching taker and maker order data, which will be used when
      * settling the orders and transferring token.
      *
-     * @param takerOrderParam The Types.ExchangeOrderParam object representing the taker's order data
+     * @param takerOrderParam The Types.OrderParam object representing the taker's order data
      * @param takerOrderInfo The OrderInfo object representing the current taker order state
-     * @param makerOrderParam The Types.ExchangeOrderParam object representing the maker's order data
+     * @param makerOrderParam The Types.OrderParam object representing the maker's order data
      * @param makerOrderInfo The OrderInfo object representing the current maker order state
      * @param takerFeeRate The rate used to calculate the fee charged to the taker
      * @param isParticipantRelayer Whether this relayer is participating in hot discount
-     * @return Types.ExchangeMatchResult object containing data that will be used during order settlement.
+     * @return Types.MatchResult object containing data that will be used during order settlement.
      */
     function getMatchResult(
         Store.State storage state,
-        Types.ExchangeOrderParam memory takerOrderParam,
+        Types.OrderParam memory takerOrderParam,
         OrderInfo memory takerOrderInfo,
-        Types.ExchangeOrderParam memory makerOrderParam,
+        Types.OrderParam memory makerOrderParam,
         OrderInfo memory makerOrderInfo,
         uint256 baseTokenFilledAmount,
         uint256 takerFeeRate,
@@ -254,7 +250,7 @@ library Exchange {
     )
         internal
         view
-        returns (Types.ExchangeMatchResult memory result)
+        returns (Types.MatchResult memory result)
     {
         result.baseTokenFilledAmount = baseTokenFilledAmount;
         result.quoteTokenFilledAmount = convertBaseToQuote(makerOrderParam, baseTokenFilledAmount);
@@ -326,13 +322,13 @@ library Exchange {
     /**
      * Get the rate used to calculate the taker fee.
      *
-     * @param orderParam The Types.ExchangeOrderParam object representing the taker order data.
+     * @param orderParam The Types.OrderParam object representing the taker order data.
      * @param isParticipantRelayer Whether this relayer is participating in hot discount.
      * @return The final potentially discounted rate to use for the taker fee.
      */
     function getTakerFeeRate(
         Store.State storage state,
-        Types.ExchangeOrderParam memory orderParam,
+        Types.OrderParam memory orderParam,
         bool isParticipantRelayer
     )
         internal
@@ -373,12 +369,12 @@ library Exchange {
      * Take an amount and convert it from base token units to quote token units based on the price
      * in the order param.
      *
-     * @param orderParam The Types.ExchangeOrderParam object containing the Order data.
+     * @param orderParam The Types.OrderParam object containing the Order data.
      * @param amount An amount of base token.
      * @return The converted amount in quote token units.
      */
     function convertBaseToQuote(
-        Types.ExchangeOrderParam memory orderParam,
+        Types.OrderParam memory orderParam,
         uint256 amount
     )
         internal
@@ -396,11 +392,11 @@ library Exchange {
      * Take an amount and convert it from quote token units to base token units based on the price
      * in the order param.
      *
-     * @param orderParam The Types.ExchangeOrderParam object containing the Order data.
+     * @param orderParam The Types.OrderParam object containing the Order data.
      * @param amount An amount of quote token.
      * @return The converted amount in base token units.
      */
-    function convertQuoteToBase(Types.ExchangeOrderParam memory orderParam, uint256 amount)
+    function convertQuoteToBase(Types.OrderParam memory orderParam, uint256 amount)
         internal
         pure
         returns (uint256)
@@ -416,18 +412,18 @@ library Exchange {
      * Take a list of matches and settle them with the taker order, transferring tokens all tokens
      * and paying all fees necessary to complete the transaction.
      *
-     * @param results List of Types.ExchangeMatchResult objects representing each individual trade to settle.
-     * @param takerOrderParam The Types.ExchangeOrderParam object representing the taker order data.
+     * @param results List of Types.MatchResult objects representing each individual trade to settle.
+     * @param takerOrderParam The Types.OrderParam object representing the taker order data.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleResults(
         Store.State storage state,
-        Types.ExchangeMatchResult[] memory results,
-        Types.ExchangeOrderParam memory takerOrderParam,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.MatchResult[] memory results,
+        Types.OrderParam memory takerOrderParam,
+        Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.ExchangeSettleResult memory)
+        returns (Types.MatchSettleResult memory)
     {
         if (takerOrderParam.isSell()) {
             return settleTakerSell(state, results, orderAddressSet);
@@ -437,7 +433,7 @@ library Exchange {
     }
 
     /**
-     * Settles a sell order given a list of Types.ExchangeMatchResult objects. A naive approach would be to take
+     * Settles a sell order given a list of Types.MatchResult objects. A naive approach would be to take
      * each result, have the taker and maker transfer the appropriate tokens, and then have them
      * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
      * transactions. Additionally the taker would have to have an allowance set for the quote token
@@ -458,16 +454,16 @@ library Exchange {
      * transactions. In this scenario, with n makers there will be 2n + 1 transactions, which will
      * be a significant gas savings over the original method.
      *
-     * @param results A list of Types.ExchangeMatchResult objects representing each individual trade to settle.
+     * @param results A list of Types.MatchResult objects representing each individual trade to settle.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleTakerSell(
         Store.State storage state,
-        Types.ExchangeMatchResult[] memory results,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.MatchResult[] memory results,
+        Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.ExchangeSettleResult memory settleResult)
+        returns (Types.MatchSettleResult memory settleResult)
     {
         settleResult.incomeToken = orderAddressSet.quoteToken;
         settleResult.outputToken = orderAddressSet.baseToken;
@@ -522,7 +518,7 @@ library Exchange {
     }
 
     /**
-     * Settles a buy order given a list of Types.ExchangeMatchResult objects. A naive approach would be to take
+     * Settles a buy order given a list of Types.MatchResult objects. A naive approach would be to take
      * each result, have the taker and maker transfer the appropriate tokens, and then have them
      * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
      * transactions. Additionally each maker would have to have an allowance set for the quote token
@@ -543,16 +539,16 @@ library Exchange {
      * this scenario, with n makers there will be 2n + 1 transactions, which will be a significant
      * gas savings over the original method.
      *
-     * @param results A list of Types.ExchangeMatchResult objects representing each individual trade to settle.
+     * @param results A list of Types.MatchResult objects representing each individual trade to settle.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleTakerBuy(
         Store.State storage state,
-        Types.ExchangeMatchResult[] memory results,
-        Types.ExchangeOrderAddressSet memory orderAddressSet
+        Types.MatchResult[] memory results,
+        Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.ExchangeSettleResult memory settleResult)
+        returns (Types.MatchSettleResult memory settleResult)
     {
         settleResult.incomeToken = orderAddressSet.baseToken;
         settleResult.outputToken = orderAddressSet.quoteToken;

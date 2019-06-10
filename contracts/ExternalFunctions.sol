@@ -204,7 +204,7 @@ contract ExternalFunctions is GlobalStore {
     // Exchange //
     //////////////
 
-    function cancelOrder(Types.ExchangeOrder calldata order) external {
+    function cancelOrder(Types.Order calldata order) external {
         Exchange.cancelOrder(state, order);
     }
 
@@ -212,8 +212,8 @@ contract ExternalFunctions is GlobalStore {
         return state.exchange.cancelled[orderHash];
     }
 
-    function exchangeMatchOrders(Types.ExchangeMatchParams memory params) public {
-        Exchange.exchangeMatchOrders(state, params);
+    function matchOrders(Types.MatchParams memory params) public {
+        Exchange.matchOrders(state, params);
     }
 
     function getDiscountedRate(address user) external view returns (uint256) {
@@ -224,7 +224,7 @@ contract ExternalFunctions is GlobalStore {
         return state.hotTokenAddress;
     }
 
-    function getExchangeOrderFilledAmount(bytes32 orderHash) external view returns (uint256) {
+    function getOrderFilledAmount(bytes32 orderHash) external view returns (uint256) {
         return state.exchange.filled[orderHash];
     }
 }

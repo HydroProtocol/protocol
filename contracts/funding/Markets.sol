@@ -28,7 +28,7 @@ library Markets {
         Store.State storage state,
         Types.Market memory market
     ) {
-        require(!isMarketExist(state, market), "TOKEN_IS_ALREADY_EXIST");
+        require(!isMarketExist(state, market), "MARKET_IS_ALREADY_EXIST");
         _;
     }
 

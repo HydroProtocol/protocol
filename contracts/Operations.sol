@@ -24,6 +24,7 @@ import "./lib/Ownable.sol";
 import "./lib/Types.sol";
 import "./funding/Markets.sol";
 import "./exchange/Discount.sol";
+import "./interfaces/OracleInterface.sol";
 
 /**
  * Only owner can use this contract functions
@@ -36,6 +37,17 @@ contract Operations is Ownable, GlobalStore {
         onlyOwner
     {
         Markets.addMarket(state, market);
+    }
+
+    function registerOracle(
+        address asset,
+        address oracleAddress
+    )
+        external
+        onlyOwner
+    {
+        state.oracles[asset] = OracleInterface(oracleAddress);
+        // TODO event
     }
 
     /**

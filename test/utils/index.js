@@ -1,6 +1,5 @@
 const Oracle = artifacts.require('./Oracle.sol');
 const HydroToken = artifacts.require('./HydroToken.sol');
-const Funding = artifacts.require('./Funding.sol');
 const BigNumber = require('bignumber.js');
 
 BigNumber.config({
@@ -37,25 +36,6 @@ const setHotAmount = async (user, amount) => {
     }
 };
 
-const getFundingContracts = async () => {
-    const accounts = await web3.eth.getAccounts();
-    const oracle = await newContract(Oracle);
-    console.log('Oracle address', web3.utils.toChecksumAddress(oracle._address));
-    const proxy = await newContract(DepositProxy);
-    console.log('DepositProxy address', web3.utils.toChecksumAddress(proxy._address));
-
-    const funding = await newContract(Funding, proxy._address, oracle._address);
-    console.log('Funding address', web3.utils.toChecksumAddress(funding._address));
-
-    await proxy.methods.addAddress(funding._address).send({ from: accounts[0] });
-
-    return {
-        proxy,
-        oracle,
-        funding
-    };
-};
-
 const clone = x => JSON.parse(JSON.stringify(x));
 
 const pp = obj => {
@@ -90,7 +70,6 @@ const getUserKey = u => {
 module.exports = {
     newContract,
     newContractAt,
-    getFundingContracts,
     clone,
     setHotAmount,
     toWei,

@@ -1,28 +1,47 @@
 const debug = require('debug')('hydro:Asset');
-const { newContract } = require('./index.js');
 const Oracle = artifacts.require('./Oracle.sol');
 const Hydro = artifacts.require('./Hydro.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
-
 const BigNumber = require('bignumber.js');
+
 BigNumber.config({
     EXPONENTIAL_AT: 1000
 });
 
-const getLastAsset = async () => {
+const newMarket = async marketConfig => {
+    const { assets, assetConfigs, liquidateRate, withdrawRate } = marketConfig;
+    let baseToken, quoteToken;
+
+    if (assetConfigs) {
+        [baseToken, quoteToken] = await createAssets(assetConfigs);
+    } else if (assets) {
+        [baseToken, quoteToken] = assets;
+    }
+
     const hydro = await Hydro.deployed();
-    const assetCount = await hydro.getAllAssetsCount();
-    return hydro.getAsset(assetCount.toNumber() - 1);
+
+    const res = await hydro.addMarket({
+        liquidateRate: liquidateRate || 120,
+        withdrawRate: withdrawRate || 200,
+        baseAsset: baseToken.address,
+        quoteAsset: quoteToken.address
+    });
+
+    debug('add market gas cost:', res.receipt.gasUsed);
+
+    return {
+        baseToken,
+        quoteToken
+    };
 };
 
 const depositAsset = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    const assetID = await hydro.getAssetID(token.address);
     const accounts = await web3.eth.getAccounts();
     const owner = accounts[0];
 
     if (token.symbol == 'ETH') {
-        await hydro.deposit(assetID, amount, {
+        await hydro.deposit(token.address, amount, {
             from: user,
             value: amount
         });
@@ -33,7 +52,7 @@ const depositAsset = async (token, user, amount) => {
         await token.approve(hydro.address, amount, {
             from: user
         });
-        await hydro.deposit(assetID, amount, {
+        await hydro.deposit(token.address, amount, {
             from: user
         });
     }
@@ -41,30 +60,24 @@ const depositAsset = async (token, user, amount) => {
 
 const depositDefaultCollateral = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    const assetID = await hydro.getAssetID(token.address);
-    await hydro.depositDefaultCollateral(assetID, amount, {
+    await hydro.depositDefaultCollateral(token.address, amount, {
         from: user
     });
 };
 
 const depositPool = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    const assetID = await hydro.getAssetID(token.address);
-    await hydro.poolSupply(assetID, amount, {
-        from: user
-    });
+    // await hydro.poolSupply(token.address, amount, {
+    //     from: user
+    // });
 };
 
 const createAsset = async assetConfig => {
-    const hydro = await Hydro.deployed();
     const accounts = await web3.eth.getAccounts();
+    const hydro = await Hydro.deployed();
     const owner = accounts[0];
 
     const { initBalances, initCollaterals, initPool, oraclePrice } = assetConfig;
-
-    let { collateralRate } = assetConfig;
-
-    collateralRate = collateralRate || 10000;
 
     let token;
 
@@ -84,21 +97,16 @@ const createAsset = async assetConfig => {
 
     const oracle = await Oracle.deployed();
 
-    // set oracle price
-    if (oraclePrice) {
-        await oracle.setPrice(token.address, new BigNumber(oraclePrice).toString(), {
+    await Promise.all([
+        oracle.setPrice(token.address, new BigNumber(oraclePrice || 10000).toString(), {
             from: accounts[0]
-        });
-    }
+        }),
+        hydro.registerOracle(token.address, oracle.address)
+    ]);
 
     debug(
         `Token ${token.symbol} price is ${(token.address, await oracle.getPrice(token.address))}`
     );
-
-    await hydro.addAsset(token.address, collateralRate.toString(), oracle.address, {
-        from: accounts[0],
-        gasLimit: 200000
-    });
 
     if (initBalances) {
         for (let j = 0; j < Object.keys(initBalances).length; j++) {
@@ -140,5 +148,6 @@ const createAssets = async configs => {
 module.exports = {
     createAssets,
     createAsset,
-    depositPool
+    depositPool,
+    newMarket
 };

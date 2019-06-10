@@ -152,17 +152,38 @@ library Events {
     //////////////
 
     event ExchangeMatch(
-        Types.ExchangeOrderAddressSet addressSet,
-        Types.ExchangeMatchResult result
+        Types.OrderAddressSet addressSet,
+        address maker,
+        address taker,
+        address buyer,
+        uint256 makerFee,
+        uint256 makerRebate,
+        uint256 takerFee,
+        uint256 makerGasFee,
+        uint256 takerGasFee,
+        uint256 baseTokenFilledAmount,
+        uint256 quoteTokenFilledAmount
     );
 
-    function logExchangeMatch(Types.ExchangeMatchResult memory result, Types.ExchangeOrderAddressSet memory addressSet) internal {
-        emit ExchangeMatch(addressSet, result);
+    function logExchangeMatch(Types.MatchResult memory result, Types.OrderAddressSet memory addressSet) internal {
+        emit ExchangeMatch(
+            addressSet,
+            result.maker,
+            result.taker,
+            result.buyer,
+            result.makerFee,
+            result.makerRebate,
+            result.takerFee,
+            result.makerGasFee,
+            result.takerGasFee,
+            result.baseTokenFilledAmount,
+            result.quoteTokenFilledAmount
+        );
     }
 
-    event ExchangeOrderCancel(bytes32 indexed orderHash);
+    event OrderCancel(bytes32 indexed orderHash);
 
-    function logExchangeOrderCancel(bytes32 orderHash) internal {
-        emit ExchangeOrderCancel(orderHash);
+    function logOrderCancel(bytes32 orderHash) internal {
+        emit OrderCancel(orderHash);
     }
 }

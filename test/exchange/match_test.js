@@ -47,11 +47,10 @@ contract('Match', async accounts => {
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
             const symbol = token.symbol;
-            const assetID = await hydro.getAssetID(token.address);
 
             for (let j = 0; j < Object.keys(users).length; j++) {
                 const user = users[j];
-                const balance = await hydro.balanceOf(assetID.toNumber(), user);
+                const balance = await hydro.balanceOf(token.address, user);
 
                 balances[`${symbol}-${user}`] = balance;
             }
@@ -88,7 +87,7 @@ contract('Match', async accounts => {
             );
         }
 
-        const res = await hydro.exchangeMatchOrders(
+        const res = await hydro.matchOrders(
             {
                 takerOrderParam: takerOrder,
                 makerOrderParams: makerOrders,
@@ -131,7 +130,7 @@ contract('Match', async accounts => {
 
             if (limitTaker && takerOrderParam.type == 'limit') {
                 assertEqual(
-                    await hydro.getExchangeOrderFilledAmount(takerOrder.orderHash),
+                    await hydro.getOrderFilledAmount(takerOrder.orderHash),
                     limitTaker,
                     allowPrecisionError
                 );
@@ -139,7 +138,7 @@ contract('Match', async accounts => {
 
             if (marketTaker && takerOrderParam.type == 'market') {
                 assertEqual(
-                    await hydro.getExchangeOrderFilledAmount(takerOrder.orderHash),
+                    await hydro.getOrderFilledAmount(takerOrder.orderHash),
                     marketTaker,
                     allowPrecisionError
                 );
@@ -148,7 +147,7 @@ contract('Match', async accounts => {
             if (makers) {
                 for (let i = 0; i < makers.length; i++) {
                     assertEqual(
-                        await hydro.getExchangeOrderFilledAmount(makerOrders[i].orderHash),
+                        await hydro.getOrderFilledAmount(makerOrders[i].orderHash),
                         makers[i],
                         allowPrecisionError
                     );
