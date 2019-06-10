@@ -28,11 +28,20 @@ import "./GlobalStore.sol";
 
 import "./lib/Transfer.sol";
 import "./lib/Relayer.sol";
+import "./lib/BatchActions.sol";
 
 /**
  * External Functions
  */
 contract ExternalFunctions is GlobalStore {
+
+    ///////////
+    // Batch //
+    ///////////
+
+    function batch(BatchActions.Action[] memory actions) public payable {
+        BatchActions.batch(state, actions);
+    }
 
     ///////////////
     // Signature //
