@@ -29,27 +29,14 @@ library Auctions {
     using SafeMath for uint256;
     using Auction for Types.Auction;
 
-    function fillAuction(
-        Store.State storage state,
-        uint32 id
-    ) internal {
-        Types.Auction storage auction = state.auctions[id];
-
-        // TODO, get debt from pool;
-        uint256 leftDebtAmount = 0;
-        fillAuctionWithAmount(state, id, leftDebtAmount);
-    }
-
     function fillAuctionWithAmount(
         Store.State storage state,
         uint32 id,
         uint256 repayAmount
     ) internal {
-        // TODO, get debt from pool;
-        uint256 leftDebtAmount = 0;
-
         Types.Auction storage auction = state.auctions[id];
 
+        uint256 leftDebtAmount = Pool._getPoolBorrow(state, auction.debtAsset, auction.borrower, auction.marketID);
         uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset];
 
         Pool.repay(
