@@ -58,11 +58,13 @@ library Pool {
 
     function supply(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
         uint256 amount,
         address user
     ) internal {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
 
         // update index
         _updateIndex(state, token);
@@ -84,7 +86,7 @@ library Pool {
 
     function withdraw(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
         uint256 amount,
         address user
@@ -92,6 +94,8 @@ library Pool {
         internal
         returns(uint256)
     {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
 
         // update index
         _updateIndex(state, token);
@@ -120,12 +124,14 @@ library Pool {
 
     function borrow(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
-        uint256 amount,
-        uint16 marketID,
-        address user
+        uint256 amount
     ) internal {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
+        uint16 marketID = path.marketID;
+        address user = path.user;
 
          // update index
         _updateIndex(state, token);
@@ -146,15 +152,17 @@ library Pool {
 
     function repay(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
-        uint256 amount,
-        uint16 marketID,
-        address user
+        uint256 amount
     )
         internal
         returns(uint256)
     {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
+        uint16 marketID = path.marketID;
+        address user = path.user;
 
         // update index
         _updateIndex(state, token);

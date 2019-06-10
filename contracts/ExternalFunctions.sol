@@ -149,6 +149,53 @@ contract ExternalFunctions is GlobalStore {
         return Pool._getInterestRate(state, token, extraBorrowAmount);
     }
 
+    function supplyPool(address token, uint256 amount)
+        external
+    {
+        Pool.supply(
+            state,
+            WalletPath.getBalancePath(msg.sender),
+            token,
+            amount,
+            msg.sender
+        );
+    }
+
+    function withdrawPool(address token, uint256 amount)
+        external
+    {
+        Pool.withdraw(
+            state,
+            WalletPath.getBalancePath(msg.sender),
+            token,
+            amount,
+            msg.sender
+        );
+    }
+
+    function borrow(address token, uint256 amount, uint16 marketID)
+        external
+    {
+        Pool.borrow(
+            state,
+            WalletPath.getMarketPath(msg.sender, marketID),
+            token,
+            amount
+        );
+
+    }
+
+    function repay(address token, uint256 amount, uint16 marketID)
+        external
+    {
+        Pool.repay(
+            state,
+            WalletPath.getMarketPath(msg.sender, marketID),
+            token,
+            amount
+        );
+    }
+
     ///////////////////////
     // Relayer Functions //
     ///////////////////////

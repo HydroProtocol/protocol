@@ -22,6 +22,7 @@ pragma experimental ABIEncoderV2;
 import "./GlobalStore.sol";
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
+import "./funding/Pool.sol";
 import "./funding/Markets.sol";
 import "./exchange/Discount.sol";
 import "./interfaces/OracleInterface.sol";
@@ -47,7 +48,20 @@ contract Operations is Ownable, GlobalStore {
         onlyOwner
     {
         state.oracles[asset] = OracleInterface(oracleAddress);
+        Pool.createAssetPool(state, asset);
         // TODO event
+    }
+
+    function createPoolToken(
+        address originTokenAddress,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals
+    )
+        external
+        onlyOwner
+    {
+        Pool.createPoolToken(state, originTokenAddress, name, symbol, decimals);
     }
 
     /**
