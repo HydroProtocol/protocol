@@ -55,10 +55,10 @@ library Exchange {
      */
     function matchOrders(
         Store.State storage state,
-        Types.ExchangeMatchParams memory params
+        Types.MatchParams memory params
     )
         internal
-        returns (Types.ExchangeSettleResult memory)
+        returns (Types.MatchSettleResult memory)
     {
         require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), Errors.INVALID_SENDER());
         require(!params.takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
@@ -68,7 +68,7 @@ library Exchange {
         OrderInfo memory takerOrderInfo = getOrderInfo(state, params.takerOrderParam, params.orderAddressSet);
 
         // Calculate which orders match for settlement.
-        Types.ExchangeMatchResult[] memory results = new Types.ExchangeMatchResult[](params.makerOrderParams.length);
+        Types.MatchResult[] memory results = new Types.MatchResult[](params.makerOrderParams.length);
 
         for (uint256 i = 0; i < params.makerOrderParams.length; i++) {
             require(!params.makerOrderParams[i].isMarketOrder(), Errors.MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER());
@@ -227,7 +227,7 @@ library Exchange {
     }
 
     /**
-     * Construct a Types.ExchangeMatchResult from matching taker and maker order data, which will be used when
+     * Construct a Types.MatchResult from matching taker and maker order data, which will be used when
      * settling the orders and transferring token.
      *
      * @param takerOrderParam The Types.OrderParam object representing the taker's order data
@@ -236,7 +236,7 @@ library Exchange {
      * @param makerOrderInfo The OrderInfo object representing the current maker order state
      * @param takerFeeRate The rate used to calculate the fee charged to the taker
      * @param isParticipantRelayer Whether this relayer is participating in hot discount
-     * @return Types.ExchangeMatchResult object containing data that will be used during order settlement.
+     * @return Types.MatchResult object containing data that will be used during order settlement.
      */
     function getMatchResult(
         Store.State storage state,
@@ -250,7 +250,7 @@ library Exchange {
     )
         internal
         view
-        returns (Types.ExchangeMatchResult memory result)
+        returns (Types.MatchResult memory result)
     {
         result.baseTokenFilledAmount = baseTokenFilledAmount;
         result.quoteTokenFilledAmount = convertBaseToQuote(makerOrderParam, baseTokenFilledAmount);
@@ -412,18 +412,18 @@ library Exchange {
      * Take a list of matches and settle them with the taker order, transferring tokens all tokens
      * and paying all fees necessary to complete the transaction.
      *
-     * @param results List of Types.ExchangeMatchResult objects representing each individual trade to settle.
+     * @param results List of Types.MatchResult objects representing each individual trade to settle.
      * @param takerOrderParam The Types.OrderParam object representing the taker order data.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleResults(
         Store.State storage state,
-        Types.ExchangeMatchResult[] memory results,
+        Types.MatchResult[] memory results,
         Types.OrderParam memory takerOrderParam,
         Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.ExchangeSettleResult memory)
+        returns (Types.MatchSettleResult memory)
     {
         if (takerOrderParam.isSell()) {
             return settleTakerSell(state, results, orderAddressSet);
@@ -433,7 +433,7 @@ library Exchange {
     }
 
     /**
-     * Settles a sell order given a list of Types.ExchangeMatchResult objects. A naive approach would be to take
+     * Settles a sell order given a list of Types.MatchResult objects. A naive approach would be to take
      * each result, have the taker and maker transfer the appropriate tokens, and then have them
      * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
      * transactions. Additionally the taker would have to have an allowance set for the quote token
@@ -454,16 +454,16 @@ library Exchange {
      * transactions. In this scenario, with n makers there will be 2n + 1 transactions, which will
      * be a significant gas savings over the original method.
      *
-     * @param results A list of Types.ExchangeMatchResult objects representing each individual trade to settle.
+     * @param results A list of Types.MatchResult objects representing each individual trade to settle.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleTakerSell(
         Store.State storage state,
-        Types.ExchangeMatchResult[] memory results,
+        Types.MatchResult[] memory results,
         Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.ExchangeSettleResult memory settleResult)
+        returns (Types.MatchSettleResult memory settleResult)
     {
         settleResult.incomeToken = orderAddressSet.quoteToken;
         settleResult.outputToken = orderAddressSet.baseToken;
@@ -518,7 +518,7 @@ library Exchange {
     }
 
     /**
-     * Settles a buy order given a list of Types.ExchangeMatchResult objects. A naive approach would be to take
+     * Settles a buy order given a list of Types.MatchResult objects. A naive approach would be to take
      * each result, have the taker and maker transfer the appropriate tokens, and then have them
      * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
      * transactions. Additionally each maker would have to have an allowance set for the quote token
@@ -539,16 +539,16 @@ library Exchange {
      * this scenario, with n makers there will be 2n + 1 transactions, which will be a significant
      * gas savings over the original method.
      *
-     * @param results A list of Types.ExchangeMatchResult objects representing each individual trade to settle.
+     * @param results A list of Types.MatchResult objects representing each individual trade to settle.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     function settleTakerBuy(
         Store.State storage state,
-        Types.ExchangeMatchResult[] memory results,
+        Types.MatchResult[] memory results,
         Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.ExchangeSettleResult memory settleResult)
+        returns (Types.MatchSettleResult memory settleResult)
     {
         settleResult.incomeToken = orderAddressSet.baseToken;
         settleResult.outputToken = orderAddressSet.quoteToken;

@@ -174,7 +174,7 @@ library Types {
         address relayer;
     }
 
-    struct ExchangeMatchResult {
+    struct MatchResult {
         address maker;
         address taker;
         address buyer;
@@ -193,14 +193,14 @@ library Types {
      * @param makerOrderParams An array of Types.OrderParam objects representing orders from a list of makers.
      * @param orderAddressSet An object containing addresses common across each order.
      */
-    struct ExchangeMatchParams {
+    struct MatchParams {
         OrderParam       takerOrderParam;
         OrderParam[]     makerOrderParams;
         uint256[]                baseTokenFilledAmounts;
         OrderAddressSet  orderAddressSet;
     }
 
-    struct ExchangeSettleResult {
+    struct MatchSettleResult {
         address incomeToken;
         address outputToken;
         uint256 incomeTokenAmount;

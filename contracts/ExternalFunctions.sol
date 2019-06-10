@@ -189,7 +189,7 @@ contract ExternalFunctions is GlobalStore {
         return state.exchange.cancelled[orderHash];
     }
 
-    function matchOrders(Types.ExchangeMatchParams memory params) public {
+    function matchOrders(Types.MatchParams memory params) public {
         Exchange.matchOrders(state, params);
     }
 

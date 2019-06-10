@@ -165,7 +165,7 @@ library Events {
         uint256 quoteTokenFilledAmount
     );
 
-    function logExchangeMatch(Types.ExchangeMatchResult memory result, Types.OrderAddressSet memory addressSet) internal {
+    function logExchangeMatch(Types.MatchResult memory result, Types.OrderAddressSet memory addressSet) internal {
         emit ExchangeMatch(
             addressSet,
             result.maker,
