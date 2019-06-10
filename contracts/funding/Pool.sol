@@ -36,7 +36,9 @@ library Pool {
         string memory name,
         string memory symbol,
         uint8 decimals
-    ) internal {
+    )
+        internal
+    {
         state.pool.poolToken[originTokenAddress] = address(new PoolToken(name, symbol, decimals));
     }
 
@@ -44,7 +46,9 @@ library Pool {
     function createAssetPool(
         Store.State storage state,
         address token
-    ) internal {
+    )
+        internal
+    {
         state.pool.borrowIndex[token] = Decimal.one();
         state.pool.supplyIndex[token] = Decimal.one();
         state.pool.indexStartTime[token] = block.timestamp;
@@ -58,13 +62,13 @@ library Pool {
 
     function supply(
         Store.State storage state,
-        Types.WalletPath memory path,
         address token,
         uint256 amount,
         address user
-    ) internal {
-
-        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
+    )
+        internal
+    {
+        Types.Wallet storage wallet = state.wallets[user];
 
         // update index
         _updateIndex(state, token);
@@ -86,16 +90,14 @@ library Pool {
 
     function withdraw(
         Store.State storage state,
-        Types.WalletPath memory path,
         address token,
         uint256 amount,
         address user
     )
         internal
-        returns(uint256)
+        returns (uint256)
     {
-
-        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
+        Types.Wallet storage wallet = state.wallets[user];
 
         // update index
         _updateIndex(state, token);
@@ -124,14 +126,14 @@ library Pool {
 
     function borrow(
         Store.State storage state,
-        Types.WalletPath memory path,
+        address user,
+        uint16 marketID,
         address token,
         uint256 amount
-    ) internal {
-
-        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
-        uint16 marketID = path.marketID;
-        address user = path.user;
+    )
+        internal
+    {
+        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
 
          // update index
         _updateIndex(state, token);
@@ -152,17 +154,15 @@ library Pool {
 
     function repay(
         Store.State storage state,
-        Types.WalletPath memory path,
+        address user,
+        uint16 marketID,
         address token,
         uint256 amount
     )
         internal
-        returns(uint256)
+        returns (uint256)
     {
-
-        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
-        uint16 marketID = path.marketID;
-        address user = path.user;
+        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
 
         // update index
         _updateIndex(state, token);
@@ -240,7 +240,7 @@ library Pool {
     )
         internal
         view
-        returns(uint256 borrowInterestRate, uint256 supplyInterestRate)
+        returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
 
         uint256 _supply = _getPoolTotalSupply(state, token);
@@ -266,27 +266,27 @@ library Pool {
         state.pool.indexStartTime[token] = block.timestamp;
     }
 
-    function _getPoolSupply(Store.State storage state, address token, address user) internal view returns (uint256){
+    function _getPoolSupply(Store.State storage state, address token, address user) internal view returns  (uint256){
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, token);
         return Decimal.mul(state.pool.logicSupply[user].balances[token], currentSupplyIndex);
     }
 
-    function _getPoolBorrow(Store.State storage state, address token, address user, uint16 marketID) internal view returns (uint256){
+    function _getPoolBorrow(Store.State storage state, address token, address user, uint16 marketID) internal view returns  (uint256){
         (, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, token);
         return Decimal.mul(state.pool.logicBorrow[user][marketID].balances[token], currentBorrowIndex);
     }
 
-    function _getPoolTotalSupply(Store.State storage state, address token) internal view returns (uint256){
+    function _getPoolTotalSupply(Store.State storage state, address token) internal view returns  (uint256){
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, token);
         return Decimal.mul(state.pool.logicTotalSupply.balances[token], currentSupplyIndex);
     }
 
-    function _getPoolTotalBorrow(Store.State storage state, address token) internal view returns (uint256){
+    function _getPoolTotalBorrow(Store.State storage state, address token) internal view returns  (uint256){
         (, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, token);
         return Decimal.mul(state.pool.logicTotalBorrow.balances[token], currentBorrowIndex);
     }
 
-    function _getPoolCurrentIndex(Store.State storage state, address token) internal view returns (uint256 currentSupplyIndex, uint256 currentBorrowIndex){
+    function _getPoolCurrentIndex(Store.State storage state, address token) internal view returns  (uint256 currentSupplyIndex, uint256 currentBorrowIndex){
          uint256 borrowInterestRate = state.pool.borrowAnnualInterestRate[token]
             .mul(block.timestamp.sub(state.pool.indexStartTime[token]))
             .div(Consts.SECONDS_OF_YEAR());
