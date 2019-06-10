@@ -26,4 +26,18 @@ import "./lib/Store.sol";
  */
 contract GlobalStore {
     Store.State state;
+
+    modifier assetExist(
+        address asset
+    ) {
+        require(address(state.oracles[asset]) != address(0), "ASSET_NOT_REGISTERED");
+        _;
+    }
+
+    modifier marketExist(
+        uint16 marketId
+    ) {
+        require(marketId < state.marketsCount, "MARKET_NOT_REGISTERED");
+        _;
+    }
 }

@@ -24,6 +24,7 @@ import "../lib/Events.sol";
 import "../interfaces/OracleInterface.sol";
 
 library Markets {
+
     modifier marketNotExist(
         Store.State storage state,
         Types.Market memory market
@@ -49,7 +50,7 @@ library Markets {
         view
         returns (bool)
     {
-        for(uint32 i = 0; i < state.marketsCount; i++) {
+        for(uint16 i = 0; i < state.marketsCount; i++) {
             if (state.markets[i].baseAsset == market.baseAsset && state.markets[i].quoteAsset == market.quoteAsset) {
                 return true;
             }

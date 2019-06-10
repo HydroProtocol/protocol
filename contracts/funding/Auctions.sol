@@ -31,7 +31,7 @@ library Auctions {
 
     function fillAuctionWithAmount(
         Store.State storage state,
-        uint32 id,
+        uint16 id,
         uint256 repayAmount
     ) internal {
         Types.Auction storage auction = state.auctions[id];
