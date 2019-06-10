@@ -7,3 +7,5 @@ coverage.json
 coverageEnv
 scTopics
 allFiredEvents
+
+scripts/*_tmp.js
