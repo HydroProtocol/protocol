@@ -35,41 +35,42 @@ import "./lib/BatchActions.sol";
  */
 contract ExternalFunctions is GlobalStore {
 
-    ///////////
-    // Batch //
-    ///////////
+    ////////////////////////////
+    // Batch Actions Function //
+    ////////////////////////////
 
-    function batch(BatchActions.Action[] memory actions) public payable {
+    function batch(
+        BatchActions.Action[] memory actions
+    )
+        public
+        payable
+    {
         BatchActions.batch(state, actions);
     }
 
-    ///////////////
-    // Signature //
-    ///////////////
+    ////////////////////////
+    // Signature Function //
+    ////////////////////////
 
-    function isValidSignature(bytes32 hash, address signerAddress, Types.Signature calldata signature) external pure returns (bool) {
+    function isValidSignature(
+        bytes32 hash,
+        address signerAddress,
+        Types.Signature calldata signature
+    )
+        external
+        pure
+        returns (bool)
+    {
         return Signature.isValidSignature(hash, signerAddress, signature);
     }
-
-    ////////////
-    // EIP712 //
-    ////////////
 
     function DOMAIN_SEPARATOR() external pure returns (bytes32) {
         return EIP712.DOMAIN_SEPARATOR();
     }
 
-    // function DOMAIN_SEPARATOR() external view returns (bytes) {
-    //     return EIP712.DOMAIN_SEPARATOR
-    // }
-
-    // function EIP712_ORDER_TYPE() external view returns (bytes) {
-    //     return EIP712.EIP712_ORDER_TYPE
-    // }
-
-    //////////////////////
+    ///////////////////////
     // Markets Functions //
-    //////////////////////
+    ///////////////////////
 
     function getAllMarketsCount()
         external
@@ -99,7 +100,7 @@ contract ExternalFunctions is GlobalStore {
         CollateralAccounts.liquidateMulti(state, users, marketIDs);
     }
 
-    function liquidateCollateralAccount(
+    function liquidateAccount(
         address user,
         uint16 marketID
     )
@@ -233,9 +234,8 @@ contract ExternalFunctions is GlobalStore {
         return Relayer.isParticipant(state, relayer);
     }
 
-
     ////////////////////////
-    // Transfer Functions //
+    // Balances Functions //
     ////////////////////////
 
     function deposit(address asset, uint256 amount) external payable {
@@ -254,15 +254,15 @@ contract ExternalFunctions is GlobalStore {
         return Transfer.balanceOf(state,  WalletPath.getMarketPath(user, marketID), asset);
     }
 
-    /** @dev fallback function to allow deposit ether into this contract */
+    /** fallback function to allow deposit ether into this contract */
     function () external payable {
         // deposit ${msg.value} ether for ${msg.sender}
         Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, WalletPath.getBalancePath(msg.sender), msg.value);
     }
 
-    //////////////
-    // Exchange //
-    //////////////
+    ////////////////////////
+    // Exchange Functions //
+    ////////////////////////
 
     function cancelOrder(Types.Order calldata order) external {
         Exchange.cancelOrder(state, order);
