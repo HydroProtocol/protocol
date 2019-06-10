@@ -115,11 +115,11 @@ library BatchActions {
         (
             address user,
             uint16 marketID,
-            address token,
+            address asset,
             uint256 amount
         ) = abi.decode(action.encodedParams, (address, uint16, address, uint256));
 
-        Pool.borrow(state, user, marketID, token, amount);
+        Pool.borrow(state, user, marketID, asset, amount);
     }
 
     function repay(
@@ -131,11 +131,11 @@ library BatchActions {
         (
             address user,
             uint16 marketID,
-            address token,
+            address asset,
             uint256 amount
         ) = abi.decode(action.encodedParams, (address, uint16, address, uint256));
 
-        Pool.repay(state, user, marketID, token, amount);
+        Pool.repay(state, user, marketID, asset, amount);
     }
 
     function supply(
@@ -145,12 +145,12 @@ library BatchActions {
         internal
     {
         (
-            address token,
+            address asset,
             uint256 amount,
             address user
         ) = abi.decode(action.encodedParams, (address, uint256, address));
 
-        Pool.supply(state, token, amount, user);
+        Pool.supply(state, asset, amount, user);
     }
 
     function unsupply(
@@ -160,11 +160,11 @@ library BatchActions {
         internal
     {
         (
-            address token,
+            address asset,
             uint256 amount,
             address user
         ) = abi.decode(action.encodedParams, (address, uint256, address));
 
-        Pool.withdraw(state, token, amount, user);
+        Pool.withdraw(state, asset, amount, user);
     }
 }
