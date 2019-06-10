@@ -24,7 +24,8 @@ import "../lib/Types.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Decimal.sol";
-import "../lib/InterestModel.sol";
+
+import "./InterestModel.sol";
 import "./PoolToken.sol";
 
 library Pool {
