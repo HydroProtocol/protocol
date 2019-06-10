@@ -37,7 +37,7 @@ library Types {
         Liquid
     }
 
-    enum ExchangeOrderStatus {
+    enum OrderStatus {
         EXPIRED,
         CANCELLED,
         FILLABLE,
@@ -119,7 +119,7 @@ library Types {
         address collateralAsset;
     }
 
-    struct ExchangeOrder {
+    struct Order {
         address trader;
         address relayer;
         address baseToken;
@@ -158,7 +158,7 @@ library Types {
      * be shared among all of the OrderParam items. This is meant to eliminate redundancy in
      * the call data, reducing it's size, and hence saving gas.
      */
-    struct ExchangeOrderParam {
+    struct OrderParam {
         address trader;
         uint256 baseTokenAmount;
         uint256 quoteTokenAmount;
@@ -168,7 +168,7 @@ library Types {
     }
 
 
-    struct ExchangeOrderAddressSet {
+    struct OrderAddressSet {
         address baseToken;
         address quoteToken;
         address relayer;
@@ -189,15 +189,15 @@ library Types {
         WalletPath takerWalletPath;
     }
     /**
-     * @param takerOrderParam A Types.ExchangeOrderParam object representing the order from the taker.
-     * @param makerOrderParams An array of Types.ExchangeOrderParam objects representing orders from a list of makers.
+     * @param takerOrderParam A Types.OrderParam object representing the order from the taker.
+     * @param makerOrderParams An array of Types.OrderParam objects representing orders from a list of makers.
      * @param orderAddressSet An object containing addresses common across each order.
      */
     struct ExchangeMatchParams {
-        ExchangeOrderParam       takerOrderParam;
-        ExchangeOrderParam[]     makerOrderParams;
+        OrderParam       takerOrderParam;
+        OrderParam[]     makerOrderParams;
         uint256[]                baseTokenFilledAmounts;
-        ExchangeOrderAddressSet  orderAddressSet;
+        OrderAddressSet  orderAddressSet;
     }
 
     struct ExchangeSettleResult {
@@ -255,7 +255,7 @@ library WalletPath {
 }
 
 
-library ExchangeOrder {
+library Order {
 
     bytes32 public constant EIP712_ORDER_TYPE = keccak256(
         abi.encodePacked(
@@ -269,7 +269,7 @@ library ExchangeOrder {
      * @param order The order data struct.
      * @return Fully qualified EIP712 hash of the order in the Hydro Protocol domain.
      */
-    function getHash(Types.ExchangeOrder memory order) internal pure returns (bytes32 orderHash) {
+    function getHash(Types.Order memory order) internal pure returns (bytes32 orderHash) {
         orderHash = EIP712.hashMessage(_hashContent(order));
         return orderHash;
     }
@@ -280,7 +280,7 @@ library ExchangeOrder {
      * @param order The order data struct.
      * @return Hash of the order.
      */
-    function _hashContent(Types.ExchangeOrder memory order) internal pure returns (bytes32 result) {
+    function _hashContent(Types.Order memory order) internal pure returns (bytes32 result) {
         /**
          * Calculate the following hash in solidity assembly to save gas.
          *
@@ -319,49 +319,49 @@ library ExchangeOrder {
     }
 }
 
-library ExchangeOrderParam {
+library OrderParam {
     /* Functions to extract info from data bytes in Order struct */
 
-    function getOrderVersion(Types.ExchangeOrderParam memory order) internal pure returns (uint256) {
+    function getOrderVersion(Types.OrderParam memory order) internal pure returns (uint256) {
         return uint256(uint8(byte(order.data)));
     }
 
-    function getExpiredAtFromOrderData(Types.ExchangeOrderParam memory order) internal pure returns (uint256) {
+    function getExpiredAtFromOrderData(Types.OrderParam memory order) internal pure returns (uint256) {
         return uint256(uint40(bytes5(order.data << (8*3))));
     }
 
-    function isSell(Types.ExchangeOrderParam memory order) internal pure returns (bool) {
+    function isSell(Types.OrderParam memory order) internal pure returns (bool) {
         return uint8(order.data[1]) == 1;
     }
 
-    function isMarketOrder(Types.ExchangeOrderParam memory order) internal pure returns (bool) {
+    function isMarketOrder(Types.OrderParam memory order) internal pure returns (bool) {
         return uint8(order.data[2]) == 1;
     }
 
-    function isMakerOnly(Types.ExchangeOrderParam memory order) internal pure returns (bool) {
+    function isMakerOnly(Types.OrderParam memory order) internal pure returns (bool) {
         return uint8(order.data[22]) == 1;
     }
 
-    function isMarketBuy(Types.ExchangeOrderParam memory order) internal pure returns (bool) {
+    function isMarketBuy(Types.OrderParam memory order) internal pure returns (bool) {
         return !isSell(order) && isMarketOrder(order);
     }
 
-    function getAsMakerFeeRateFromOrderData(Types.ExchangeOrderParam memory order) internal pure returns (uint256) {
+    function getAsMakerFeeRateFromOrderData(Types.OrderParam memory order) internal pure returns (uint256) {
         return uint256(uint16(bytes2(order.data << (8*8))));
     }
 
-    function getAsTakerFeeRateFromOrderData(Types.ExchangeOrderParam memory order) internal pure returns (uint256) {
+    function getAsTakerFeeRateFromOrderData(Types.OrderParam memory order) internal pure returns (uint256) {
         return uint256(uint16(bytes2(order.data << (8*10))));
     }
 
-    function getMakerRebateRateFromOrderData(Types.ExchangeOrderParam memory order) internal pure returns (uint256) {
+    function getMakerRebateRateFromOrderData(Types.OrderParam memory order) internal pure returns (uint256) {
         uint256 makerRebate = uint256(uint16(bytes2(order.data << (8*12))));
 
         // make sure makerRebate will never be larger than REBATE_RATE_BASE, which is 100
         return Math.min(makerRebate, Consts.REBATE_RATE_BASE());
     }
 
-    function getWalletPathFromOrderData(Types.ExchangeOrderParam memory order) internal pure returns (Types.WalletPath memory) {
+    function getWalletPathFromOrderData(Types.OrderParam memory order) internal pure returns (Types.WalletPath memory) {
         Types.WalletCategory category;
         uint16 marketID;
 

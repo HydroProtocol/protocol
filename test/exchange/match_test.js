@@ -87,7 +87,7 @@ contract('Match', async accounts => {
             );
         }
 
-        const res = await hydro.exchangeMatchOrders(
+        const res = await hydro.matchOrders(
             {
                 takerOrderParam: takerOrder,
                 makerOrderParams: makerOrders,
@@ -130,7 +130,7 @@ contract('Match', async accounts => {
 
             if (limitTaker && takerOrderParam.type == 'limit') {
                 assertEqual(
-                    await hydro.getExchangeOrderFilledAmount(takerOrder.orderHash),
+                    await hydro.getOrderFilledAmount(takerOrder.orderHash),
                     limitTaker,
                     allowPrecisionError
                 );
@@ -138,7 +138,7 @@ contract('Match', async accounts => {
 
             if (marketTaker && takerOrderParam.type == 'market') {
                 assertEqual(
-                    await hydro.getExchangeOrderFilledAmount(takerOrder.orderHash),
+                    await hydro.getOrderFilledAmount(takerOrder.orderHash),
                     marketTaker,
                     allowPrecisionError
                 );
@@ -147,7 +147,7 @@ contract('Match', async accounts => {
             if (makers) {
                 for (let i = 0; i < makers.length; i++) {
                     assertEqual(
-                        await hydro.getExchangeOrderFilledAmount(makerOrders[i].orderHash),
+                        await hydro.getOrderFilledAmount(makerOrders[i].orderHash),
                         makers[i],
                         allowPrecisionError
                     );
