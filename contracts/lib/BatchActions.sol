@@ -21,6 +21,7 @@ pragma experimental ABIEncoderV2;
 
 import "./Store.sol";
 import "./Transfer.sol";
+import "../funding/Pool.sol";
 
 library BatchActions {
     enum ActionType {
@@ -54,6 +55,14 @@ library BatchActions {
                 withdraw(state, action);
             } else if (actionType == ActionType.Transfer) {
                 transfer(state, action);
+            } else if (actionType == ActionType.Borrow) {
+                borrow(state, action);
+            } else if (actionType == ActionType.Repay) {
+                repay(state, action);
+            } else if (actionType == ActionType.Supply) {
+                supply(state, action);
+            } else if (actionType == ActionType.Unsupply) {
+                unsupply(state, action);
             }
         }
     }
@@ -95,5 +104,71 @@ library BatchActions {
         require(toWalletPath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
 
         Transfer.transferFrom(state, asset, fromWalletPath, toWalletPath, amount);
+    }
+
+    function borrow(
+        Store.State storage state,
+        Action memory action
+    )
+        internal
+    {
+        (
+            address token,
+            uint256 amount,
+            uint16 marketID,
+            address user
+        ) = abi.decode(action.encodedParams, (address, uint256, uint16, address));
+
+        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
+        Pool.borrow(state, wallet, token, amount, marketID, user);
+    }
+
+    function repay(
+        Store.State storage state,
+        Action memory action
+    )
+        internal
+    {
+        (
+            address token,
+            uint256 amount,
+            uint16 marketID,
+            address user
+        ) = abi.decode(action.encodedParams, (address, uint256, uint16, address));
+
+        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
+        Pool.repay(state, wallet, token, amount, marketID, user);
+    }
+
+    function supply(
+        Store.State storage state,
+        Action memory action
+    )
+        internal
+    {
+        (
+            address token,
+            uint256 amount,
+            address user
+        ) = abi.decode(action.encodedParams, (address, uint256, address));
+
+        Types.Wallet storage wallet = state.wallets[user];
+        Pool.supply(state, wallet, token, amount, user);
+    }
+
+    function unsupply(
+        Store.State storage state,
+        Action memory action
+    )
+        internal
+    {
+        (
+            address token,
+            uint256 amount,
+            address user
+        ) = abi.decode(action.encodedParams, (address, uint256, address));
+
+        Types.Wallet storage wallet = state.wallets[user];
+        Pool.withdraw(state, wallet, token, amount, user);
     }
 }
