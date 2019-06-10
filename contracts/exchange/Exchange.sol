@@ -162,11 +162,7 @@ library Exchange {
             Errors.INVALID_ORDER_SIGNATURE()
         );
 
-        orderInfo.walletPath = Types.WalletPath({
-            user: order.trader,
-            category: Types.WalletCategory.Balance,
-            marketID: 0
-        });
+        orderInfo.walletPath = orderParam.getWalletPathFromOrderData();
 
         return orderInfo;
     }

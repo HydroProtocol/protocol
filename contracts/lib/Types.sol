@@ -74,7 +74,7 @@ library Types {
 
     struct WalletPath {
         WalletCategory category;
-        uint32 marketID;
+        uint16 marketID;
         address user;
     }
 
@@ -142,7 +142,9 @@ library Types {
          * ║ makerRebateRate    │ 2               rebate rate for maker (base 100)          ║
          * ║ salt               │ 8               salt                                      ║
          * ║ isMakerOnly        │ 1               is maker only                             ║
-         * ║                    │ 9               reserved                                  ║
+         * ║ walletType         │ 1               0: balance, 1: market                     ║
+         * ║ marketID           │ 2               marketID                                  ║
+         * ║                    │ 6               reserved                                  ║
          * ╚════════════════════╧═══════════════════════════════════════════════════════════╝
          */
         bytes32 data;
@@ -357,5 +359,24 @@ library ExchangeOrderParam {
 
         // make sure makerRebate will never be larger than REBATE_RATE_BASE, which is 100
         return Math.min(makerRebate, Consts.REBATE_RATE_BASE());
+    }
+
+    function getWalletPathFromOrderData(Types.ExchangeOrderParam memory order) internal pure returns (Types.WalletPath memory) {
+        Types.WalletCategory category;
+        uint16 marketID;
+
+        if (byte(order.data << (8*23)) == "\x01") {
+            category = Types.WalletCategory.CollateralAccount;
+            marketID = uint16(bytes2(order.data << (8*23)));
+        } else {
+            category = Types.WalletCategory.Balance;
+            marketID = 0;
+        }
+
+        return Types.WalletPath({
+            user: order.trader,
+            category: category,
+            marketID: marketID
+        });
     }
 }
