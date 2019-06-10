@@ -119,6 +119,9 @@ library Store {
 
         // user => marketID => wallet
         mapping (address => mapping (uint16 => Types.Wallet)) logicBorrow;
+
+        // pool token
+        mapping (address => address) poolToken;
     }
 
     struct State {

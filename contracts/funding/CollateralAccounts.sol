@@ -102,8 +102,10 @@ library CollateralAccounts {
         Types.Market storage market = state.markets[marketID];
         Types.CollateralAccount storage account = state.accounts[user][marketID];
 
-        Pool.repay(state, account.wallet, market.baseAsset, account.wallet.balances[market.baseAsset], marketID, user);
-        Pool.repay(state, account.wallet, market.quoteAsset, account.wallet.balances[market.quoteAsset], marketID, user);
+        Types.WalletPath memory path = WalletPath.getMarketPath(user, marketID);
+
+        Pool.repay(state, path, market.baseAsset, account.wallet.balances[market.baseAsset]);
+        Pool.repay(state, path, market.quoteAsset, account.wallet.balances[market.quoteAsset]);
 
         address collateralAsset;
         address debtAsset;

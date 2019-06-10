@@ -24,12 +24,24 @@ import "../lib/Types.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Decimal.sol";
+import "../lib/InterestModel.sol";
+import "./PoolToken.sol";
 
 library Pool {
     using SafeMath for uint256;
 
+    function createPoolToken(
+        Store.State storage state,
+        address originTokenAddress,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) internal {
+        state.pool.poolToken[originTokenAddress] = address(new PoolToken(name, symbol, decimals));
+    }
+
     // create new pool
-    function createPool(
+    function createAssetPool(
         Store.State storage state,
         address token
     ) internal {
@@ -46,11 +58,13 @@ library Pool {
 
     function supply(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
         uint256 amount,
         address user
     ) internal {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
 
         // update index
         _updateIndex(state, token);
@@ -72,11 +86,16 @@ library Pool {
 
     function withdraw(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
         uint256 amount,
         address user
-    ) internal {
+    )
+        internal
+        returns(uint256)
+    {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
 
         // update index
         _updateIndex(state, token);
@@ -99,16 +118,20 @@ library Pool {
 
         // update interest rate
         _updateInterestRate(state, token);
+
+        return withdrawAmount;
     }
 
     function borrow(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
-        uint256 amount,
-        uint16 marketID,
-        address user
+        uint256 amount
     ) internal {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
+        uint16 marketID = path.marketID;
+        address user = path.user;
 
          // update index
         _updateIndex(state, token);
@@ -129,12 +152,17 @@ library Pool {
 
     function repay(
         Store.State storage state,
-        Types.Wallet storage wallet,
+        Types.WalletPath memory path,
         address token,
-        uint256 amount,
-        uint16 marketID,
-        address user
-    ) internal {
+        uint256 amount
+    )
+        internal
+        returns(uint256)
+    {
+
+        Types.Wallet storage wallet = WalletPath.getWallet(path, state);
+        uint16 marketID = path.marketID;
+        address user = path.user;
 
         // update index
         _updateIndex(state, token);
@@ -157,14 +185,49 @@ library Pool {
 
         // update interest rate
         _updateInterestRate(state, token);
+
+        return repayAmount;
     }
 
+    // mint and redeem
+    function transferLogicSupply(
+        Store.State storage state,
+        address token,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
+        state.pool.logicSupply[from].balances[token] = state.pool.logicSupply[from].balances[token].sub(value);
+        state.pool.logicSupply[to].balances[token] = state.pool.logicSupply[to].balances[token].add(value);
+    }
+
+    function mintPoolToken(
+        Store.State storage state,
+        address token,
+        address user,
+        uint256 value
+    ) internal {
+        require(state.pool.poolToken[token] != address(0), "POOL_TOKEN_NOT_EXIST");
+        require(msg.sender == user, "SENDER_MUST_BE_USER");
+        transferLogicSupply(state, token, user, state.pool.poolToken[token], value);
+        PoolToken(state.pool.poolToken[token]).mint(user, value);
+    }
+
+    function redeemPoolToken(
+        Store.State storage state,
+        address token,
+        address user,
+        uint256 value
+    ) internal {
+        require(msg.sender == state.pool.poolToken[token], "SENDER_MUST_BE_POOL_TOKEN");
+        transferLogicSupply(state, token, state.pool.poolToken[token], user, value);
+    }
 
     function _updateInterestRate(
         Store.State storage state,
         address token
-    ) internal{
-        (uint256 borrowInterestRate, uint256 supplyInterestRate) = _getInterestRate(state, token);
+    ) internal {
+        (uint256 borrowInterestRate, uint256 supplyInterestRate) = _getInterestRate(state, token, 0);
         state.pool.borrowAnnualInterestRate[token] = borrowInterestRate;
         state.pool.supplyAnnualInterestRate[token] = supplyInterestRate;
     }
@@ -172,7 +235,8 @@ library Pool {
     // get interestRate
     function _getInterestRate(
         Store.State storage state,
-        address token
+        address token,
+        uint256 extraBorrowAmount
     )
         internal
         view
@@ -180,7 +244,7 @@ library Pool {
     {
 
         uint256 _supply = _getPoolTotalSupply(state, token);
-        uint256 _borrow = _getPoolTotalBorrow(state, token);
+        uint256 _borrow = _getPoolTotalBorrow(state, token).add(extraBorrowAmount);
 
         require(_supply >= _borrow, "BORROW_EXCEED_LIMITATION");
 
@@ -189,11 +253,7 @@ library Pool {
         }
 
         uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
-
-        // 0.2r + 0.5r^2
-        uint256 rate1 = borrowRatio.mul(2).div(10);
-        uint256 rate2 = Decimal.mul(borrowRatio, borrowRatio).mul(5).div(10);
-        borrowInterestRate = rate1.add(rate2);
+        borrowInterestRate = InterestModel.polynomialInterestModel(borrowRatio);
         supplyInterestRate = borrowInterestRate.mul(_borrow).div(_supply);
 
         return (borrowInterestRate, supplyInterestRate);
