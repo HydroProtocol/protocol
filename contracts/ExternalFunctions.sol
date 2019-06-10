@@ -125,19 +125,19 @@ contract ExternalFunctions is GlobalStore {
     // Pool Functions //
     ////////////////////
 
-    function getPoolTotalBorrow(address token) external view {
+    function getPoolTotalBorrow(address token) external view returns (uint256) {
         return Pool._getPoolTotalBorrow(state, token);
     }
 
-    function getPoolTotalSupply(address token) external view {
+    function getPoolTotalSupply(address token) external view returns (uint256) {
         return Pool._getPoolTotalSupply(state, token);
     }
 
-    function getPoolTotalBorrowOf(address token, address user) external view {
-        return Pool._getPoolBorrow(state, token, user);
+    function getPoolTotalBorrowOf(address token, address user, uint16 marketID) external view returns (uint256) {
+        return Pool._getPoolBorrow(state, token, user, marketID);
     }
 
-    function getPoolTotalSupplyOf(address token, address user) external view {
+    function getPoolTotalSupplyOf(address token, address user) external view returns (uint256) {
         return Pool._getPoolSupply(state, token, user);
     }
 

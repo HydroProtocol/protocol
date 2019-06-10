@@ -25,12 +25,23 @@ import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Decimal.sol";
 import "../lib/InterestModel.sol";
+import "./PoolToken.sol";
 
 library Pool {
     using SafeMath for uint256;
 
+    function createPoolToken(
+        Store.State storage state,
+        address originTokenAddress,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) internal {
+        state.pool.poolToken[originTokenAddress] = address(new PoolToken(name, symbol, decimals));
+    }
+
     // create new pool
-    function createPool(
+    function createAssetPool(
         Store.State storage state,
         address token
     ) internal {
@@ -170,6 +181,39 @@ library Pool {
         return repayAmount;
     }
 
+    // mint and redeem
+    function transferLogicSupply(
+        Store.State storage state,
+        address token,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
+        state.pool.logicSupply[from].balances[token] = state.pool.logicSupply[from].balances[token].sub(value);
+        state.pool.logicSupply[to].balances[token] = state.pool.logicSupply[to].balances[token].add(value);
+    }
+
+    function mintPoolToken(
+        Store.State storage state,
+        address token,
+        address user,
+        uint256 value
+    ) internal {
+        require(state.pool.poolToken[token] != address(0), "POOL_TOKEN_NOT_EXIST");
+        require(msg.sender == user, "SENDER_MUST_BE_USER");
+        transferLogicSupply(state, token, user, state.pool.poolToken[token], value);
+        PoolToken(state.pool.poolToken[token]).mint(user, value);
+    }
+
+    function redeemPoolToken(
+        Store.State storage state,
+        address token,
+        address user,
+        uint256 value
+    ) internal {
+        require(msg.sender == state.pool.poolToken[token], "SENDER_MUST_BE_POOL_TOKEN");
+        transferLogicSupply(state, token, state.pool.poolToken[token], user, value);
+    }
 
     function _updateInterestRate(
         Store.State storage state,

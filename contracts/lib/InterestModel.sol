@@ -32,7 +32,8 @@ library InterestModel {
         // 0.2r + 0.5r^2
         uint256 rate1 = borrowRatio.mul(2).div(10);
         uint256 rate2 = Decimal.mul(borrowRatio, borrowRatio).mul(5).div(10);
-        borrowInterestRate = rate1.add(rate2);
-        return borrowInterestRate
+        uint256 borrowInterestRate = rate1.add(rate2);
+        return borrowInterestRate;
     }
+
 }
