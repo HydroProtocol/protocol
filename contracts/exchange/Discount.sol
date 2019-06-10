@@ -131,8 +131,8 @@ library Discount {
      * Meaning if a user has less than 10000 (0x00002710) HOT, they will pay 100%(0x64) of the
      * standard fee.
      *
-     * @param user The user address to calculate a fee discount for.
-     * @return The percentage of the regular fee this user will pay.
+     * @param  user The user address to calculate a fee discount for.
+     * @return      The percentage of the regular fee this user will pay.
      */
     function getDiscountedRate(
         Store.State storage state,
