@@ -41,11 +41,10 @@ library Auctions {
         uint256 leftDebtAmount = Pool._getPoolBorrow(state, auction.debtAsset, auction.borrower, auction.marketID);
         uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset];
 
-        Types.WalletPath memory path = WalletPath.getMarketPath(msg.sender, auction.marketID);
-
         Pool.repay(
             state,
-            path,
+            auction.borrower,
+            auction.marketID,
             auction.debtAsset,
             repayAmount
         );

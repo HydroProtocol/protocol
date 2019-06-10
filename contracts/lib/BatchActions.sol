@@ -113,14 +113,13 @@ library BatchActions {
         internal
     {
         (
-            address token,
-            uint256 amount,
+            address user,
             uint16 marketID,
-            address user
-        ) = abi.decode(action.encodedParams, (address, uint256, uint16, address));
+            address token,
+            uint256 amount
+        ) = abi.decode(action.encodedParams, (address, uint16, address, uint256));
 
-        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
-        Pool.borrow(state, wallet, token, amount, marketID, user);
+        Pool.borrow(state, user, marketID, token, amount);
     }
 
     function repay(
@@ -130,14 +129,13 @@ library BatchActions {
         internal
     {
         (
-            address token,
-            uint256 amount,
+            address user,
             uint16 marketID,
-            address user
-        ) = abi.decode(action.encodedParams, (address, uint256, uint16, address));
+            address token,
+            uint256 amount
+        ) = abi.decode(action.encodedParams, (address, uint16, address, uint256));
 
-        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
-        Pool.repay(state, wallet, token, amount, marketID, user);
+        Pool.repay(state, user, marketID, token, amount);
     }
 
     function supply(
@@ -152,8 +150,7 @@ library BatchActions {
             address user
         ) = abi.decode(action.encodedParams, (address, uint256, address));
 
-        Types.Wallet storage wallet = state.wallets[user];
-        Pool.supply(state, wallet, token, amount, user);
+        Pool.supply(state, token, amount, user);
     }
 
     function unsupply(
@@ -168,7 +165,6 @@ library BatchActions {
             address user
         ) = abi.decode(action.encodedParams, (address, uint256, address));
 
-        Types.Wallet storage wallet = state.wallets[user];
-        Pool.withdraw(state, wallet, token, amount, user);
+        Pool.withdraw(state, token, amount, user);
     }
 }

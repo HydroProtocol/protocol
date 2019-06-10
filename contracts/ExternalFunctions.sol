@@ -121,7 +121,7 @@ contract ExternalFunctions is GlobalStore {
     }
 
     function getAccountDetails(
-     address user,
+        address user,
         uint16 marketID
     )
         external
@@ -135,72 +135,115 @@ contract ExternalFunctions is GlobalStore {
     // Pool Functions //
     ////////////////////
 
-    function getPoolTotalBorrow(address token) external view returns (uint256) {
+    function getPoolTotalBorrow(
+        address token
+    )
+        external
+        view
+        returns (uint256)
+    {
         return Pool._getPoolTotalBorrow(state, token);
     }
 
-    function getPoolTotalSupply(address token) external view returns (uint256) {
+    function getPoolTotalSupply(
+        address token
+    )
+        external
+        view
+        returns (uint256)
+    {
         return Pool._getPoolTotalSupply(state, token);
     }
 
-    function getPoolTotalBorrowOf(address token, address user, uint16 marketID) external view returns (uint256) {
+    function getPoolTotalBorrowOf(
+        address token,
+        address user,
+        uint16 marketID
+    )
+        external
+        view
+        returns (uint256)
+    {
         return Pool._getPoolBorrow(state, token, user, marketID);
     }
 
-    function getPoolTotalSupplyOf(address token, address user) external view returns (uint256) {
+    function getPoolTotalSupplyOf(
+        address token,
+        address user
+    )
+        external
+        view
+        returns (uint256)
+    {
         return Pool._getPoolSupply(state, token, user);
     }
 
-    function getPoolInterestRate(address token, uint256 extraBorrowAmount)
+    function getPoolInterestRate(
+        address token,
+        uint256 extraBorrowAmount
+    )
         external
         view
-        returns(uint256 borrowInterestRate, uint256 supplyInterestRate)
+        returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
         return Pool._getInterestRate(state, token, extraBorrowAmount);
     }
 
-    function supplyPool(address token, uint256 amount)
+    function supplyPool(
+        address token,uint256 amount
+    )
         external
     {
         Pool.supply(
             state,
-            WalletPath.getBalancePath(msg.sender),
             token,
             amount,
             msg.sender
         );
     }
 
-    function withdrawPool(address token, uint256 amount)
+    function withdrawPool(
+        address token,
+        uint256 amount
+    )
         external
     {
         Pool.withdraw(
             state,
-            WalletPath.getBalancePath(msg.sender),
             token,
             amount,
             msg.sender
         );
     }
 
-    function borrow(address token, uint256 amount, uint16 marketID)
+    function borrow(
+        address token,
+        uint256 amount,
+        uint16 marketID
+    )
         external
     {
         Pool.borrow(
             state,
-            WalletPath.getMarketPath(msg.sender, marketID),
+            msg.sender,
+            marketID,
             token,
             amount
         );
 
     }
 
-    function repay(address token, uint256 amount, uint16 marketID)
+    function repay(
+        address token,
+        uint256 amount,
+        uint16 marketID
+    )
         external
     {
         Pool.repay(
             state,
-            WalletPath.getMarketPath(msg.sender, marketID),
+            msg.sender,
+            marketID,
             token,
             amount
         );
