@@ -48,12 +48,14 @@ library BatchActions {
             ActionType actionType = action.actionType;
 
             if (actionType == ActionType.Deposit) {
-                parseAndCallDeposit(state, action);
+                deposit(state, action);
+            } else if (actionType == ActionType.Withdraw) {
+                withdraw(state, action);
             }
         }
     }
 
-    function parseAndCallDeposit(
+    function deposit(
         Store.State storage state,
         Action memory action
     )
@@ -61,5 +63,15 @@ library BatchActions {
     {
         (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
         Transfer.depositFor(state, asset, msg.sender, WalletPath.getBalancePath(msg.sender), amount);
+    }
+
+    function withdraw(
+        Store.State storage state,
+        Action memory action
+    )
+        internal
+    {
+        (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
+        Transfer.withdrawFrom(state, asset, WalletPath.getBalancePath(msg.sender), msg.sender, amount);
     }
 }
