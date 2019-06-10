@@ -174,7 +174,10 @@ library Exchange {
      * @param orderAddressSet An object containing addresses common across each order.
      * @return The reconstructed Order object.
      */
-    function getOrderFromOrderParam(Types.OrderParam memory orderParam, Types.OrderAddressSet memory orderAddressSet)
+    function getOrderFromOrderParam(
+        Types.OrderParam memory orderParam,
+        Types.OrderAddressSet memory orderAddressSet
+    )
         internal
         pure
         returns (Types.Order memory order)
@@ -217,7 +220,10 @@ library Exchange {
      * @param takerOrderParam The Types.OrderParam object representing the taker's order data
      * @param makerOrderParam The Types.OrderParam object representing the maker's order data
      */
-    function validatePrice(Types.OrderParam memory takerOrderParam, Types.OrderParam memory makerOrderParam)
+    function validatePrice(
+        Types.OrderParam memory takerOrderParam,
+        Types.OrderParam memory makerOrderParam
+    )
         internal
         pure
     {

@@ -29,19 +29,6 @@ import "../lib/Types.sol";
 library CollateralAccounts {
     using SafeMath for uint256;
 
-    /**
-     * Get a user's default collateral account asset balance
-     */
-    function balanceOf(
-        Store.State storage state,
-        address user,
-        uint16 marketID,
-        address asset
-    ) internal view returns (uint256) {
-        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
-        return wallet.balances[asset];
-    }
-
     function getDetails(
         Store.State storage state,
         address user,
@@ -92,7 +79,10 @@ library CollateralAccounts {
         Store.State storage state,
         address user,
         uint16 marketID
-    ) internal returns (bool) {
+    )
+        internal
+        returns (bool)
+    {
         Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
         if (!details.liquidable) {

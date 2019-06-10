@@ -25,7 +25,7 @@ import "./lib/Types.sol";
 import "./funding/Pool.sol";
 import "./funding/Markets.sol";
 import "./exchange/Discount.sol";
-import "./interfaces/OracleInterface.sol";
+import "./interfaces/IOracle.sol";
 
 /**
  * Only owner can use this contract functions
@@ -47,7 +47,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        state.oracles[asset] = OracleInterface(oracleAddress);
+        state.oracles[asset] = IOracle(oracleAddress);
         Pool.createAssetPool(state, asset);
         // TODO event
     }
