@@ -19,10 +19,11 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./Relayer.sol";
+
 import "../lib/SafeMath.sol";
 import "../lib/Math.sol";
 import "../lib/Signature.sol";
-import "../lib/Relayer.sol";
 import "../lib/Errors.sol";
 import "../lib/Store.sol";
 import "../lib/Types.sol";

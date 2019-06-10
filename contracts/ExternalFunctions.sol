@@ -19,15 +19,16 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
+import "./GlobalStore.sol";
+
 import "./exchange/Exchange.sol";
+import "./exchange/Relayer.sol";
 
 import "./funding/Markets.sol";
 import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
-import "./GlobalStore.sol";
 
 import "./lib/Transfer.sol";
-import "./lib/Relayer.sol";
 import "./lib/BatchActions.sol";
 
 /**
