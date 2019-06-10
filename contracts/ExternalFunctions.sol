@@ -27,9 +27,9 @@ import "./exchange/Relayer.sol";
 import "./funding/Markets.sol";
 import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
+import "./funding/BatchActions.sol";
 
 import "./lib/Transfer.sol";
-import "./lib/BatchActions.sol";
 
 /**
  * External Functions

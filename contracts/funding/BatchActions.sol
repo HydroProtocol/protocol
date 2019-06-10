@@ -19,9 +19,11 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Store.sol";
-import "./Transfer.sol";
-import "../funding/Pool.sol";
+import "./Pool.sol";
+
+import "../lib/Store.sol";
+import "../lib/Transfer.sol";
+
 
 library BatchActions {
     enum ActionType {
