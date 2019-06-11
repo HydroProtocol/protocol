@@ -158,7 +158,7 @@ contract ExternalFunctions is GlobalStore {
         return Pool._getPoolTotalSupply(state, asset);
     }
 
-    function getPoolTotalBorrowOf(
+    function getPoolBorrowOf(
         address asset,
         address user,
         uint16 marketID
@@ -171,7 +171,7 @@ contract ExternalFunctions is GlobalStore {
         return Pool._getPoolBorrow(state, asset, user, marketID);
     }
 
-    function getPoolTotalSupplyOf(
+    function getPoolSupplyOf(
         address asset,
         address user
     )
@@ -257,6 +257,17 @@ contract ExternalFunctions is GlobalStore {
             asset,
             amount
         );
+    }
+
+    function getPoolTokenAddress(
+        address asset
+    )
+        external
+        view
+        assetExist(asset)
+        returns (address)
+    {
+        return state.pool.poolToken[asset];
     }
 
     ///////////////////////
