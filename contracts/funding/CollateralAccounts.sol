@@ -45,8 +45,8 @@ library CollateralAccounts {
         uint256 baseUSDPrice = state.oracles[market.baseAsset].getPrice(market.baseAsset);
         uint256 quoteUSDPrice = state.oracles[market.quoteAsset].getPrice(market.quoteAsset);
 
-        details.debtsTotalUSDValue = baseUSDPrice.mul(Pool._getPoolBorrow(state, market.baseAsset, user, marketID)).add(
-            quoteUSDPrice.mul(Pool._getPoolBorrow(state, market.quoteAsset, user, marketID))
+        details.debtsTotalUSDValue = baseUSDPrice.mul(Pool._getPoolBorrowOf(state, market.baseAsset, user, marketID)).add(
+            quoteUSDPrice.mul(Pool._getPoolBorrowOf(state, market.quoteAsset, user, marketID))
         );
 
         details.balancesTotalUSDValue = baseUSDPrice.mul(account.wallet.balances[market.baseAsset]).add(

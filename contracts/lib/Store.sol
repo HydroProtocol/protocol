@@ -108,12 +108,8 @@ library Store {
         mapping (address => uint256) borrowAnnualInterestRate; // decimal
         mapping (address => uint256) supplyAnnualInterestRate; // decimal
 
-        // total suppy and borrow
-        Types.Wallet logicTotalSupply;
+        // total borrow
         Types.Wallet logicTotalBorrow;
-
-        // user => wallet
-        mapping (address => Types.Wallet) logicSupply;
 
         // user => marketID => wallet
         mapping (address => mapping (uint16 => Types.Wallet)) logicBorrow;
