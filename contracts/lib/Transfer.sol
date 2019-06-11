@@ -44,7 +44,7 @@ library Transfer {
         if (asset != Consts.ETHEREUM_TOKEN_ADDRESS()) {
             SafeERC20.safeTransferFrom(asset, from, address(this), amount);
         } else {
-            require(amount == msg.value, "Wrong amount");
+            require(amount == msg.value, "MSG_VALUE_AND_AMOUNT_MISMATCH");
         }
 
         Types.Wallet storage toWallet = toWalletPath.getWallet(state);
