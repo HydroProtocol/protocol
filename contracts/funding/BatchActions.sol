@@ -19,26 +19,41 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Store.sol";
-import "./Transfer.sol";
-import "../funding/Pool.sol";
+import "./Pool.sol";
 
+import "../lib/Store.sol";
+import "../lib/Transfer.sol";
+
+/**
+ * A library allows user to do multi actions at once in a single transaction.
+ */
 library BatchActions {
+
+    /**
+     * All actions can be included in a batch
+     */
     enum ActionType {
-        Deposit,
-        Withdraw,
-        Transfer,
-        Borrow,
-        Repay,
-        Supply,
-        Unsupply
+        Deposit,   // Move asset from your wallet to tradeable balance
+        Withdraw,  // Move asset from your tradeable balance to wallet
+        Transfer,  // Move asset between tradeable balance and margin account
+        Borrow,    // Borrow asset from pool
+        Repay,     // Repay asset to pool
+        Supply,    // Move asset from tradeable balance to pool to earn interest
+        Unsupply   // Move asset from pool back to tradeable balance
     }
 
+    /**
+     * Uniform parameter for an action
+     */
     struct Action {
-        ActionType actionType;
-        bytes encodedParams;
+        ActionType actionType;  // The action type
+        bytes encodedParams;    // Encoded params, it's different for each action
     }
 
+    /**
+     * Batch actions entrance
+     * @param actions List of actions
+     */
     function batch(
         Store.State storage state,
         Action[] memory actions
@@ -113,13 +128,12 @@ library BatchActions {
         internal
     {
         (
-            address user,
             uint16 marketID,
             address asset,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (address, uint16, address, uint256));
+        ) = abi.decode(action.encodedParams, (uint16, address, uint256));
 
-        Pool.borrow(state, user, marketID, asset, amount);
+        Pool.borrow(state, msg.sender, marketID, asset, amount);
     }
 
     function repay(
@@ -129,13 +143,12 @@ library BatchActions {
         internal
     {
         (
-            address user,
             uint16 marketID,
             address asset,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (address, uint16, address, uint256));
+        ) = abi.decode(action.encodedParams, (uint16, address, uint256));
 
-        Pool.repay(state, user, marketID, asset, amount);
+        Pool.repay(state, msg.sender, marketID, asset, amount);
     }
 
     function supply(
@@ -146,11 +159,10 @@ library BatchActions {
     {
         (
             address asset,
-            uint256 amount,
-            address user
-        ) = abi.decode(action.encodedParams, (address, uint256, address));
+            uint256 amount
+        ) = abi.decode(action.encodedParams, (address, uint256));
 
-        Pool.supply(state, asset, amount, user);
+        Pool.supply(state, asset, amount, msg.sender);
     }
 
     function unsupply(
@@ -161,10 +173,9 @@ library BatchActions {
     {
         (
             address asset,
-            uint256 amount,
-            address user
-        ) = abi.decode(action.encodedParams, (address, uint256, address));
+            uint256 amount
+        ) = abi.decode(action.encodedParams, (address, uint256));
 
-        Pool.withdraw(state, asset, amount, user);
+        Pool.withdraw(state, asset, amount, msg.sender);
     }
 }
