@@ -367,7 +367,7 @@ library OrderParam {
 
         if (byte(order.data << (8*23)) == "\x01") {
             category = Types.WalletCategory.CollateralAccount;
-            marketID = uint16(bytes2(order.data << (8*23)));
+            marketID = uint16(bytes2(order.data << (8*24)));
         } else {
             category = Types.WalletCategory.Balance;
             marketID = 0;

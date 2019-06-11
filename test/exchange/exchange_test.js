@@ -18,7 +18,7 @@ contract('CancelOrder', accounts => {
             quoteAsset: '0x0000000000000000000000000000000000000000',
             baseAssetAmount: 1,
             quoteAssetAmount: 1,
-            data: generateOrderData(1, true, false, 0, 1, 1, 0, 1),
+            data: generateOrderData(1, true, false, 0, 1, 1, 0, 1, false),
             gasTokenAmount: 0
         };
 
@@ -39,7 +39,7 @@ contract('CancelOrder', accounts => {
             quoteAsset: '0x0000000000000000000000000000000000000000',
             baseAssetAmount: 1,
             quoteAssetAmount: 1,
-            data: generateOrderData(1, true, false, 0, 1, 1, 0, 1123123),
+            data: generateOrderData(1, true, false, 0, 1, 1, 0, 1123123, false),
             gasTokenAmount: 0
         };
 

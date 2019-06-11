@@ -2,9 +2,9 @@ require('../utils/hooks');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const BigNumber = require('bignumber.js');
-const { setHotAmount, clone, toWei, wei, getUserKey } = require('../utils');
+const { setHotAmount, pp, clone, toWei, wei, getUserKey } = require('../utils');
 const { buildOrder } = require('../utils/order');
-const { createAsset } = require('../utils/assets');
+const { createAsset, newMarket } = require('../utils/assets');
 
 const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => {
     a = new BigNumber(a);
@@ -42,7 +42,7 @@ contract('Match', async accounts => {
 
     const users = [relayer, u1, u2, u3];
 
-    const getTokenUsersBalances = async tokens => {
+    const getUsersAssetsBalances = async (tokens, walletPaths) => {
         const balances = {};
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
@@ -50,7 +50,17 @@ contract('Match', async accounts => {
 
             for (let j = 0; j < Object.keys(users).length; j++) {
                 const user = users[j];
-                const balance = await hydro.balanceOf(token.address, user);
+                let balance;
+
+                if (walletPaths && walletPaths[user] && walletPaths[user].category == 1) {
+                    balance = await hydro.marketBalanceOf(
+                        walletPaths[user].marketID,
+                        token.address,
+                        user
+                    );
+                } else {
+                    balance = await hydro.balanceOf(token.address, user);
+                }
 
                 balances[`${symbol}-${user}`] = balance;
             }
@@ -58,8 +68,63 @@ contract('Match', async accounts => {
         return balances;
     };
 
+    const tryToDepositToMarketBalances = async (
+        baseAssetConfig,
+        baseAsset,
+        quoteAssetConfig,
+        quoteAsset,
+        userWalletPaths
+    ) => {
+        const users = Object.keys(userWalletPaths);
+        for (let j = 0; j < users.length; j++) {
+            const user = users[j];
+            const path = userWalletPaths[user];
+
+            if (path.category == 0) {
+                continue;
+            }
+
+            if (
+                baseAssetConfig &&
+                baseAssetConfig.initBalances &&
+                baseAssetConfig.initBalances[user]
+            ) {
+                await hydro.transfer(
+                    baseAsset.address,
+                    {
+                        category: 0,
+                        marketID: 0,
+                        user
+                    },
+                    path,
+                    baseAssetConfig.initBalances[user],
+                    { from: user }
+                );
+            }
+
+            if (
+                quoteAssetConfig &&
+                quoteAssetConfig.initBalances &&
+                quoteAssetConfig.initBalances[user]
+            ) {
+                await hydro.transfer(
+                    quoteAsset.address,
+                    {
+                        category: 0,
+                        marketID: 0,
+                        user
+                    },
+                    path,
+                    quoteAssetConfig.initBalances[user],
+                    { from: user }
+                );
+            }
+        }
+    };
+
     const matchTest = async config => {
         const {
+            userWalletPaths,
             baseAssetConfig,
             quoteAssetConfig,
             takerOrderParam,
@@ -73,7 +138,23 @@ contract('Match', async accounts => {
         const baseAsset = await createAsset(baseAssetConfig);
         const quoteAsset = await createAsset(quoteAssetConfig);
 
-        const balancesBeforeMatch = await getTokenUsersBalances([baseAsset, quoteAsset]);
+        if (userWalletPaths) {
+            await newMarket({ assets: [baseAsset, quoteAsset] });
+
+            // if the user has a special wallet path, try to deposit all initBalances into market balances
+            await tryToDepositToMarketBalances(
+                baseAssetConfig,
+                baseAsset,
+                quoteAssetConfig,
+                quoteAsset,
+                userWalletPaths
+            );
+        }
+
+        const balancesBeforeMatch = await getUsersAssetsBalances(
+            [baseAsset, quoteAsset],
+            userWalletPaths
+        );
 
         const baseAssetAddress = baseAsset.address;
         const quoteAssetAddress = quoteAsset.address;
@@ -86,7 +167,6 @@ contract('Match', async accounts => {
                 await buildOrder(makerOrdersParams[i], baseAssetAddress, quoteAssetAddress)
             );
         }
-
         const res = await hydro.matchOrders(
             {
                 takerOrderParam: takerOrder,
@@ -103,8 +183,10 @@ contract('Match', async accounts => {
 
         console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.receipt.gasUsed);
 
-        const balancesAfterMatch = await getTokenUsersBalances([baseAsset, quoteAsset]);
-
+        const balancesAfterMatch = await getUsersAssetsBalances(
+            [baseAsset, quoteAsset],
+            userWalletPaths
+        );
         for (let i = 0; i < Object.keys(assertDiffs).length; i++) {
             const tokenSymbol = Object.keys(assertDiffs)[i];
 
@@ -120,7 +202,7 @@ contract('Match', async accounts => {
                     actualDiff.toString(),
                     expectedDiff,
                     allowPrecisionError,
-                    `${tokenSymbol}-${getUserKey(user)}`
+                    `${tokenSymbol}-${await getUserKey(user)}`
                 );
             }
         }
@@ -1328,6 +1410,18 @@ contract('Match', async accounts => {
 
     it('match with market balance', async () => {
         const testConfig = {
+            userWalletPaths: {
+                [u1]: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                },
+                [u2]: {
+                    category: 0,
+                    marketID: 0,
+                    user: u2
+                }
+            },
             baseAssetFilledAmounts: [toWei('1')],
             baseAssetConfig: {
                 name: 'TestToken',
@@ -1356,7 +1450,12 @@ contract('Match', async accounts => {
                 asTakerFeeRate: 0,
                 baseAssetAmount: toWei('1'),
                 quoteAssetAmount: toWei('1'),
-                gasTokenAmount: toWei('0')
+                gasTokenAmount: toWei('0'),
+                walletPath: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                }
             },
             makerOrdersParams: [
                 {

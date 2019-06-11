@@ -43,8 +43,8 @@ const pp = obj => {
     console.log(JSON.stringify(obj, null, 2));
 };
 
-const getUserKey = u => {
-    const accounts = web3.eth.getAccounts();
+const getUserKey = async u => {
+    const accounts = await web3.eth.getAccounts();
     const relayer = accounts[9];
     const u1 = accounts[4];
     const u2 = accounts[5];
