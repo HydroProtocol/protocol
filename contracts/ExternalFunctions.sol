@@ -66,10 +66,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return Signature.isValidSignature(hash, signerAddress, signature);
     }
 
-    function DOMAIN_SEPARATOR() external pure returns (bytes32) {
-        return EIP712.DOMAIN_SEPARATOR();
-    }
-
     ///////////////////////
     // Markets Functions //
     ///////////////////////
