@@ -20,6 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
+import "./Modifiers.sol";
 
 import "./exchange/Exchange.sol";
 import "./exchange/Relayer.sol";
@@ -34,7 +35,7 @@ import "./lib/Transfer.sol";
 /**
  * External Functions
  */
-contract ExternalFunctions is GlobalStore {
+contract ExternalFunctions is GlobalStore, Modifiers {
 
     ////////////////////////////
     // Batch Actions Function //
@@ -141,7 +142,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolTotalBorrow(state, asset);
@@ -152,7 +153,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolTotalSupply(state, asset);
@@ -165,7 +166,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        marketExist(marketID)
+        requireMarketIDAndAssetMatch(marketID, asset)
         returns (uint256)
     {
         return Pool._getPoolBorrowOf(state, asset, user, marketID);
@@ -177,7 +178,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolSupplyOf(state, asset, user);
@@ -189,7 +190,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
         return Pool._getInterestRate(state, asset, extraBorrowAmount);
@@ -200,7 +201,7 @@ contract ExternalFunctions is GlobalStore {
         uint256 amount
     )
         external
-        assetExist(asset)
+        requireAssetExist(asset)
     {
         Pool.supply(
             state,
@@ -215,7 +216,7 @@ contract ExternalFunctions is GlobalStore {
         uint256 amount
     )
         external
-        assetExist(asset)
+        requireAssetExist(asset)
     {
         Pool.withdraw(
             state,
@@ -231,7 +232,7 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
-        marketExist(marketID)
+        requireMarketIDAndAssetMatch(marketID, asset)
     {
         Pool.borrow(
             state,
@@ -248,7 +249,7 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
-        marketExist(marketID)
+        requireMarketIDAndAssetMatch(marketID, asset)
     {
         Pool.repay(
             state,
@@ -264,7 +265,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (address)
     {
         return state.pool.poolToken[asset];

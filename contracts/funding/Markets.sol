@@ -24,41 +24,6 @@ import "../lib/Events.sol";
 import "../interfaces/IOracle.sol";
 
 library Markets {
-
-    modifier marketNotExist(
-        Store.State storage state,
-        Types.Market memory market
-    ) {
-        require(!isMarketExist(state, market), "MARKET_IS_ALREADY_EXIST");
-        _;
-    }
-
-    modifier marketAssetsValid(
-        Store.State storage state,
-        Types.Market memory market
-    ) {
-        require(state.oracles[market.baseAsset] != IOracle(address(0)), "MARKET_BASE_ASSET_INVALID");
-        require(state.oracles[market.quoteAsset] != IOracle(address(0)), "MARKET_QUOTE_ASSET_INVALID");
-        _;
-    }
-
-    function isMarketExist(
-        Store.State storage state,
-        Types.Market memory market
-    )
-        internal
-        view
-        returns (bool)
-    {
-        for(uint16 i = 0; i < state.marketsCount; i++) {
-            if (state.markets[i].baseAsset == market.baseAsset && state.markets[i].quoteAsset == market.quoteAsset) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     function getMarket(
         Store.State storage state,
         uint16 marketID
@@ -85,8 +50,6 @@ library Markets {
         Types.Market memory market
     )
         internal
-        marketNotExist(state, market)
-        marketAssetsValid(state, market)
     {
         state.markets[state.marketsCount++] = market;
         Events.logMarketCreate(market);
