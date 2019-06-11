@@ -14,13 +14,13 @@
     "ethereumjs-util": "^5.2.0",
     "ganache-cli": "^6.4.3",
     "solc": "^0.5.8",
-    "solidity-coverage": "^0.5.11",
     "truffle": "^5.0.17",
     "truffle-privatekey-provider": "^1.1.0"
   },
   "devDependencies": {
     "ethereumjs-abi": "^0.6.7",
     "ethers": "^4.0.29",
-    "prettier": "1.17.1"
+    "prettier": "1.17.1",
+    "solidity-coverage": "^0.6.0-beta.5"
   }
 }

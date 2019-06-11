@@ -22,67 +22,13 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Events.sol";
+import "../HydroToken.sol";
 
 /**
  * Library to handle fee discount calculation
  */
 library Discount {
     using SafeMath for uint256;
-
-    /**
-     * Get the HOT token balance of an address.
-     *
-     * @param owner The address to check.
-     * @return The HOT balance for the owner address.
-     */
-    function getHotBalance(
-        Store.State storage state,
-        address owner
-    )
-        internal
-        view
-        returns (uint256 result)
-    {
-        address hotToken = state.exchange.hotTokenAddress;
-
-        // EIP20Interface(hotTokenAddress).balanceOf(owner)
-
-        /**
-         * We construct calldata for the `balanceOf` ABI.
-         * The layout of this calldata is in the table below.
-         *
-         * ╔════════╤════════╤════════╤═══════════════════╗
-         * ║ Area   │ Offset │ Length │ Contents          ║
-         * ╟────────┼────────┼────────┼───────────────────╢
-         * ║ Header │ 0      │ 4      │ function selector ║
-         * ║ Params │ 4      │ 32     │ owner address     ║
-         * ╚════════╧════════╧════════╧═══════════════════╝
-         */
-        assembly {
-            // Keep these so we can restore stack memory upon completion
-            let tmp1 := mload(0)
-            let tmp2 := mload(4)
-
-            // keccak256('balanceOf(address)') bitmasked to 4 bytes
-            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            mstore(4, owner)
-
-            // No need to check the return value because hotToken is a trustworthy contract
-            result := staticcall(
-                gas,      // Forward all gas
-                hotToken, // HOT token deployment address
-                0,        // Pointer to start of calldata
-                36,       // Length of calldata
-                0,        // Overwrite calldata with output
-                32        // Expecting uint256 output, the token balance
-            )
-            result := mload(0)
-
-            // Restore stack memory
-            mstore(0, tmp1)
-            mstore(4, tmp2)
-        }
-    }
 
     /**
      * Calculate and return the rate at which fees will be charged for an address. The discounted
@@ -142,7 +88,7 @@ library Discount {
         view
         returns (uint256 result)
     {
-        uint256 hotBalance = getHotBalance(state, user);
+        uint256 hotBalance = HydroToken(state.exchange.hotTokenAddress).balanceOf(user);
 
         if (hotBalance == 0) {
             return Consts.DISCOUNT_RATE_BASE();

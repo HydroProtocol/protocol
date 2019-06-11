@@ -1,7 +1,7 @@
+require('../utils/hooks');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const BigNumber = require('bignumber.js');
-require('../utils/hooks');
 const { setHotAmount, clone, toWei, wei, getUserKey } = require('../utils');
 const { buildOrder } = require('../utils/order');
 const { createAsset } = require('../utils/assets');
@@ -98,7 +98,7 @@ contract('Match', async accounts => {
                     relayer
                 }
             },
-            { from: relayer, gas: 10000000, gasLimit: 10000000 }
+            { from: relayer }
         );
 
         console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.receipt.gasUsed);

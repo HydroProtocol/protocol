@@ -47,27 +47,6 @@ library Events {
         emit Transfer(asset, fromPath, toPath, amount);
     }
 
-    // a user deposit tokens to default collateral account
-    event DepositCollateral(address asset, address user, uint256 amount);
-
-    function logDepositCollateral(address asset, address user, uint256 amount) internal {
-        emit DepositCollateral(asset, user, amount);
-    }
-
-    // a user deposit tokens to default collateral account
-    event DepositWithdraw(address asset, address user, uint256 amount);
-
-    function logDepositWithdraw(address asset, address user, uint256 amount) internal {
-        emit DepositWithdraw(asset, user, amount);
-    }
-
-    // a user withdraw tokens from default collateral account
-    event WithdrawCollateral(address asset, address user, uint256 amount);
-
-    function logWithdrawCollateral(address asset, address user, uint256 amount) internal {
-        emit WithdrawCollateral(asset, user, amount);
-    }
-
     ///////////////////
     // Admin Actions //
     ///////////////////

@@ -20,6 +20,8 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
+import "./Modifiers.sol";
+
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
 import "./funding/Pool.sol";
@@ -30,12 +32,14 @@ import "./interfaces/IOracle.sol";
 /**
  * Only owner can use this contract functions
  */
-contract Operations is Ownable, GlobalStore {
+contract Operations is Ownable, GlobalStore, Modifiers {
     function addMarket(
         Types.Market calldata market
     )
         external
         onlyOwner
+        requireMarketAssetsValid(market)
+        requireMarketNotExist(market)
     {
         Markets.addMarket(state, market);
     }
@@ -49,7 +53,7 @@ contract Operations is Ownable, GlobalStore {
     )
         external
         onlyOwner
-        assetNotExist(asset)
+        requireAssetNotExist(asset)
     {
         state.oracles[asset] = IOracle(oracleAddress);
         Pool.createAssetPool(state, asset);

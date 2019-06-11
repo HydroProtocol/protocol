@@ -1,12 +1,14 @@
 require('../utils/hooks');
 
 const { newMarket } = require('../utils/assets');
-const { toWei } = require('../utils');
+const { toWei, etherAsset } = require('../utils');
 const Hydro = artifacts.require('./Hydro.sol');
 const assert = require('assert');
 
 contract('Markets', accounts => {
     let hydro;
+
+    const fakeOracleAddress = '0xffffffffffffffffffffffffffffffffffffffff';
 
     before(async () => {
         hydro = await Hydro.deployed();
@@ -35,8 +37,47 @@ contract('Markets', accounts => {
         });
     });
 
+    it('can not add invalid market, same quote and base', async () => {
+        assert.rejects(
+            newMarket({
+                assets: [{ address: etherAsset }, { address: etherAsset }]
+            }),
+            /BASE_QUOTE_DUPLICATED/
+        );
+    });
+
+    it('can not add invalid market, unregistered base asset', async () => {
+        // register fake ether asset oracle
+        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
+
+        await assert.rejects(
+            newMarket({
+                assets: [
+                    { address: '0xffffffffffffffffffffffffffffffffffffffff' },
+                    { address: etherAsset }
+                ]
+            }),
+            /MARKET_BASE_ASSET_NOT_EXIST/
+        );
+    });
+
+    it('can not add invalid market, unregistered quote asset', async () => {
+        // register fake ether asset oracle
+        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
+
+        await assert.rejects(
+            newMarket({
+                assets: [
+                    { address: etherAsset },
+                    { address: '0xffffffffffffffffffffffffffffffffffffffff' }
+                ]
+            }),
+            /MARKET_QUOTE_ASSET_NOT_EXIST/
+        );
+    });
+
     it('can not add duplicated market', async () => {
-        try {
+        await assert.rejects(async () => {
             const assets = await newMarket({
                 assetConfigs: [
                     {
@@ -55,12 +96,8 @@ contract('Markets', accounts => {
             });
 
             await newMarket({ assets: [assets.baseToken, assets.quoteToken] });
-        } catch (e) {
-            assert.equal(await hydro.getAllMarketsCount.call(), 1);
-            assert.ok(e.message.match(/MARKET_IS_ALREADY_EXIST/));
-            return;
-        }
+        }, /MARKET_ALREADY_EXIST/);
 
-        asset(false, 'Should never get here');
+        assert.equal(await hydro.getAllMarketsCount.call(), 1);
     });
 });

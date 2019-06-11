@@ -20,6 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
+import "./Modifiers.sol";
 
 import "./exchange/Exchange.sol";
 import "./exchange/Relayer.sol";
@@ -30,11 +31,12 @@ import "./funding/CollateralAccounts.sol";
 import "./funding/BatchActions.sol";
 
 import "./lib/Transfer.sol";
+import "./lib/Types.sol";
 
 /**
  * External Functions
  */
-contract ExternalFunctions is GlobalStore {
+contract ExternalFunctions is GlobalStore, Modifiers {
 
     ////////////////////////////
     // Batch Actions Function //
@@ -63,10 +65,6 @@ contract ExternalFunctions is GlobalStore {
         returns (bool)
     {
         return Signature.isValidSignature(hash, signerAddress, signature);
-    }
-
-    function DOMAIN_SEPARATOR() external pure returns (bytes32) {
-        return EIP712.DOMAIN_SEPARATOR();
     }
 
     ///////////////////////
@@ -141,7 +139,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolTotalBorrow(state, asset);
@@ -152,7 +150,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolTotalSupply(state, asset);
@@ -165,7 +163,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        marketExist(marketID)
+        requireMarketIDAndAssetMatch(marketID, asset)
         returns (uint256)
     {
         return Pool._getPoolBorrowOf(state, asset, user, marketID);
@@ -177,7 +175,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolSupplyOf(state, asset, user);
@@ -189,7 +187,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
         return Pool._getInterestRate(state, asset, extraBorrowAmount);
@@ -200,7 +198,7 @@ contract ExternalFunctions is GlobalStore {
         uint256 amount
     )
         external
-        assetExist(asset)
+        requireAssetExist(asset)
     {
         Pool.supply(
             state,
@@ -215,7 +213,7 @@ contract ExternalFunctions is GlobalStore {
         uint256 amount
     )
         external
-        assetExist(asset)
+        requireAssetExist(asset)
     {
         Pool.withdraw(
             state,
@@ -231,7 +229,7 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
-        marketExist(marketID)
+        requireMarketIDAndAssetMatch(marketID, asset)
     {
         Pool.borrow(
             state,
@@ -248,7 +246,7 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
-        marketExist(marketID)
+        requireMarketIDAndAssetMatch(marketID, asset)
     {
         Pool.repay(
             state,
@@ -264,7 +262,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        assetExist(asset)
+        requireAssetExist(asset)
         returns (address)
     {
         return state.pool.poolToken[asset];
@@ -310,6 +308,20 @@ contract ExternalFunctions is GlobalStore {
         Transfer.withdrawFrom(state, asset, WalletPath.getBalancePath(msg.sender), msg.sender, amount);
     }
 
+    function transfer(
+        address asset,
+        Types.WalletPath calldata fromWalletPath,
+        Types.WalletPath calldata toWalletPath,
+        uint256 amount
+    )
+        external
+    {
+        require(fromWalletPath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
+        require(toWalletPath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER"); // should we allow to transfer to other ??
+
+        Transfer.transferFrom(state, asset, fromWalletPath, toWalletPath, amount);
+    }
+
     function balanceOf(address asset, address user) external view returns (uint256) {
         return Transfer.balanceOf(state,  WalletPath.getBalancePath(user), asset);
     }
@@ -342,6 +354,10 @@ contract ExternalFunctions is GlobalStore {
 
     function getDiscountedRate(address user) external view returns (uint256) {
         return Discount.getDiscountedRate(state, user);
+    }
+
+    function getDiscountConfig() external view returns (bytes32) {
+        return state.exchange.discountConfig;
     }
 
     function getHydroTokenAddress() external view returns (address) {
