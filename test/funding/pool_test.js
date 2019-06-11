@@ -1,11 +1,15 @@
 require('../utils/hooks');
-const Hydro = artifacts.require('./Hydro.sol');
 const assert = require('assert');
 const { createAssets } = require('../utils/assets');
 const { toWei } = require('../utils');
-const { toInterest, getInterestRate } = require('../utils/interest');
 const { updateTimestamp } = require('../utils/evm');
-const { snapshot, revert } = require('../utils/evm');
+const Hydro = artifacts.require('./Hydro.sol');
+const PoolToken = artifacts.require('./funding/PoolToken.sol');
+
+const getInterestRate = borrowRatio => {
+    const interestRate = 0.2 * borrowRatio + 0.5 * borrowRatio ** 2;
+    return Math.floor(interestRate * 10000) / 10000;
+};
 
 contract('Pool', accounts => {
     let hydro;
@@ -33,7 +37,7 @@ contract('Pool', accounts => {
                 collateralRate: 15000,
                 decimals: 18,
                 initBalances: {
-                    [u1]: toWei('1000')
+                    [u1]: toWei('10000')
                 }
             }
         ]);
@@ -41,10 +45,17 @@ contract('Pool', accounts => {
         USDAddress = tokens[1].address;
     });
 
-    it('pool token registered', async () => {
-        console.log(await hydro.getPoolTokenAddress(ETHAddress));
-        assert.notEqual(await hydro.getPoolTokenAddress(ETHAddress), '0x0');
+    it('mint and burn pool token', async () => {
+        poolToken = await PoolToken.at(await hydro.getPoolTokenAddress(USDAddress));
+        await hydro.supplyPool(USDAddress, toWei('100'), { from: u1 });
+        assert.equal((await poolToken.balanceOf(u1)).toString(), toWei('100'));
+        assert.equal((await poolToken.totalSupply()).toString(), toWei('100'));
+        await hydro.withdrawPool(USDAddress, toWei('50'), { from: u1 });
+        assert.equal((await poolToken.balanceOf(u1)).toString(), toWei('50'));
+        assert.equal((await poolToken.totalSupply()).toString(), toWei('50'));
     });
+
+    // it('basic ')
 });
 
 //     it('can not borrow more than supply', async () => {

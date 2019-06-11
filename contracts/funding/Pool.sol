@@ -107,8 +107,8 @@ library Pool {
         // round ceil
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
         uint256 withdrawAmount = amount;
-        if (_readLogicSupplyOf(state, asset, user) < logicAmount) {
-            logicAmount = _readLogicSupplyOf(state, asset, user);
+        if (state.pool.logicSupply[user].balances[asset] < logicAmount) {
+            logicAmount = state.pool.logicSupply[user].balances[asset];
             withdrawAmount = logicAmount.mul(state.pool.supplyIndex[asset]);
         }
 
@@ -249,7 +249,7 @@ library Pool {
         returns (uint256)
     {
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(_readLogicSupplyOf(state, asset, user), currentSupplyIndex);
+        return Decimal.mul(state.pool.logicSupply[user].balances[asset], currentSupplyIndex);
     }
 
     function _getPoolBorrowOf(
@@ -275,7 +275,7 @@ library Pool {
         returns (uint256)
     {
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(_readTotalLogicSupply(state, asset), currentSupplyIndex);
+        return Decimal.mul(state.pool.logicTotalSupply.balances[asset], currentSupplyIndex);
     }
 
     function _getPoolTotalBorrow(
@@ -308,30 +308,7 @@ library Pool {
         currentBorrowIndex = Decimal.mul(state.pool.borrowIndex[asset], Decimal.onePlus(borrowInterestRate));
         currentSupplyIndex = Decimal.mul(state.pool.supplyIndex[asset], Decimal.onePlus(supplyInterestRate));
 
-        return (currentSupplyIndex, currentBorrowIndex);
-    }
-
-    function _readLogicSupplyOf(
-        Store.State storage state,
-        address asset,
-        address user
-    )
-        internal
-        view
-        returns (uint256)
-    {
-        return PoolToken(state.pool.poolToken[asset]).balanceOf(user);
-    }
-
-    function _readTotalLogicSupply(
-        Store.State storage state,
-        address asset
-    )
-        internal
-        view
-        returns (uint256)
-    {
-        return PoolToken(state.pool.poolToken[asset]).totalSupply();
+        return (currentSupplyIndfex, currentBorrowIndex);
     }
 
 }

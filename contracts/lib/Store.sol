@@ -113,6 +113,9 @@ library Store {
 
         // total borrow
         Types.Wallet logicTotalBorrow;
+        Types.Wallet logicTotalSupply;
+
+        mapping (address => Types.Wallet) logicSupply;
 
         // user => marketID => wallet
         mapping (address => mapping (uint16 => Types.Wallet)) logicBorrow;

@@ -13,7 +13,7 @@ const toWei = x => {
 };
 
 const newContract = async (contract, ...args) => {
-    const c = await contract.new(...args);
+    const c = await contracπpoot.new(...args);
     const instance = new web3.eth.Contract(contract.abi, c.address);
     return instance;
 };
