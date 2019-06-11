@@ -33,14 +33,15 @@ library Pool {
 
     function createPoolToken(
         Store.State storage state,
-        address originTokenAddress,
+        address originAssetAddress,
         string memory name,
         string memory symbol,
         uint8 decimals
     )
         internal
     {
-        state.pool.poolToken[originTokenAddress] = address(new PoolToken(name, symbol, decimals));
+        require(state.pool.poolToken[originAssetAddress] == address(0), "POOL_TOKEN_ALREADY_EXIST");
+        state.pool.poolToken[originAssetAddress] = address(new PoolToken(name, symbol, decimals));
     }
 
     // create new pool
@@ -197,7 +198,9 @@ library Pool {
         address from,
         address to,
         uint256 value
-    ) internal {
+    )
+        internal
+    {
         state.pool.logicSupply[from].balances[asset] = state.pool.logicSupply[from].balances[asset].sub(value);
         state.pool.logicSupply[to].balances[asset] = state.pool.logicSupply[to].balances[asset].add(value);
     }
@@ -207,7 +210,9 @@ library Pool {
         address asset,
         address user,
         uint256 value
-    ) internal {
+    )
+        internal
+    {
         require(state.pool.poolToken[asset] != address(0), "POOL_TOKEN_NOT_EXIST");
         require(msg.sender == user, "SENDER_MUST_BE_USER");
         transferLogicSupply(state, asset, user, state.pool.poolToken[asset], value);
@@ -219,7 +224,9 @@ library Pool {
         address asset,
         address user,
         uint256 value
-    ) internal {
+    )
+        internal
+    {
         require(msg.sender == state.pool.poolToken[asset], "SENDER_MUST_BE_POOL_TOKEN");
         transferLogicSupply(state, asset, state.pool.poolToken[asset], user, value);
     }
@@ -227,7 +234,9 @@ library Pool {
     function _updateInterestRate(
         Store.State storage state,
         address asset
-    ) internal {
+    )
+        internal
+    {
         (uint256 borrowInterestRate, uint256 supplyInterestRate) = _getInterestRate(state, asset, 0);
         state.pool.borrowAnnualInterestRate[asset] = borrowInterestRate;
         state.pool.supplyAnnualInterestRate[asset] = supplyInterestRate;
@@ -260,7 +269,12 @@ library Pool {
         return (borrowInterestRate, supplyInterestRate);
     }
 
-    function _updateIndex(Store.State storage state, address asset) internal {
+    function _updateIndex(
+        Store.State storage state,
+        address asset
+    )
+        internal
+    {
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, asset);
         state.pool.supplyIndex[asset] = currentSupplyIndex;
         state.pool.borrowIndex[asset] = currentBorrowIndex;

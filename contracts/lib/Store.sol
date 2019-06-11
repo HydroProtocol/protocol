@@ -126,17 +126,17 @@ library Store {
         // count of auctions
         uint32 auctionsCount;
 
-        uint32 marketsCount;
+        uint16 marketsCount;
 
         address hotTokenAddress;
 
         mapping(address => IOracle) oracles;
 
         // user => marketID => account
-        mapping(address => mapping(uint32 => Types.CollateralAccount)) accounts;
+        mapping(address => mapping(uint16 => Types.CollateralAccount)) accounts;
 
         // all markets
-        mapping(uint32 => Types.Market) markets;
+        mapping(uint16 => Types.Market) markets;
 
         // all auctions
         mapping(uint32 => Types.Auction) auctions;

@@ -141,6 +141,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
+        assetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolTotalBorrow(state, asset);
@@ -151,6 +152,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
+        assetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolTotalSupply(state, asset);
@@ -163,6 +165,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
+        marketExist(marketID)
         returns (uint256)
     {
         return Pool._getPoolBorrow(state, asset, user, marketID);
@@ -174,6 +177,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
+        assetExist(asset)
         returns (uint256)
     {
         return Pool._getPoolSupply(state, asset, user);
@@ -185,15 +189,18 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
+        assetExist(asset)
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
         return Pool._getInterestRate(state, asset, extraBorrowAmount);
     }
 
     function supplyPool(
-        address asset,uint256 amount
+        address asset,
+        uint256 amount
     )
         external
+        assetExist(asset)
     {
         Pool.supply(
             state,
@@ -208,6 +215,7 @@ contract ExternalFunctions is GlobalStore {
         uint256 amount
     )
         external
+        assetExist(asset)
     {
         Pool.withdraw(
             state,
@@ -223,6 +231,7 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
+        marketExist(marketID)
     {
         Pool.borrow(
             state,
@@ -231,7 +240,6 @@ contract ExternalFunctions is GlobalStore {
             asset,
             amount
         );
-
     }
 
     function repay(
@@ -240,6 +248,7 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
+        marketExist(marketID)
     {
         Pool.repay(
             state,
