@@ -14,10 +14,10 @@ contract('CancelOrder', accounts => {
         const order = {
             trader: accounts[0],
             relayer: '0x0000000000000000000000000000000000000000',
-            baseToken: '0x0000000000000000000000000000000000000000',
-            quoteToken: '0x0000000000000000000000000000000000000000',
-            baseTokenAmount: 1,
-            quoteTokenAmount: 1,
+            baseAsset: '0x0000000000000000000000000000000000000000',
+            quoteAsset: '0x0000000000000000000000000000000000000000',
+            baseAssetAmount: 1,
+            quoteAssetAmount: 1,
             data: generateOrderData(1, true, false, 0, 1, 1, 0, 1),
             gasTokenAmount: 0
         };
@@ -35,10 +35,10 @@ contract('CancelOrder', accounts => {
         const order = {
             trader: accounts[0],
             relayer: '0x0000000000000000000000000000000000000000',
-            baseToken: '0x0000000000000000000000000000000000000000',
-            quoteToken: '0x0000000000000000000000000000000000000000',
-            baseTokenAmount: 1,
-            quoteTokenAmount: 1,
+            baseAsset: '0x0000000000000000000000000000000000000000',
+            quoteAsset: '0x0000000000000000000000000000000000000000',
+            baseAssetAmount: 1,
+            quoteAssetAmount: 1,
             data: generateOrderData(1, true, false, 0, 1, 1, 0, 1123123),
             gasTokenAmount: 0
         };

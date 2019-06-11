@@ -84,7 +84,7 @@ library Exchange {
                 takerOrderInfo,
                 params.makerOrderParams[i],
                 makerOrderInfo,
-                params.baseTokenFilledAmounts[i],
+                params.baseAssetFilledAmounts[i],
                 takerFeeRate,
                 isParticipantRelayer
             );
@@ -147,9 +147,9 @@ library Exchange {
         orderInfo.filledAmount = state.exchange.filled[orderInfo.orderHash];
         uint8 status = uint8(Types.OrderStatus.FILLABLE);
 
-        if (!orderParam.isMarketBuy() && orderInfo.filledAmount >= order.baseTokenAmount) {
+        if (!orderParam.isMarketBuy() && orderInfo.filledAmount >= order.baseAssetAmount) {
             status = uint8(Types.OrderStatus.FULLY_FILLED);
-        } else if (orderParam.isMarketBuy() && orderInfo.filledAmount >= order.quoteTokenAmount) {
+        } else if (orderParam.isMarketBuy() && orderInfo.filledAmount >= order.quoteAssetAmount) {
             status = uint8(Types.OrderStatus.FULLY_FILLED);
         } else if (block.timestamp >= orderParam.getExpiredAtFromOrderData()) {
             status = uint8(Types.OrderStatus.EXPIRED);
@@ -184,12 +184,12 @@ library Exchange {
         returns (Types.Order memory order)
     {
         order.trader = orderParam.trader;
-        order.baseTokenAmount = orderParam.baseTokenAmount;
-        order.quoteTokenAmount = orderParam.quoteTokenAmount;
+        order.baseAssetAmount = orderParam.baseAssetAmount;
+        order.quoteAssetAmount = orderParam.quoteAssetAmount;
         order.gasTokenAmount = orderParam.gasTokenAmount;
         order.data = orderParam.data;
-        order.baseToken = orderAddressSet.baseToken;
-        order.quoteToken = orderAddressSet.quoteToken;
+        order.baseAsset = orderAddressSet.baseAsset;
+        order.quoteAsset = orderAddressSet.quoteAsset;
         order.relayer = orderAddressSet.relayer;
     }
 
@@ -199,12 +199,12 @@ library Exchange {
      * If the taker submitted a sell order, the matching maker order must have a price greater than
      * or equal to the price the taker is willing to sell for.
      *
-     * Since the price of an order is computed by order.quoteTokenAmount / order.baseTokenAmount
+     * Since the price of an order is computed by order.quoteAssetAmount / order.baseAssetAmount
      * we can establish the following formula:
      *
-     *    takerOrder.quoteTokenAmount        makerOrder.quoteTokenAmount
+     *    takerOrder.quoteAssetAmount        makerOrder.quoteAssetAmount
      *   -----------------------------  <=  -----------------------------
-     *     takerOrder.baseTokenAmount        makerOrder.baseTokenAmount
+     *     takerOrder.baseAssetAmount        makerOrder.baseAssetAmount
      *
      * To avoid precision loss from division, we modify the formula to avoid division entirely.
      * In shorthand, this becomes:
@@ -228,8 +228,8 @@ library Exchange {
         internal
         pure
     {
-        uint256 left = takerOrderParam.quoteTokenAmount.mul(makerOrderParam.baseTokenAmount);
-        uint256 right = takerOrderParam.baseTokenAmount.mul(makerOrderParam.quoteTokenAmount);
+        uint256 left = takerOrderParam.quoteAssetAmount.mul(makerOrderParam.baseAssetAmount);
+        uint256 right = takerOrderParam.baseAssetAmount.mul(makerOrderParam.quoteAssetAmount);
         require(takerOrderParam.isSell() ? left <= right : left >= right, Errors.INVALID_MATCH());
     }
 
@@ -251,7 +251,7 @@ library Exchange {
         OrderInfo memory takerOrderInfo,
         Types.OrderParam memory makerOrderParam,
         OrderInfo memory makerOrderInfo,
-        uint256 baseTokenFilledAmount,
+        uint256 baseAssetFilledAmount,
         uint256 takerFeeRate,
         bool isParticipantRelayer
     )
@@ -259,8 +259,8 @@ library Exchange {
         view
         returns (Types.MatchResult memory result)
     {
-        result.baseTokenFilledAmount = baseTokenFilledAmount;
-        result.quoteTokenFilledAmount = convertBaseToQuote(makerOrderParam, baseTokenFilledAmount);
+        result.baseAssetFilledAmount = baseAssetFilledAmount;
+        result.quoteAssetFilledAmount = convertBaseToQuote(makerOrderParam, baseAssetFilledAmount);
 
         result.takerWalletPath = takerOrderInfo.walletPath;
         result.makerWalletPath = makerOrderInfo.walletPath;
@@ -275,15 +275,15 @@ library Exchange {
         }
 
         if(!takerOrderParam.isMarketBuy()) {
-            takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.baseTokenAmount, Errors.TAKER_ORDER_OVER_MATCH());
+            takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.baseAssetFilledAmount);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.baseAssetAmount, Errors.TAKER_ORDER_OVER_MATCH());
         } else {
-            takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.quoteTokenFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteTokenAmount, Errors.TAKER_ORDER_OVER_MATCH());
+            takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.quoteAssetFilledAmount);
+            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteAssetAmount, Errors.TAKER_ORDER_OVER_MATCH());
         }
 
-        makerOrderInfo.filledAmount = makerOrderInfo.filledAmount.add(result.baseTokenFilledAmount);
-        require(makerOrderInfo.filledAmount <= makerOrderParam.baseTokenAmount, Errors.MAKER_ORDER_OVER_MATCH());
+        makerOrderInfo.filledAmount = makerOrderInfo.filledAmount.add(result.baseAssetFilledAmount);
+        require(makerOrderInfo.filledAmount <= makerOrderParam.baseAssetAmount, Errors.MAKER_ORDER_OVER_MATCH());
 
         result.maker = makerOrderParam.trader;
         result.taker = takerOrderParam.trader;
@@ -301,7 +301,7 @@ library Exchange {
             result.makerFee = 0;
 
             // RebateRate will never exceed REBATE_RATE_BASE, so rebateFee will never exceed the fees paid by the taker.
-            result.makerRebate = result.quoteTokenFilledAmount.mul(takerFeeRate).mul(rebateRate).div(
+            result.makerRebate = result.quoteAssetFilledAmount.mul(takerFeeRate).mul(rebateRate).div(
                 Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE()).mul(Consts.REBATE_RATE_BASE())
             );
         } else {
@@ -316,12 +316,12 @@ library Exchange {
                 isParticipantRelayer
             );
 
-            result.makerFee = result.quoteTokenFilledAmount.mul(makerFeeRate).div(
+            result.makerFee = result.quoteAssetFilledAmount.mul(makerFeeRate).div(
                 Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE())
             );
         }
 
-        result.takerFee = result.quoteTokenFilledAmount.mul(takerFeeRate).div(
+        result.takerFee = result.quoteAssetFilledAmount.mul(takerFeeRate).div(
             Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE())
         );
     }
@@ -389,8 +389,8 @@ library Exchange {
         returns (uint256)
     {
         return Math.getPartialAmountFloor(
-            orderParam.quoteTokenAmount,
-            orderParam.baseTokenAmount,
+            orderParam.quoteAssetAmount,
+            orderParam.baseAssetAmount,
             amount
         );
     }
@@ -409,8 +409,8 @@ library Exchange {
         returns (uint256)
     {
         return Math.getPartialAmountFloor(
-            orderParam.baseTokenAmount,
-            orderParam.quoteTokenAmount,
+            orderParam.baseAssetAmount,
+            orderParam.quoteAssetAmount,
             amount
         );
     }
@@ -472,8 +472,8 @@ library Exchange {
         internal
         returns (Types.MatchSettleResult memory settleResult)
     {
-        settleResult.incomeToken = orderAddressSet.quoteToken;
-        settleResult.outputToken = orderAddressSet.baseToken;
+        settleResult.incomeToken = orderAddressSet.quoteAsset;
+        settleResult.outputToken = orderAddressSet.baseAsset;
 
         uint256 totalTakerQuoteTokenFilledAmount = 0;
         Types.WalletPath memory relayerWalletPath = Types.WalletPath({
@@ -485,29 +485,29 @@ library Exchange {
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
-                orderAddressSet.baseToken,
+                orderAddressSet.baseAsset,
                 results[i].takerWalletPath,
                 results[i].makerWalletPath,
-                results[i].baseTokenFilledAmount
+                results[i].baseAssetFilledAmount
             );
 
-            settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(results[i].baseTokenFilledAmount);
+            settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(results[i].baseAssetFilledAmount);
 
-            uint256 amount = results[i].quoteTokenFilledAmount.
+            uint256 amount = results[i].quoteAssetFilledAmount.
                     add(results[i].makerFee).
                     add(results[i].makerGasFee).
                     sub(results[i].makerRebate);
 
             transferFrom(
                 state,
-                orderAddressSet.quoteToken,
+                orderAddressSet.quoteAsset,
                 results[i].makerWalletPath,
                 relayerWalletPath,
                 amount
             );
 
             totalTakerQuoteTokenFilledAmount = totalTakerQuoteTokenFilledAmount.add(
-                results[i].quoteTokenFilledAmount.sub(results[i].takerFee)
+                results[i].quoteAssetFilledAmount.sub(results[i].takerFee)
             );
 
             Events.logExchangeMatch(results[i], orderAddressSet);
@@ -515,7 +515,7 @@ library Exchange {
 
         transferFrom(
             state,
-            orderAddressSet.quoteToken,
+            orderAddressSet.quoteAsset,
             relayerWalletPath,
             results[0].takerWalletPath,
             totalTakerQuoteTokenFilledAmount.sub(results[0].takerGasFee)
@@ -557,8 +557,8 @@ library Exchange {
         internal
         returns (Types.MatchSettleResult memory settleResult)
     {
-        settleResult.incomeToken = orderAddressSet.baseToken;
-        settleResult.outputToken = orderAddressSet.quoteToken;
+        settleResult.incomeToken = orderAddressSet.baseAsset;
+        settleResult.outputToken = orderAddressSet.quoteAsset;
 
         uint256 totalFee = 0;
         Types.WalletPath memory relayerWalletPath = Types.WalletPath({
@@ -570,22 +570,22 @@ library Exchange {
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
-                orderAddressSet.baseToken,
+                orderAddressSet.baseAsset,
                 results[i].makerWalletPath,
                 results[i].takerWalletPath,
-                results[i].baseTokenFilledAmount
+                results[i].baseAssetFilledAmount
             );
 
-            settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(results[i].baseTokenFilledAmount);
+            settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(results[i].baseAssetFilledAmount);
 
-            uint256 amount = results[i].quoteTokenFilledAmount.
+            uint256 amount = results[i].quoteAssetFilledAmount.
                     sub(results[i].makerFee).
                     sub(results[i].makerGasFee).
                     add(results[i].makerRebate);
 
             transferFrom(
                 state,
-                orderAddressSet.quoteToken,
+                orderAddressSet.quoteAsset,
                 results[i].takerWalletPath,
                 results[i].makerWalletPath,
                 amount
@@ -605,7 +605,7 @@ library Exchange {
 
         transferFrom(
             state,
-            orderAddressSet.quoteToken,
+            orderAddressSet.quoteAsset,
             results[0].takerWalletPath,
             relayerWalletPath,
             totalFee

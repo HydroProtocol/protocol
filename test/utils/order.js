@@ -1,10 +1,10 @@
 const { generateOrderData, isValidSignature, getOrderHash } = require('../../sdk/sdk');
 const { fromRpcSig } = require('ethereumjs-util');
 
-const getOrderSignature = async (order, baseToken, quoteToken) => {
+const getOrderSignature = async (order, baseAsset, quoteAsset) => {
     const copyedOrder = JSON.parse(JSON.stringify(order));
-    copyedOrder.baseToken = baseToken;
-    copyedOrder.quoteToken = quoteToken;
+    copyedOrder.baseAsset = baseAsset;
+    copyedOrder.quoteAsset = quoteAsset;
 
     const orderHash = getOrderHash(copyedOrder);
 
@@ -19,7 +19,7 @@ const getOrderSignature = async (order, baseToken, quoteToken) => {
     order.orderHash = orderHash;
 };
 
-const buildOrder = async (orderParam, baseTokenAddress, quoteTokenAddress) => {
+const buildOrder = async (orderParam, baseAssetAddress, quoteAssetAddress) => {
     const order = {
         trader: orderParam.trader,
         relayer: orderParam.relayer,
@@ -33,12 +33,12 @@ const buildOrder = async (orderParam, baseTokenAddress, quoteTokenAddress) => {
             orderParam.makerRebateRate || '0',
             Math.round(Math.random() * 10000000)
         ),
-        baseTokenAmount: orderParam.baseTokenAmount,
-        quoteTokenAmount: orderParam.quoteTokenAmount,
+        baseAssetAmount: orderParam.baseAssetAmount,
+        quoteAssetAmount: orderParam.quoteAssetAmount,
         gasTokenAmount: orderParam.gasTokenAmount
     };
 
-    await getOrderSignature(order, baseTokenAddress, quoteTokenAddress);
+    await getOrderSignature(order, baseAssetAddress, quoteAssetAddress);
 
     return order;
 };
