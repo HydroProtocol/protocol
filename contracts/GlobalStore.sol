@@ -34,10 +34,24 @@ contract GlobalStore {
         _;
     }
 
+    modifier assetNotExist(
+        address asset
+    ) {
+        require(address(state.oracles[asset]) == address(0), "ASSET_ALREADY_REGISTERED");
+        _;
+    }
+
     modifier marketExist(
         uint16 marketId
     ) {
         require(marketId < state.marketsCount, "MARKET_NOT_REGISTERED");
+        _;
+    }
+
+    modifier marketNotExist(
+        uint16 marketId
+    ) {
+        require(marketId != state.marketsCount, "MARKET_ALREADY_REGISTERED");
         _;
     }
 }

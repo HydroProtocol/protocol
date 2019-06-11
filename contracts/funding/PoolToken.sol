@@ -34,7 +34,7 @@ contract PoolToken is StandardToken, Ownable {
     uint256 public totalSupply;
 
     event Mint(address indexed user, uint256 value);
-    event Redeem(address indexed user, uint256 value);
+    event Burn(address indexed user, uint256 value);
 
     constructor (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) public {
         name = tokenName;
@@ -49,11 +49,10 @@ contract PoolToken is StandardToken, Ownable {
         emit Mint(user, value);
     }
 
-    function redeem(uint256 value) public {
-        balances[msg.sender] = balances[msg.sender].sub(value);
+    function burn(address user, uint256 value) public onlyOwner {
+        balances[user] = balances[user].sub(value);
         totalSupply = totalSupply.sub(value);
-        IHydroPool(owner()).redeemPoolToken(msg.sender, value);
-        emit Redeem(msg.sender, value);
+        emit Burn(user, value);
     }
 
 }

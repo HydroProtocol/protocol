@@ -40,28 +40,21 @@ contract Operations is Ownable, GlobalStore {
         Markets.addMarket(state, market);
     }
 
-    function registerOracle(
+    function registerAsset(
         address asset,
-        address oracleAddress
+        address oracleAddress,
+        string calldata poolTokenName,
+        string calldata poolTokenSymbol,
+        uint8 poolTokenDecimals
     )
         external
         onlyOwner
+        assetNotExist(asset)
     {
         state.oracles[asset] = IOracle(oracleAddress);
         Pool.createAssetPool(state, asset);
+        Pool.createPoolToken(state, asset, poolTokenName, poolTokenSymbol, poolTokenDecimals);
         // TODO event
-    }
-
-    function createPoolToken(
-        address originTokenAddress,
-        string calldata name,
-        string calldata symbol,
-        uint8 decimals
-    )
-        external
-        onlyOwner
-    {
-        Pool.createPoolToken(state, originTokenAddress, name, symbol, decimals);
     }
 
     /**

@@ -58,18 +58,18 @@ const depositAsset = async (token, user, amount) => {
     }
 };
 
-const depositDefaultCollateral = async (token, user, amount) => {
+const deposit = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    await hydro.depositDefaultCollateral(token.address, amount, {
+    await hydro.deposit(token.address, amount, {
         from: user
     });
 };
 
-const depositPool = async (token, user, amount) => {
+const supply = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    // await hydro.poolSupply(token.address, amount, {
-    //     from: user
-    // });
+    await hydro.supplyPool(token.address, amount, {
+        from: user
+    });
 };
 
 const createAsset = async assetConfig => {
@@ -101,7 +101,13 @@ const createAsset = async assetConfig => {
         oracle.setPrice(token.address, new BigNumber(oraclePrice || 10000).toString(), {
             from: accounts[0]
         }),
-        hydro.registerOracle(token.address, oracle.address)
+        hydro.registerAsset(
+            token.address,
+            oracle.address,
+            'supply shares ' + assetConfig.name,
+            'S' + assetConfig.symbol,
+            assetConfig.decimals
+        )
     ]);
 
     debug(
@@ -116,23 +122,23 @@ const createAsset = async assetConfig => {
         }
     }
 
-    if (initCollaterals) {
-        for (let j = 0; j < Object.keys(initCollaterals).length; j++) {
-            const user = Object.keys(initCollaterals)[j];
-            const amount = initCollaterals[user];
-            await depositAsset(token, user, amount);
-            await depositDefaultCollateral(token, user, amount);
-        }
-    }
+    // if (initCollaterals) {
+    //     for (let j = 0; j < Object.keys(initCollaterals).length; j++) {
+    //         const user = Object.keys(initCollaterals)[j];
+    //         const amount = initCollaterals[user];
+    //         await depositAsset(token, user, amount);
+    //         await deposit(token, user, amount);
+    //     }
+    // }
 
-    if (initPool) {
-        for (let j = 0; j < Object.keys(initPool).length; j++) {
-            const user = Object.keys(initPool)[j];
-            const amount = initPool[user];
-            await depositAsset(token, user, amount);
-            await depositPool(token, user, amount);
-        }
-    }
+    // if (initPool) {
+    //     for (let j = 0; j < Object.keys(initPool).length; j++) {
+    //         const user = Object.keys(initPool)[j];
+    //         const amount = initPool[user];
+    //         await depositAsset(token, user, amount);
+    //         await supply(token, user, amount);
+    //     }
+    // }
 
     return token;
 };
@@ -148,6 +154,6 @@ const createAssets = async configs => {
 module.exports = {
     createAssets,
     createAsset,
-    depositPool,
+    supply,
     newMarket
 };

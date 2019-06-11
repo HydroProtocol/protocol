@@ -168,7 +168,7 @@ contract ExternalFunctions is GlobalStore {
         marketExist(marketID)
         returns (uint256)
     {
-        return Pool._getPoolBorrow(state, asset, user, marketID);
+        return Pool._getPoolBorrowOf(state, asset, user, marketID);
     }
 
     function getPoolSupplyOf(
@@ -180,7 +180,7 @@ contract ExternalFunctions is GlobalStore {
         assetExist(asset)
         returns (uint256)
     {
-        return Pool._getPoolSupply(state, asset, user);
+        return Pool._getPoolSupplyOf(state, asset, user);
     }
 
     function getPoolInterestRate(
