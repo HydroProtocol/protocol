@@ -31,6 +31,7 @@ import "./funding/CollateralAccounts.sol";
 import "./funding/BatchActions.sol";
 
 import "./lib/Transfer.sol";
+import "./lib/Types.sol";
 
 /**
  * External Functions
@@ -305,6 +306,20 @@ contract ExternalFunctions is GlobalStore, Modifiers {
 
     function withdraw(address asset, uint256 amount) external {
         Transfer.withdrawFrom(state, asset, WalletPath.getBalancePath(msg.sender), msg.sender, amount);
+    }
+
+    function transfer(
+        address asset,
+        Types.WalletPath calldata fromWalletPath,
+        Types.WalletPath calldata toWalletPath,
+        uint256 amount
+    )
+        external
+    {
+        require(fromWalletPath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
+        require(toWalletPath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER"); // should we allow to transfer to other ??
+
+        Transfer.transferFrom(state, asset, fromWalletPath, toWalletPath, amount);
     }
 
     function balanceOf(address asset, address user) external view returns (uint256) {
