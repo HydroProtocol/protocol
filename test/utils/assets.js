@@ -10,12 +10,12 @@ BigNumber.config({
 
 const newMarket = async marketConfig => {
     const { assets, assetConfigs, liquidateRate, withdrawRate } = marketConfig;
-    let baseToken, quoteToken;
+    let baseAsset, quoteAsset;
 
     if (assetConfigs) {
-        [baseToken, quoteToken] = await createAssets(assetConfigs);
+        [baseAsset, quoteAsset] = await createAssets(assetConfigs);
     } else if (assets) {
-        [baseToken, quoteToken] = assets;
+        [baseAsset, quoteAsset] = assets;
     }
 
     const hydro = await Hydro.deployed();
@@ -23,15 +23,15 @@ const newMarket = async marketConfig => {
     const res = await hydro.addMarket({
         liquidateRate: liquidateRate || 120,
         withdrawRate: withdrawRate || 200,
-        baseAsset: baseToken.address,
-        quoteAsset: quoteToken.address
+        baseAsset: baseAsset.address,
+        quoteAsset: quoteAsset.address
     });
 
     debug('add market gas cost:', res.receipt.gasUsed);
 
     return {
-        baseToken,
-        quoteToken
+        baseAsset,
+        quoteAsset
     };
 };
 

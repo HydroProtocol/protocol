@@ -20,10 +20,6 @@ pragma solidity 0.5.8;
 
 library SafeERC20 {
     function safeTransfer(address token, address to, uint256 amount) internal {
-        if (amount == 0) {
-            return;
-        }
-
         bool result;
 
         assembly {
@@ -60,10 +56,6 @@ library SafeERC20 {
     }
 
     function safeTransferFrom(address token, address from, address to, uint256 amount) internal {
-        if (amount == 0) {
-            return;
-        }
-
         bool result;
 
         assembly {

@@ -95,7 +95,7 @@ contract('Markets', accounts => {
                 ]
             });
 
-            await newMarket({ assets: [assets.baseToken, assets.quoteToken] });
+            await newMarket({ assets: [assets.baseAsset, assets.quoteAsset] });
         }, /MARKET_ALREADY_EXIST/);
 
         assert.equal(await hydro.getAllMarketsCount.call(), 1);
