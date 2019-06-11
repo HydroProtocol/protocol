@@ -344,6 +344,10 @@ contract ExternalFunctions is GlobalStore {
         return Discount.getDiscountedRate(state, user);
     }
 
+    function getDiscountConfig() external view returns (bytes32) {
+        return state.exchange.discountConfig;
+    }
+
     function getHydroTokenAddress() external view returns (address) {
         return state.exchange.hotTokenAddress;
     }
