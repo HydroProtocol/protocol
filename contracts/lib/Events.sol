@@ -88,16 +88,6 @@ library Events {
         emit AuctionFinished(auctionID);
     }
 
-    //////////
-    // Loan //
-    //////////
-
-    event LoanCreate(uint256 loanID);
-
-    function logLoanCreate(uint256 loanID) internal {
-        emit LoanCreate(loanID);
-    }
-
     /////////////
     // Relayer //
     /////////////
