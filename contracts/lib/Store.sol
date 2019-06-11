@@ -94,10 +94,13 @@ library Store {
         * buy order the amount is specified in quote token units.
         */
         mapping (bytes32 => uint256) filled;
+
         /**
         * Mapping of orderHash => whether order has been cancelled.
         */
         mapping (bytes32 => bool) cancelled;
+
+        address hotTokenAddress;
     }
 
     struct PoolState {
@@ -127,8 +130,6 @@ library Store {
         uint32 auctionsCount;
 
         uint16 marketsCount;
-
-        address hotTokenAddress;
 
         mapping(address => IOracle) oracles;
 

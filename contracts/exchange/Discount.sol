@@ -43,7 +43,7 @@ library Discount {
         view
         returns (uint256 result)
     {
-        address hotToken = state.hotTokenAddress;
+        address hotToken = state.exchange.hotTokenAddress;
 
         // EIP20Interface(hotTokenAddress).balanceOf(owner)
 
