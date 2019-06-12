@@ -2,7 +2,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
 const { toWei } = require('../utils');
-const { updateTimestamp } = require('../utils/evm');
+const { mineAt, updateTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const PoolToken = artifacts.require('./funding/PoolToken.sol');
 
@@ -10,14 +10,6 @@ const PoolToken = artifacts.require('./funding/PoolToken.sol');
 //     const interestRate = 0.2 * borrowRatio + 0.5 * borrowRatio ** 2;
 //     return Math.floor(interestRate * 10000) / 10000;
 // };
-
-const approxEqual = (actual, expected) => {
-    equal = actual.slice(0, 8) == expected.slice(0, 8);
-    if (!equal) {
-        console.log(`expected ${expected} but got ${actual}`);
-    }
-    return equal;
-};
 
 contract('Pool', accounts => {
     let hydro;
@@ -73,10 +65,12 @@ contract('Pool', accounts => {
         assert.equal((await poolToken.totalSupply()).toString(), toWei('50'));
     });
 
-    it('multi borrow and supply', async () => {
+    it('basic supply withdraw borrow repay', async () => {
+        // const web3Hydro = new web3.eth.Contract(Hydro.abi, hydro.address);
         const initTime = Math.ceil(new Date().getTime() / 1000) + 1000;
 
         await hydro.supplyPool(USDAddr, toWei('1000'), { from: u1 });
+        // deposit to collateral
         await hydro.transfer(
             ETHAddr,
             {
@@ -96,35 +90,47 @@ contract('Pool', accounts => {
         );
 
         // first borrow
-        await updateTimestamp(initTime);
-        borrowTx = await hydro.borrow(USDAddr, toWei('100'), 0, {
-            from: u2
-        });
+        borrowTx = await mineAt(async () => {
+            return await hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 });
+        }, initTime);
         console.log(`borrow gas cost ${borrowTx.receipt.gasUsed}`);
 
-        interestRate = await hydro.getPoolInterestRate(USDAddr, 0);
-        assert(approxEqual(interestRate[0].toString(), toWei(0.025))); // borrow interestRate 2.5%
-        assert(approxEqual(interestRate[1].toString(), toWei(0.0025))); // supply interestRate 0.25%
-
-        await updateTimestamp(initTime);
-        assert(approxEqual((await hydro.getPoolTotalBorrow(USDAddr)).toString(), toWei('100')));
-        assert(
-            approxEqual((await hydro.getPoolBorrowOf.call(USDAddr, u2, 0)).toString(), toWei('100'))
-        );
+        // test interest rate
+        interestRate = await hydro.getPoolInterestRate(USDAddr, 0, borrowBlockNum - 1);
+        assert.equal(interestRate[0].toString(), toWei(0.025)); // borrow interestRate 2.5%
+        assert.equal(interestRate[1].toString(), toWei(0.0025)); // supply interestRate 0.25%
 
         // test interest accumulate in 90 days
         await updateTimestamp(initTime + 86400 * 90);
-        assert(approxEqual(await hydro.getPoolTotalSupply(USDAddr), '1000616438356164383000'));
-        assert(approxEqual(await hydro.getPoolTotalBorrow(USDAddr), '100616438356164383500'));
+        assert.equal(
+            (await hydro.getPoolTotalSupply(USDAddr)).toString(),
+            '1000616438356164383000'
+        );
+        assert.equal(
+            (await hydro.getPoolSupplyOf(USDAddr, u1)).toString(),
+            '1000616438356164383000'
+        );
+        assert.equal((await hydro.getPoolTotalBorrow(USDAddr)).toString(), '100616438356164383500');
+        assert.equal(
+            (await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(),
+            '100616438356164383500'
+        );
 
-        // 180 days later second borrow
-        await updateTimestamp(initTime + 86400 * 180);
-        await hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 });
+        // based on the index
+        // test supply withdraw borrow repay with index != 1
+        tempSnapshot = await snapshot();
 
-        await updateTimestamp(initTime + 86400 * 180);
+        // borrow
+        await mineAt(() => {
+            hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 });
+        }, initTime + 86400 * 180);
+
+        // use principle with interest to calculate new interest rate
         interestRate = await hydro.getPoolInterestRate(USDAddr, 0);
         assert(approxEqual(interestRate[0].toString(), '60394519949755790')); // borrow
         assert(approxEqual(interestRate[1].toString(), '12138397839128643')); // supply
+
+        assert.equal((await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(), '');
 
         // 270 days later second supply
         // should mint less than 1000 pool token
@@ -141,7 +147,7 @@ contract('Pool', accounts => {
         assert.equal((await hydro.balanceOf(USDAddr, u1)).toString(), toWei('8500'));
         assert(approxEqual((await poolToken.balanceOf(u1)).toString(), '1498213804520197685559'));
 
-        // 360 days repay
+        // 360 days later repay
 
         // // new interest 158824109589041095890
         // // total supply 1209372054794520547944

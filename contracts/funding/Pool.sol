@@ -200,19 +200,19 @@ library Pool {
         state.pool.supplyAnnualInterestRate[asset] = supplyInterestRate;
     }
 
-    // function _getBorrowRatio(
-    //     Store.State storage state,
-    //     address asset
-    // )
-    //     internal
-    //     view
-    //     returns (uint256)
-    // {
-    //     uint256 _supply = _getPoolTotalSupply(state, asset);
-    //     uint256 _borrow = _getPoolTotalBorrow(state, asset);
-    //     uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
-    //     return borrowRatio;
-    // }
+    function _getBorrowRatio(
+        Store.State storage state,
+        address asset
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 _supply = _getPoolTotalSupply(state, asset);
+        uint256 _borrow = _getPoolTotalBorrow(state, asset);
+        uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
+        return borrowRatio;
+    }
 
     // get interestRate
     function _getInterestRate(

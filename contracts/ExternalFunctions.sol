@@ -181,6 +181,14 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return Pool._getPoolSupplyOf(state, asset, user);
     }
 
+    function getBlockTime() external view returns(uint256){
+        return block.timestamp;
+    }
+
+    function getBlockNumber() external view returns(uint256){
+        return block.number;
+    }
+
     function getPoolInterestRate(
         address asset,
         uint256 extraBorrowAmount
@@ -193,16 +201,27 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return Pool._getInterestRate(state, asset, extraBorrowAmount);
     }
 
-    // function getPoolBorrowRatio(
-    //     address asset
-    // )
-    //     external
-    //     view
-    //      requireAssetExist(asset)
-    //     returns (uint256)
-    // {
-    //     return Pool._getBorrowRatio(state, asset);
-    // }
+    function getPoolBorrowRatio(
+        address asset
+    )
+        external
+        view
+        requireAssetExist(asset)
+        returns (uint256)
+    {
+        return Pool._getBorrowRatio(state, asset);
+    }
+
+    function getPoolIndex(
+        address asset
+    )
+        external
+        view
+        requireAssetExist(asset)
+        returns (uint256 supplyIndex, uint256 borrowIndex)
+    {
+        return Pool._getPoolCurrentIndex(state, asset);
+    }
 
     function supplyPool(
         address asset,
