@@ -132,6 +132,7 @@ contract('Match', async accounts => {
             assertDiffs,
             baseAssetFilledAmounts,
             beforeMatch,
+            afterMatch,
             allowPrecisionError,
             assertFilled
         } = config;
@@ -179,6 +180,7 @@ contract('Match', async accounts => {
             await beforeMatch({
                 takerOrder,
                 makerOrders,
+                baseAssetFilledAmounts,
                 orderAddressSet
             });
         }
@@ -192,6 +194,15 @@ contract('Match', async accounts => {
             },
             { from: relayer }
         );
+
+        if (afterMatch) {
+            await afterMatch({
+                takerOrder,
+                makerOrders,
+                baseAssetFilledAmounts,
+                orderAddressSet
+            });
+        }
 
         console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.receipt.gasUsed);
 
@@ -1678,5 +1689,75 @@ contract('Match', async accounts => {
         };
 
         await assert.rejects(limitAndMarketTestMatch(testConfig), /ORDER_IS_NOT_FILLABLE/);
+    });
+
+    it('match with a full filled market taker order will revert', async () => {
+        const testConfig = {
+            baseAssetFilledAmounts: [toWei('1')],
+            baseAssetConfig: {
+                name: 'TestToken',
+                symbol: 'TT',
+                decimals: 18,
+                initBalances: {
+                    [u1]: toWei(20)
+                }
+            },
+            quoteAssetConfig: {
+                name: 'Wrapped Ethereum',
+                symbol: 'WETH',
+                decimals: 18,
+                initBalances: {
+                    [u2]: toWei(10)
+                }
+            },
+            takerOrderParam: {
+                trader: u1,
+                relayer,
+                version: 2,
+                side: 'sell',
+                type: 'market',
+                expiredAtSeconds: 3500000000,
+                asMakerFeeRate: 0,
+                asTakerFeeRate: 0,
+                baseAssetAmount: toWei('1'),
+                quoteAssetAmount: toWei('0'),
+                gasTokenAmount: toWei('0')
+            },
+            makerOrdersParams: [
+                {
+                    trader: u2,
+                    relayer,
+                    version: 2,
+                    side: 'buy',
+                    type: 'limit',
+                    expiredAtSeconds: 3500000000,
+                    makerRebateRate: 0,
+                    asMakerFeeRate: 0,
+                    asTakerFeeRate: 0,
+                    quoteAssetAmount: toWei('1'),
+                    baseAssetAmount: toWei('1'),
+                    gasTokenAmount: toWei('0')
+                }
+            ],
+            afterMatch: async ({
+                takerOrder,
+                makerOrders,
+                baseAssetFilledAmounts,
+                orderAddressSet
+            }) => {
+                // match again
+                await hydro.matchOrders(
+                    {
+                        takerOrderParam: takerOrder,
+                        makerOrderParams: makerOrders,
+                        baseAssetFilledAmounts: baseAssetFilledAmounts,
+                        orderAddressSet
+                    },
+                    { from: relayer }
+                );
+            }
+        };
+
+        await assert.rejects(matchTest(testConfig), /ORDER_IS_NOT_FILLABLE/);
     });
 });
