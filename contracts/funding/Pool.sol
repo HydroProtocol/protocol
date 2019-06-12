@@ -224,7 +224,9 @@ library Pool {
         borrowInterestRate = InterestModel.polynomialInterestModel(borrowRatio);
         supplyInterestRate = borrowInterestRate.mul(_borrow).div(_supply);
 
-        return (borrowInterestRate, supplyInterestRate);
+        return (
+            borrowInterestRate.mul(Consts.INTEREST_RATE_BASE()).div(Decimal.one()), supplyInterestRate.mul(Consts.INTEREST_RATE_BASE()).div(Decimal.one())
+        );
     }
 
     function _updateIndex(
