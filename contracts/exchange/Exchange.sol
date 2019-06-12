@@ -396,26 +396,6 @@ library Exchange {
     }
 
     /**
-     * Take an amount and convert it from quote token units to base token units based on the price
-     * in the order param.
-     *
-     * @param orderParam The Types.OrderParam object containing the Order data.
-     * @param amount An amount of quote token.
-     * @return The converted amount in base token units.
-     */
-    function convertQuoteToBase(Types.OrderParam memory orderParam, uint256 amount)
-        internal
-        pure
-        returns (uint256)
-    {
-        return Math.getPartialAmountFloor(
-            orderParam.baseAssetAmount,
-            orderParam.quoteAssetAmount,
-            amount
-        );
-    }
-
-    /**
      * Take a list of matches and settle them with the taker order, transferring tokens all tokens
      * and paying all fees necessary to complete the transaction.
      *
