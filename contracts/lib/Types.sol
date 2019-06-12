@@ -122,10 +122,10 @@ library Types {
     struct Order {
         address trader;
         address relayer;
-        address baseToken;
-        address quoteToken;
-        uint256 baseTokenAmount;
-        uint256 quoteTokenAmount;
+        address baseAsset;
+        address quoteAsset;
+        uint256 baseAssetAmount;
+        uint256 quoteAssetAmount;
         uint256 gasTokenAmount;
 
         /**
@@ -160,8 +160,8 @@ library Types {
      */
     struct OrderParam {
         address trader;
-        uint256 baseTokenAmount;
-        uint256 quoteTokenAmount;
+        uint256 baseAssetAmount;
+        uint256 quoteAssetAmount;
         uint256 gasTokenAmount;
         bytes32 data;
         Signature signature;
@@ -169,8 +169,8 @@ library Types {
 
 
     struct OrderAddressSet {
-        address baseToken;
-        address quoteToken;
+        address baseAsset;
+        address quoteAsset;
         address relayer;
     }
 
@@ -183,8 +183,8 @@ library Types {
         uint256 takerFee;
         uint256 makerGasFee;
         uint256 takerGasFee;
-        uint256 baseTokenFilledAmount;
-        uint256 quoteTokenFilledAmount;
+        uint256 baseAssetFilledAmount;
+        uint256 quoteAssetFilledAmount;
         WalletPath makerWalletPath;
         WalletPath takerWalletPath;
     }
@@ -196,7 +196,7 @@ library Types {
     struct MatchParams {
         OrderParam       takerOrderParam;
         OrderParam[]     makerOrderParams;
-        uint256[]                baseTokenFilledAmounts;
+        uint256[]        baseAssetFilledAmounts;
         OrderAddressSet  orderAddressSet;
     }
 
@@ -259,7 +259,7 @@ library Order {
 
     bytes32 public constant EIP712_ORDER_TYPE = keccak256(
         abi.encodePacked(
-            "Order(address trader,address relayer,address baseToken,address quoteToken,uint256 baseTokenAmount,uint256 quoteTokenAmount,uint256 gasTokenAmount,bytes32 data)"
+            "Order(address trader,address relayer,address baseAsset,address quoteAsset,uint256 baseAssetAmount,uint256 quoteAssetAmount,uint256 gasTokenAmount,bytes32 data)"
         )
     );
 
@@ -289,10 +289,10 @@ library Order {
          *         EIP712_ORDER_TYPE,
          *         bytes32(order.trader),
          *         bytes32(order.relayer),
-         *         bytes32(order.baseToken),
-         *         bytes32(order.quoteToken),
-         *         order.baseTokenAmount,
-         *         order.quoteTokenAmount,
+         *         bytes32(order.baseAsset),
+         *         bytes32(order.quoteAsset),
+         *         order.baseAssetAmount,
+         *         order.quoteAssetAmount,
          *         order.gasTokenAmount,
          *         order.data
          *     )
@@ -367,7 +367,7 @@ library OrderParam {
 
         if (byte(order.data << (8*23)) == "\x01") {
             category = Types.WalletCategory.CollateralAccount;
-            marketID = uint16(bytes2(order.data << (8*23)));
+            marketID = uint16(bytes2(order.data << (8*24)));
         } else {
             category = Types.WalletCategory.Balance;
             marketID = 0;

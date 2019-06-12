@@ -2,9 +2,9 @@ require('../utils/hooks');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const BigNumber = require('bignumber.js');
-const { setHotAmount, clone, toWei, wei, getUserKey } = require('../utils');
+const { setHotAmount, pp, clone, toWei, wei, getUserKey } = require('../utils');
 const { buildOrder } = require('../utils/order');
-const { createAsset } = require('../utils/assets');
+const { createAsset, newMarket } = require('../utils/assets');
 
 const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => {
     a = new BigNumber(a);
@@ -42,7 +42,7 @@ contract('Match', async accounts => {
 
     const users = [relayer, u1, u2, u3];
 
-    const getTokenUsersBalances = async tokens => {
+    const getUsersAssetsBalances = async (tokens, walletPaths) => {
         const balances = {};
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
@@ -50,7 +50,17 @@ contract('Match', async accounts => {
 
             for (let j = 0; j < Object.keys(users).length; j++) {
                 const user = users[j];
-                const balance = await hydro.balanceOf(token.address, user);
+                let balance;
+
+                if (walletPaths && walletPaths[user] && walletPaths[user].category == 1) {
+                    balance = await hydro.marketBalanceOf(
+                        walletPaths[user].marketID,
+                        token.address,
+                        user
+                    );
+                } else {
+                    balance = await hydro.balanceOf(token.address, user);
+                }
 
                 balances[`${symbol}-${user}`] = balance;
             }
@@ -58,43 +68,113 @@ contract('Match', async accounts => {
         return balances;
     };
 
+    const tryToDepositToMarketBalances = async (
+        baseAssetConfig,
+        baseAsset,
+        quoteAssetConfig,
+        quoteAsset,
+        userWalletPaths
+    ) => {
+        const users = Object.keys(userWalletPaths);
+        for (let j = 0; j < users.length; j++) {
+            const user = users[j];
+            const path = userWalletPaths[user];
+
+            if (path.category == 0) {
+                continue;
+            }
+
+            if (
+                baseAssetConfig &&
+                baseAssetConfig.initBalances &&
+                baseAssetConfig.initBalances[user]
+            ) {
+                await hydro.transfer(
+                    baseAsset.address,
+                    {
+                        category: 0,
+                        marketID: 0,
+                        user
+                    },
+                    path,
+                    baseAssetConfig.initBalances[user],
+                    { from: user }
+                );
+            }
+
+            if (
+                quoteAssetConfig &&
+                quoteAssetConfig.initBalances &&
+                quoteAssetConfig.initBalances[user]
+            ) {
+                await hydro.transfer(
+                    quoteAsset.address,
+                    {
+                        category: 0,
+                        marketID: 0,
+                        user
+                    },
+                    path,
+                    quoteAssetConfig.initBalances[user],
+                    { from: user }
+                );
+            }
+        }
+    };
+
     const matchTest = async config => {
         const {
-            baseTokenConfig,
-            quoteTokenConfig,
+            userWalletPaths,
+            baseAssetConfig,
+            quoteAssetConfig,
             takerOrderParam,
             makerOrdersParams,
             assertDiffs,
-            baseTokenFilledAmounts,
+            baseAssetFilledAmounts,
             allowPrecisionError,
             assertFilled
         } = config;
 
-        const baseToken = await createAsset(baseTokenConfig);
-        const quoteToken = await createAsset(quoteTokenConfig);
+        const baseAsset = await createAsset(baseAssetConfig);
+        const quoteAsset = await createAsset(quoteAssetConfig);
 
-        const balancesBeforeMatch = await getTokenUsersBalances([baseToken, quoteToken]);
+        if (userWalletPaths) {
+            await newMarket({ assets: [baseAsset, quoteAsset] });
 
-        const baseTokenAddress = baseToken.address;
-        const quoteTokenAddress = quoteToken.address;
+            // if the user has a special wallet path, try to deposit all initBalances into market balances
+            await tryToDepositToMarketBalances(
+                baseAssetConfig,
+                baseAsset,
+                quoteAssetConfig,
+                quoteAsset,
+                userWalletPaths
+            );
+        }
 
-        const takerOrder = await buildOrder(takerOrderParam, baseTokenAddress, quoteTokenAddress);
+        const balancesBeforeMatch = await getUsersAssetsBalances(
+            [baseAsset, quoteAsset],
+            userWalletPaths
+        );
+
+        const baseAssetAddress = baseAsset.address;
+        const quoteAssetAddress = quoteAsset.address;
+
+        const takerOrder = await buildOrder(takerOrderParam, baseAssetAddress, quoteAssetAddress);
 
         const makerOrders = [];
         for (let i = 0; i < makerOrdersParams.length; i++) {
             makerOrders.push(
-                await buildOrder(makerOrdersParams[i], baseTokenAddress, quoteTokenAddress)
+                await buildOrder(makerOrdersParams[i], baseAssetAddress, quoteAssetAddress)
             );
         }
-
         const res = await hydro.matchOrders(
             {
                 takerOrderParam: takerOrder,
                 makerOrderParams: makerOrders,
-                baseTokenFilledAmounts: baseTokenFilledAmounts,
+                baseAssetFilledAmounts: baseAssetFilledAmounts,
                 orderAddressSet: {
-                    baseToken: baseTokenAddress,
-                    quoteToken: quoteTokenAddress,
+                    baseAsset: baseAssetAddress,
+                    quoteAsset: quoteAssetAddress,
                     relayer
                 }
             },
@@ -103,8 +183,10 @@ contract('Match', async accounts => {
 
         console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.receipt.gasUsed);
 
-        const balancesAfterMatch = await getTokenUsersBalances([baseToken, quoteToken]);
-
+        const balancesAfterMatch = await getUsersAssetsBalances(
+            [baseAsset, quoteAsset],
+            userWalletPaths
+        );
         for (let i = 0; i < Object.keys(assertDiffs).length; i++) {
             const tokenSymbol = Object.keys(assertDiffs)[i];
 
@@ -120,7 +202,7 @@ contract('Match', async accounts => {
                     actualDiff.toString(),
                     expectedDiff,
                     allowPrecisionError,
-                    `${tokenSymbol}-${getUserKey(user)}`
+                    `${tokenSymbol}-${await getUserKey(user)}`
                 );
             }
         }
@@ -163,9 +245,9 @@ contract('Match', async accounts => {
         marketTestConfig.takerOrderParam.type = 'market';
 
         if (marketTestConfig.takerOrderParam.side === 'sell') {
-            marketTestConfig.takerOrderParam.quoteTokenAmount = '0';
+            marketTestConfig.takerOrderParam.quoteAssetAmount = '0';
         } else {
-            marketTestConfig.takerOrderParam.baseTokenAmount = '0';
+            marketTestConfig.takerOrderParam.baseAssetAmount = '0';
         }
 
         await matchTest(marketTestConfig);
@@ -189,8 +271,8 @@ contract('Match', async accounts => {
     // ╚═════════╧═════╧════════╧═══════════════════════════════════════════════╝
     it('taker sell(limit & market), taker full match', async () => {
         const testConfig = {
-            baseTokenFilledAmounts: [toWei('10'), toWei('10')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('10'), toWei('10')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -198,7 +280,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(20)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -216,8 +298,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('20'),
-                quoteTokenAmount: toWei('3.6'),
+                baseAssetAmount: toWei('20'),
+                quoteAssetAmount: toWei('3.6'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -230,8 +312,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('1.9'),
-                    baseTokenAmount: toWei('10'),
+                    quoteAssetAmount: toWei('1.9'),
+                    baseAssetAmount: toWei('10'),
                     gasTokenAmount: toWei('0.1')
                 },
                 {
@@ -243,8 +325,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('3.6'),
-                    baseTokenAmount: toWei('20'),
+                    quoteAssetAmount: toWei('3.6'),
+                    baseAssetAmount: toWei('20'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -288,8 +370,8 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════╝
     it('taker sell(limit & market), maker full match', async () => {
         await limitAndMarketTestMatch({
-            baseTokenFilledAmounts: [toWei('1952')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('1952')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -297,7 +379,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -314,8 +396,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('8424.22'),
-                quoteTokenAmount: toWei('310.0955382'),
+                baseAssetAmount: toWei('8424.22'),
+                quoteAssetAmount: toWei('310.0955382'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -328,8 +410,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('73.826592'),
+                    baseAssetAmount: toWei('1952'),
+                    quoteAssetAmount: toWei('73.826592'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -372,12 +454,12 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════════════════════════╝
     it('taker buy(limit), taker full match', async () => {
         await matchTest({
-            baseTokenFilledAmounts: [toWei('1952'), toWei('6472.22')],
+            baseAssetFilledAmounts: [toWei('1952'), toWei('6472.22')],
             assertFilled: {
                 limitTaker: toWei('8424.22'),
                 makers: [toWei('1952'), toWei('6472.22')]
             },
-            baseTokenConfig: {
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -386,7 +468,7 @@ contract('Match', async accounts => {
                     [u3]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -403,8 +485,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('8424.22'),
-                quoteTokenAmount: toWei('318.5197582'),
+                baseAssetAmount: toWei('8424.22'),
+                quoteAssetAmount: toWei('318.5197582'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -417,8 +499,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('71.874592'),
+                    baseAssetAmount: toWei('1952'),
+                    quoteAssetAmount: toWei('71.874592'),
                     gasTokenAmount: toWei('0.1')
                 },
                 {
@@ -430,8 +512,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('314159'),
-                    quoteTokenAmount: toWei('11875.2102'),
+                    baseAssetAmount: toWei('314159'),
+                    quoteAssetAmount: toWei('11875.2102'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -473,7 +555,7 @@ contract('Match', async accounts => {
     it('taker buy(market), taker full match', async () => {
         await matchTest({
             allowPrecisionError: true,
-            baseTokenFilledAmounts: [toWei('1952'), toWei('6525.004396825396825396')],
+            baseAssetFilledAmounts: [toWei('1952'), toWei('6525.004396825396825396')],
             assertDiffs: {
                 TT: {
                     [u1]: toWei('8477.004396825396825396'),
@@ -492,7 +574,7 @@ contract('Match', async accounts => {
                 marketTaker: toWei('318.5197582'),
                 makers: [toWei('1952'), toWei('6525.004396825396825396')]
             },
-            baseTokenConfig: {
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -501,7 +583,7 @@ contract('Match', async accounts => {
                     [u3]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -518,8 +600,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('0'),
-                quoteTokenAmount: toWei('318.5197582'),
+                baseAssetAmount: toWei('0'),
+                quoteAssetAmount: toWei('318.5197582'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -532,8 +614,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('71.874592'),
+                    baseAssetAmount: toWei('1952'),
+                    quoteAssetAmount: toWei('71.874592'),
                     gasTokenAmount: toWei('0.1')
                 },
                 {
@@ -545,8 +627,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('314159'),
-                    quoteTokenAmount: toWei('11875.2102'),
+                    baseAssetAmount: toWei('314159'),
+                    quoteAssetAmount: toWei('11875.2102'),
                     gasTokenAmount: toWei('0.1')
                 }
             ]
@@ -569,13 +651,13 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════╝
     it('taker buy(limit), maker full match', async () => {
         await matchTest({
-            baseTokenFilledAmounts: [toWei('1952')],
+            baseAssetFilledAmounts: [toWei('1952')],
             assertFilled: {
                 limitTaker: toWei('1952'),
                 marketTaker: toWei('71.874592'),
                 makers: [toWei('1952')]
             },
-            baseTokenConfig: {
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -583,7 +665,7 @@ contract('Match', async accounts => {
                     [u2]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -600,8 +682,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('8424.22'),
-                quoteTokenAmount: toWei('318.5197582'),
+                baseAssetAmount: toWei('8424.22'),
+                quoteAssetAmount: toWei('318.5197582'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -614,8 +696,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('71.874592'),
+                    baseAssetAmount: toWei('1952'),
+                    quoteAssetAmount: toWei('71.874592'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -650,12 +732,12 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧═════════════════════════════════╝
     it('taker buy(market), maker full match', async () => {
         await matchTest({
-            baseTokenFilledAmounts: [toWei('1952')],
+            baseAssetFilledAmounts: [toWei('1952')],
             assertFilled: {
                 marketTaker: toWei('71.874592'),
                 makers: [toWei('1952')]
             },
-            baseTokenConfig: {
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -663,7 +745,7 @@ contract('Match', async accounts => {
                     [u2]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -680,8 +762,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('0'),
-                quoteTokenAmount: toWei('318.5197582'),
+                baseAssetAmount: toWei('0'),
+                quoteAssetAmount: toWei('318.5197582'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -694,8 +776,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('71.874592'),
+                    baseAssetAmount: toWei('1952'),
+                    quoteAssetAmount: toWei('71.874592'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -732,8 +814,8 @@ contract('Match', async accounts => {
     it('HOT discount', async () => {
         await setHotAmount(u1, toWei(10000));
         await matchTest({
-            baseTokenFilledAmounts: [toWei('1952')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('1952')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -741,7 +823,7 @@ contract('Match', async accounts => {
                     [u2]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -758,8 +840,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('8424.22'),
-                quoteTokenAmount: toWei('318.5197582'),
+                baseAssetAmount: toWei('8424.22'),
+                quoteAssetAmount: toWei('318.5197582'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -772,8 +854,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('71.874592'),
+                    baseAssetAmount: toWei('1952'),
+                    quoteAssetAmount: toWei('71.874592'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -810,8 +892,8 @@ contract('Match', async accounts => {
     it('eth, taker market order sell, taker full match, maker fee discount', async () => {
         await setHotAmount(u2, toWei(10000));
         await matchTest({
-            baseTokenFilledAmounts: [toWei('102')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('102')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -819,7 +901,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Ethereum',
                 symbol: 'ETH',
                 decimals: 18,
@@ -836,8 +918,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('102'),
-                quoteTokenAmount: toWei('0'),
+                baseAssetAmount: toWei('102'),
+                quoteAssetAmount: toWei('0'),
                 gasTokenAmount: toWei('0.00001')
             },
             makerOrdersParams: [
@@ -850,8 +932,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    baseTokenAmount: toWei('312'),
-                    quoteTokenAmount: toWei('0.2581176'),
+                    baseAssetAmount: toWei('312'),
+                    quoteAssetAmount: toWei('0.2581176'),
                     gasTokenAmount: toWei('0.00001')
                 }
             ],
@@ -886,8 +968,8 @@ contract('Match', async accounts => {
     // ╚═════════╧══════════╧═══════════════╧════════════════════════════════════════════╝
     it('Maker Rebate 50%', async () => {
         await limitAndMarketTestMatch({
-            baseTokenFilledAmounts: [toWei('1952')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('1952')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -895,7 +977,7 @@ contract('Match', async accounts => {
                     [u2]: toWei(10000)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -912,8 +994,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('8424.22'),
-                quoteTokenAmount: toWei('318.5197582'),
+                baseAssetAmount: toWei('8424.22'),
+                quoteAssetAmount: toWei('318.5197582'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -927,8 +1009,8 @@ contract('Match', async accounts => {
                     asMakerFeeRate: 1000, // It will have no effect
                     asTakerFeeRate: 5000,
                     makerRebateRate: 50,
-                    baseTokenAmount: toWei('1952'),
-                    quoteTokenAmount: toWei('71.874592'),
+                    baseAssetAmount: toWei('1952'),
+                    quoteAssetAmount: toWei('71.874592'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -965,8 +1047,8 @@ contract('Match', async accounts => {
     // ╚═════════╧═════╧═════════╧═══════════════════════════════════════════════╝
     it('Maker Rebate Rate is 100%', async () => {
         const testConfig = {
-            baseTokenFilledAmounts: [toWei('10'), toWei('10')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('10'), toWei('10')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -974,7 +1056,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(20)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -992,8 +1074,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('20'),
-                quoteTokenAmount: toWei('3.6'),
+                baseAssetAmount: toWei('20'),
+                quoteAssetAmount: toWei('3.6'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -1007,8 +1089,8 @@ contract('Match', async accounts => {
                     makerRebateRate: 100,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('1.9'),
-                    baseTokenAmount: toWei('10'),
+                    quoteAssetAmount: toWei('1.9'),
+                    baseAssetAmount: toWei('10'),
                     gasTokenAmount: toWei('0.1')
                 },
                 {
@@ -1020,8 +1102,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('3.6'),
-                    baseTokenAmount: toWei('20'),
+                    quoteAssetAmount: toWei('3.6'),
+                    baseAssetAmount: toWei('20'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -1062,8 +1144,8 @@ contract('Match', async accounts => {
     // ╚═════════╧═════╧═════════╧═══════════════════════════════════════════════╝
     it('Maker Rebate Rate large than 100%(will be calculated as 100%)', async () => {
         const testConfig = {
-            baseTokenFilledAmounts: [toWei('10'), toWei('10')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('10'), toWei('10')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -1071,7 +1153,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(20)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -1089,8 +1171,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('20'),
-                quoteTokenAmount: toWei('3.6'),
+                baseAssetAmount: toWei('20'),
+                quoteAssetAmount: toWei('3.6'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -1104,8 +1186,8 @@ contract('Match', async accounts => {
                     makerRebateRate: 200, // should be used as 100% in contract
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('1.9'),
-                    baseTokenAmount: toWei('10'),
+                    quoteAssetAmount: toWei('1.9'),
+                    baseAssetAmount: toWei('10'),
                     gasTokenAmount: toWei('0.1')
                 },
                 {
@@ -1117,8 +1199,8 @@ contract('Match', async accounts => {
                     expiredAtSeconds: 3500000000,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('3.6'),
-                    baseTokenAmount: toWei('20'),
+                    quoteAssetAmount: toWei('3.6'),
+                    baseAssetAmount: toWei('20'),
                     gasTokenAmount: toWei('0.1')
                 }
             ],
@@ -1144,8 +1226,8 @@ contract('Match', async accounts => {
     // invalid taker order
     it('Invalid taker order will revert', async () => {
         const testConfig = {
-            baseTokenFilledAmounts: [toWei('1')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('1')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -1153,7 +1235,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(20)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -1171,8 +1253,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('0'),
-                quoteTokenAmount: toWei('0'),
+                baseAssetAmount: toWei('0'),
+                quoteAssetAmount: toWei('0'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -1186,8 +1268,8 @@ contract('Match', async accounts => {
                     makerRebateRate: 6553,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('1'),
-                    baseTokenAmount: toWei('1'),
+                    quoteAssetAmount: toWei('1'),
+                    baseAssetAmount: toWei('1'),
                     gasTokenAmount: toWei('0.1')
                 }
             ]
@@ -1204,8 +1286,8 @@ contract('Match', async accounts => {
     // invalid maker order
     it('Invalid taker order will revert', async () => {
         const testConfig = {
-            baseTokenFilledAmounts: [toWei('1')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('1')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -1213,7 +1295,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(20)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -1231,8 +1313,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 1000,
                 asTakerFeeRate: 5000,
-                baseTokenAmount: toWei('1'),
-                quoteTokenAmount: toWei('1'),
+                baseAssetAmount: toWei('1'),
+                quoteAssetAmount: toWei('1'),
                 gasTokenAmount: toWei('0.1')
             },
             makerOrdersParams: [
@@ -1246,8 +1328,8 @@ contract('Match', async accounts => {
                     makerRebateRate: 6553,
                     asMakerFeeRate: 1000,
                     asTakerFeeRate: 5000,
-                    quoteTokenAmount: toWei('0'),
-                    baseTokenAmount: toWei('0'),
+                    quoteAssetAmount: toWei('0'),
+                    baseAssetAmount: toWei('0'),
                     gasTokenAmount: toWei('0.1')
                 }
             ]
@@ -1263,8 +1345,8 @@ contract('Match', async accounts => {
 
     it('match without fees', async () => {
         const testConfig = {
-            baseTokenFilledAmounts: [toWei('1')],
-            baseTokenConfig: {
+            baseAssetFilledAmounts: [toWei('1')],
+            baseAssetConfig: {
                 name: 'TestToken',
                 symbol: 'TT',
                 decimals: 18,
@@ -1272,7 +1354,7 @@ contract('Match', async accounts => {
                     [u1]: toWei(20)
                 }
             },
-            quoteTokenConfig: {
+            quoteAssetConfig: {
                 name: 'Wrapped Ethereum',
                 symbol: 'WETH',
                 decimals: 18,
@@ -1289,8 +1371,8 @@ contract('Match', async accounts => {
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 0,
                 asTakerFeeRate: 0,
-                baseTokenAmount: toWei('1'),
-                quoteTokenAmount: toWei('1'),
+                baseAssetAmount: toWei('1'),
+                quoteAssetAmount: toWei('1'),
                 gasTokenAmount: toWei('0')
             },
             makerOrdersParams: [
@@ -1304,8 +1386,90 @@ contract('Match', async accounts => {
                     makerRebateRate: 0,
                     asMakerFeeRate: 0,
                     asTakerFeeRate: 0,
-                    quoteTokenAmount: toWei('1'),
-                    baseTokenAmount: toWei('1'),
+                    quoteAssetAmount: toWei('1'),
+                    baseAssetAmount: toWei('1'),
+                    gasTokenAmount: toWei('0')
+                }
+            ],
+            assertDiffs: {
+                TT: {
+                    [u1]: toWei('-1'),
+                    [u2]: toWei('1'),
+                    [relayer]: toWei('0')
+                },
+                WETH: {
+                    [u1]: toWei('1'),
+                    [u2]: toWei('-1'),
+                    [relayer]: toWei('0')
+                }
+            }
+        };
+
+        await limitAndMarketTestMatch(testConfig);
+    });
+
+    it('match with market balance', async () => {
+        const testConfig = {
+            userWalletPaths: {
+                [u1]: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                },
+                [u2]: {
+                    category: 0,
+                    marketID: 0,
+                    user: u2
+                }
+            },
+            baseAssetFilledAmounts: [toWei('1')],
+            baseAssetConfig: {
+                name: 'TestToken',
+                symbol: 'TT',
+                decimals: 18,
+                initBalances: {
+                    [u1]: toWei(20)
+                }
+            },
+            quoteAssetConfig: {
+                name: 'Wrapped Ethereum',
+                symbol: 'WETH',
+                decimals: 18,
+                initBalances: {
+                    [u2]: toWei(10)
+                }
+            },
+            takerOrderParam: {
+                trader: u1,
+                relayer,
+                version: 2,
+                side: 'sell',
+                type: 'limit',
+                expiredAtSeconds: 3500000000,
+                asMakerFeeRate: 0,
+                asTakerFeeRate: 0,
+                baseAssetAmount: toWei('1'),
+                quoteAssetAmount: toWei('1'),
+                gasTokenAmount: toWei('0'),
+                walletPath: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                }
+            },
+            makerOrdersParams: [
+                {
+                    trader: u2,
+                    relayer,
+                    version: 2,
+                    side: 'buy',
+                    type: 'limit',
+                    expiredAtSeconds: 3500000000,
+                    makerRebateRate: 0,
+                    asMakerFeeRate: 0,
+                    asTakerFeeRate: 0,
+                    quoteAssetAmount: toWei('1'),
+                    baseAssetAmount: toWei('1'),
                     gasTokenAmount: toWei('0')
                 }
             ],

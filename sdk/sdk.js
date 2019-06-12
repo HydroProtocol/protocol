@@ -45,7 +45,8 @@ const generateOrderData = (
     asTakerFeeRate,
     makerRebateRate,
     salt,
-    isMakerOnly
+    isMakerOnly,
+    walletPath
 ) => {
     let res = '0x';
     res += addLeadingZero(new BigNumber(version).toString(16), 2);
@@ -57,6 +58,12 @@ const generateOrderData = (
     res += addLeadingZero(new BigNumber(makerRebateRate).toString(16), 2 * 2);
     res += addLeadingZero(new BigNumber(salt).toString(16), 8 * 2);
     res += isMakerOnly ? '01' : '00';
+
+    if (walletPath) {
+        res += '01' + addLeadingZero(new BigNumber(walletPath.marketID).toString(16), 2 * 2);
+    } else {
+        res += '000000';
+    }
 
     return addTailingZero(res, 66);
 };
@@ -86,7 +93,7 @@ const generateFundingOrderData = (side, expiredAt, loanDuration, interestRate, f
 
 const EIP712_DOMAIN_TYPEHASH = sha3ToHex('EIP712Domain(string name)');
 const EIP712_ORDER_TYPE = sha3ToHex(
-    'Order(address trader,address relayer,address baseToken,address quoteToken,uint256 baseTokenAmount,uint256 quoteTokenAmount,uint256 gasTokenAmount,bytes32 data)'
+    'Order(address trader,address relayer,address baseAsset,address quoteAsset,uint256 baseAssetAmount,uint256 quoteAssetAmount,uint256 gasTokenAmount,bytes32 data)'
 );
 
 const EIP712_FUNDING_ORDER_TYPE = sha3ToHex(
@@ -109,10 +116,10 @@ const getOrderHash = order => {
             EIP712_ORDER_TYPE +
                 addLeadingZero(order.trader.slice(2), 64) +
                 addLeadingZero(order.relayer.slice(2), 64) +
-                addLeadingZero(order.baseToken.slice(2), 64) +
-                addLeadingZero(order.quoteToken.slice(2), 64) +
-                addLeadingZero(new BigNumber(order.baseTokenAmount).toString(16), 64) +
-                addLeadingZero(new BigNumber(order.quoteTokenAmount).toString(16), 64) +
+                addLeadingZero(order.baseAsset.slice(2), 64) +
+                addLeadingZero(order.quoteAsset.slice(2), 64) +
+                addLeadingZero(new BigNumber(order.baseAssetAmount).toString(16), 64) +
+                addLeadingZero(new BigNumber(order.quoteAssetAmount).toString(16), 64) +
                 addLeadingZero(new BigNumber(order.gasTokenAmount).toString(16), 64) +
                 order.data.slice(2)
         )

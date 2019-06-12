@@ -88,16 +88,6 @@ library Events {
         emit AuctionFinished(auctionID);
     }
 
-    //////////
-    // Loan //
-    //////////
-
-    event LoanCreate(uint256 loanID);
-
-    function logLoanCreate(uint256 loanID) internal {
-        emit LoanCreate(loanID);
-    }
-
     /////////////
     // Relayer //
     /////////////
@@ -140,8 +130,8 @@ library Events {
         uint256 takerFee,
         uint256 makerGasFee,
         uint256 takerGasFee,
-        uint256 baseTokenFilledAmount,
-        uint256 quoteTokenFilledAmount
+        uint256 baseAssetFilledAmount,
+        uint256 quoteAssetFilledAmount
     );
 
     function logExchangeMatch(Types.MatchResult memory result, Types.OrderAddressSet memory addressSet) internal {
@@ -155,8 +145,8 @@ library Events {
             result.takerFee,
             result.makerGasFee,
             result.takerGasFee,
-            result.baseTokenFilledAmount,
-            result.quoteTokenFilledAmount
+            result.baseAssetFilledAmount,
+            result.quoteAssetFilledAmount
         );
     }
 

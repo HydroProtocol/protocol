@@ -79,7 +79,7 @@
 //     };
 
 //     it('open margin', async () => {
-//         const [baseToken, quoteToken] = await createAssets([
+//         const [baseAsset, quoteAsset] = await createAssets([
 //             {
 //                 symbol: 'ETH',
 //                 name: 'ETH',
@@ -131,12 +131,12 @@
 //                     expiredAtSeconds: 3500000000,
 //                     asMakerFeeRate: 0,
 //                     asTakerFeeRate: 0,
-//                     baseTokenAmount: toWei('0'),
-//                     quoteTokenAmount: toWei('300'),
+//                     baseAssetAmount: toWei('0'),
+//                     quoteAssetAmount: toWei('300'),
 //                     gasTokenAmount: toWei('0')
 //                 },
-//                 baseToken.address,
-//                 quoteToken.address
+//                 baseAsset.address,
+//                 quoteAsset.address
 //             ),
 //             makerOrderParams: [
 //                 await buildOrder(
@@ -149,18 +149,18 @@
 //                         expiredAtSeconds: 3500000000,
 //                         asMakerFeeRate: 0,
 //                         asTakerFeeRate: 0,
-//                         baseTokenAmount: toWei('3'),
-//                         quoteTokenAmount: toWei('300'),
+//                         baseAssetAmount: toWei('3'),
+//                         quoteAssetAmount: toWei('300'),
 //                         gasTokenAmount: toWei('0')
 //                     },
-//                     baseToken.address,
-//                     quoteToken.address
+//                     baseAsset.address,
+//                     quoteAsset.address
 //                 )
 //             ],
-//             baseTokenFilledAmounts: [toWei('3')],
+//             baseAssetFilledAmounts: [toWei('3')],
 //             orderAddressSet: {
-//                 baseToken: baseToken.address,
-//                 quoteToken: quoteToken.address,
+//                 baseAsset: baseAsset.address,
+//                 quoteAsset: quoteAsset.address,
 //                 relayer
 //             }
 //         };
@@ -174,7 +174,7 @@
 //     });
 
 //     it.only('partial margin close', async () => {
-//         const [baseToken, quoteToken] = await createAssets([
+//         const [baseAsset, quoteAsset] = await createAssets([
 //             {
 //                 symbol: 'ETH',
 //                 name: 'ETH',
@@ -226,12 +226,12 @@
 //                     expiredAtSeconds: 3500000000,
 //                     asMakerFeeRate: 0,
 //                     asTakerFeeRate: 0,
-//                     baseTokenAmount: toWei('0'),
-//                     quoteTokenAmount: toWei('300'),
+//                     baseAssetAmount: toWei('0'),
+//                     quoteAssetAmount: toWei('300'),
 //                     gasTokenAmount: toWei('0')
 //                 },
-//                 baseToken.address,
-//                 quoteToken.address
+//                 baseAsset.address,
+//                 quoteAsset.address
 //             ),
 //             makerOrderParams: [
 //                 await buildOrder(
@@ -244,18 +244,18 @@
 //                         expiredAtSeconds: 3500000000,
 //                         asMakerFeeRate: 0,
 //                         asTakerFeeRate: 0,
-//                         baseTokenAmount: toWei('3'),
-//                         quoteTokenAmount: toWei('300'),
+//                         baseAssetAmount: toWei('3'),
+//                         quoteAssetAmount: toWei('300'),
 //                         gasTokenAmount: toWei('0')
 //                     },
-//                     baseToken.address,
-//                     quoteToken.address
+//                     baseAsset.address,
+//                     quoteAsset.address
 //                 )
 //             ],
-//             baseTokenFilledAmounts: [toWei('3')],
+//             baseAssetFilledAmounts: [toWei('3')],
 //             orderAddressSet: {
-//                 baseToken: baseToken.address,
-//                 quoteToken: quoteToken.address,
+//                 baseAsset: baseAsset.address,
+//                 quoteAsset: quoteAsset.address,
 //                 relayer
 //             }
 //         };
@@ -290,12 +290,12 @@
 //                     expiredAtSeconds: 3500000000,
 //                     asMakerFeeRate: 0,
 //                     asTakerFeeRate: 0,
-//                     baseTokenAmount: toWei('1'),
-//                     quoteTokenAmount: toWei('0'),
+//                     baseAssetAmount: toWei('1'),
+//                     quoteAssetAmount: toWei('0'),
 //                     gasTokenAmount: toWei('0')
 //                 },
-//                 baseToken.address,
-//                 quoteToken.address
+//                 baseAsset.address,
+//                 quoteAsset.address
 //             ),
 //             makerOrderParams: [
 //                 await buildOrder(
@@ -308,18 +308,18 @@
 //                         expiredAtSeconds: 3500000000,
 //                         asMakerFeeRate: 0,
 //                         asTakerFeeRate: 0,
-//                         baseTokenAmount: toWei('1'),
-//                         quoteTokenAmount: toWei('100'),
+//                         baseAssetAmount: toWei('1'),
+//                         quoteAssetAmount: toWei('100'),
 //                         gasTokenAmount: toWei('0')
 //                     },
-//                     baseToken.address,
-//                     quoteToken.address
+//                     baseAsset.address,
+//                     quoteAsset.address
 //                 )
 //             ],
-//             baseTokenFilledAmounts: [toWei('1')],
+//             baseAssetFilledAmounts: [toWei('1')],
 //             orderAddressSet: {
-//                 baseToken: baseToken.address,
-//                 quoteToken: quoteToken.address,
+//                 baseAsset: baseAsset.address,
+//                 quoteAsset: quoteAsset.address,
 //                 relayer
 //             }
 //         };
