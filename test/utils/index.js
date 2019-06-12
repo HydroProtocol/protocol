@@ -8,7 +8,7 @@ BigNumber.config({
 
 const wei = new BigNumber('1000000000000000000');
 const etherAsset = '0x0000000000000000000000000000000000000000';
-
+const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const toWei = x => {
     return new BigNumber(x).times(wei).toString();
 };
@@ -77,5 +77,6 @@ module.exports = {
     getUserKey,
     wei,
     pp,
+    maxUint256,
     etherAsset
 };
