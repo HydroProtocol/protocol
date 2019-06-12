@@ -1569,7 +1569,7 @@ contract('Match', async accounts => {
         await limitAndMarketTestMatch(testConfig);
     });
 
-    it.only('match with a expired order will revert', async () => {
+    it('match with a expired order will revert', async () => {
         const testConfig = {
             baseAssetFilledAmounts: [toWei('1')],
             baseAssetConfig: {
@@ -1622,7 +1622,7 @@ contract('Match', async accounts => {
         await assert.rejects(limitAndMarketTestMatch(testConfig), /ORDER_IS_NOT_FILLABLE/);
     });
 
-    it.only('match with a canceled order will revert', async () => {
+    it('match with a canceled order will revert', async () => {
         const testConfig = {
             baseAssetFilledAmounts: [toWei('1')],
             baseAssetConfig: {
