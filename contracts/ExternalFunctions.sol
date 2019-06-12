@@ -193,6 +193,17 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return Pool._getInterestRate(state, asset, extraBorrowAmount);
     }
 
+    // function getPoolBorrowRatio(
+    //     address asset
+    // )
+    //     external
+    //     view
+    //      requireAssetExist(asset)
+    //     returns (uint256)
+    // {
+    //     return Pool._getBorrowRatio(state, asset);
+    // }
+
     function supplyPool(
         address asset,
         uint256 amount
