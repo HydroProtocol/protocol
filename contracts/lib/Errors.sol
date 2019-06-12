@@ -54,10 +54,6 @@ library Errors {
         return "MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER";
     }
 
-    function TRANSFER_FROM_FAILED() internal pure returns (string memory) {
-        return "TRANSFER_FROM_FAILED";
-    }
-
     function MAKER_ORDER_OVER_MATCH() internal pure returns (string memory) {
         return "MAKER_ORDER_OVER_MATCH";
     }
