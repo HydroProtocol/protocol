@@ -1691,7 +1691,7 @@ contract('Match', async accounts => {
         await assert.rejects(limitAndMarketTestMatch(testConfig), /ORDER_IS_NOT_FILLABLE/);
     });
 
-    it('match with a full filled market taker order will revert', async () => {
+    it('match with a full filled market buy order will revert', async () => {
         const testConfig = {
             baseAssetFilledAmounts: [toWei('1')],
             baseAssetConfig: {
@@ -1699,7 +1699,7 @@ contract('Match', async accounts => {
                 symbol: 'TT',
                 decimals: 18,
                 initBalances: {
-                    [u1]: toWei(20)
+                    [u2]: toWei(20)
                 }
             },
             quoteAssetConfig: {
@@ -1707,20 +1707,20 @@ contract('Match', async accounts => {
                 symbol: 'WETH',
                 decimals: 18,
                 initBalances: {
-                    [u2]: toWei(10)
+                    [u1]: toWei(10)
                 }
             },
             takerOrderParam: {
                 trader: u1,
                 relayer,
                 version: 2,
-                side: 'sell',
+                side: 'buy',
                 type: 'market',
                 expiredAtSeconds: 3500000000,
                 asMakerFeeRate: 0,
                 asTakerFeeRate: 0,
-                baseAssetAmount: toWei('1'),
-                quoteAssetAmount: toWei('0'),
+                baseAssetAmount: toWei('0'),
+                quoteAssetAmount: toWei('1'),
                 gasTokenAmount: toWei('0')
             },
             makerOrdersParams: [
@@ -1728,7 +1728,7 @@ contract('Match', async accounts => {
                     trader: u2,
                     relayer,
                     version: 2,
-                    side: 'buy',
+                    side: 'sell',
                     type: 'limit',
                     expiredAtSeconds: 3500000000,
                     makerRebateRate: 0,
