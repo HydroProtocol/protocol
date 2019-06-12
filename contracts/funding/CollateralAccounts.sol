@@ -47,11 +47,11 @@ library CollateralAccounts {
 
         details.debtsTotalUSDValue = baseUSDPrice.mul(Pool._getPoolBorrowOf(state, market.baseAsset, user, marketID)).add(
             quoteUSDPrice.mul(Pool._getPoolBorrowOf(state, market.quoteAsset, user, marketID))
-        );
+        ).div(Consts.ORACLE_PRICE_BASE());
 
         details.balancesTotalUSDValue = baseUSDPrice.mul(account.wallet.balances[market.baseAsset]).add(
             quoteUSDPrice.mul(account.wallet.balances[market.quoteAsset])
-        );
+        ).div(Consts.ORACLE_PRICE_BASE());
 
         details.liquidable = details.balancesTotalUSDValue <
             details.debtsTotalUSDValue.mul(liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
