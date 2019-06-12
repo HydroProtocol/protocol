@@ -3,13 +3,57 @@ const Oracle = artifacts.require('./Oracle.sol');
 const Hydro = artifacts.require('./Hydro.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
 const BigNumber = require('bignumber.js');
+const { toWei } = require('./index');
 
 BigNumber.config({
     EXPONENTIAL_AT: 1000
 });
 
+const depositAsset = async (asset, user, amount) => {
+    const hydro = await Hydro.deployed();
+    const accounts = await web3.eth.getAccounts();
+    const owner = accounts[0];
+
+    if (asset.symbol == 'ETH') {
+        await hydro.deposit(asset.address, amount, {
+            from: user,
+            value: amount
+        });
+    } else {
+        await asset.transfer(user, amount, {
+            from: owner
+        });
+        await asset.approve(hydro.address, amount, {
+            from: user
+        });
+        await hydro.deposit(asset.address, amount, {
+            from: user
+        });
+    }
+};
+
+const depositMarket = async (marketID, asset, user, amount) => {
+    const hydro = await Hydro.deployed();
+    await depositAsset(asset, user, amount);
+    await hydro.transfer(
+        asset.address,
+        {
+            category: 0,
+            marketID,
+            user
+        },
+        {
+            category: 1,
+            marketID,
+            user
+        },
+        amount,
+        { from: user }
+    );
+};
+
 const newMarket = async marketConfig => {
-    const { assets, assetConfigs, liquidateRate, withdrawRate } = marketConfig;
+    const { assets, assetConfigs, liquidateRate, withdrawRate, initMarketBalances } = marketConfig;
     let baseAsset, quoteAsset;
 
     if (assetConfigs) {
@@ -27,35 +71,36 @@ const newMarket = async marketConfig => {
         quoteAsset: quoteAsset.address
     });
 
+    const marketID = (await hydro.getAllMarketsCount()).toNumber() - 1;
+
+    debug(`new Market ${baseAsset.symbol}-${quoteAsset.symbol}, marketID: ${marketID}`);
     debug('add market gas cost:', res.receipt.gasUsed);
+
+    if (initMarketBalances) {
+        if (initMarketBalances[0]) {
+            const users = Object.keys(initMarketBalances[0]);
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                const amount = initMarketBalances[0][user];
+                await depositMarket(marketID, baseAsset, user, amount);
+            }
+        }
+
+        if (initMarketBalances[1]) {
+            const users = Object.keys(initMarketBalances[1]);
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                const amount = initMarketBalances[1][user];
+                await depositMarket(marketID, quoteAsset, user, amount);
+            }
+        }
+    }
 
     return {
         baseAsset,
-        quoteAsset
+        quoteAsset,
+        marketID
     };
-};
-
-const depositAsset = async (token, user, amount) => {
-    const hydro = await Hydro.deployed();
-    const accounts = await web3.eth.getAccounts();
-    const owner = accounts[0];
-
-    if (token.symbol == 'ETH') {
-        await hydro.deposit(token.address, amount, {
-            from: user,
-            value: amount
-        });
-    } else {
-        await token.transfer(user, amount, {
-            from: owner
-        });
-        await token.approve(hydro.address, amount, {
-            from: user
-        });
-        await hydro.deposit(token.address, amount, {
-            from: user
-        });
-    }
 };
 
 const deposit = async (token, user, amount) => {
@@ -98,9 +143,10 @@ const createAsset = async assetConfig => {
     const oracle = await Oracle.deployed();
 
     await Promise.all([
-        oracle.setPrice(token.address, new BigNumber(oraclePrice || 10000).toString(), {
+        oracle.setPrice(token.address, oraclePrice || toWei(100), {
             from: accounts[0]
         }),
+
         hydro.registerAsset(
             token.address,
             oracle.address,
@@ -146,7 +192,7 @@ const createAsset = async assetConfig => {
 const createAssets = async configs => {
     const tokens = await Promise.all(configs.map(config => createAsset(config)));
 
-    tokens.forEach((t, i) => (t.symbol = configs[i]));
+    tokens.forEach((t, i) => (t.symbol = configs[i].symbol));
 
     return tokens;
 };
