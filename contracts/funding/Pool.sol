@@ -107,8 +107,8 @@ library Pool {
         // round ceil
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
         uint256 withdrawAmount = amount;
-        if (_readLogicSupplyOf(state, asset, user) < logicAmount) {
-            logicAmount = _readLogicSupplyOf(state, asset, user);
+        if (PoolToken(state.pool.poolToken[asset]).balanceOf(user) < logicAmount) {
+            logicAmount = PoolToken(state.pool.poolToken[asset]).balanceOf(user);
             withdrawAmount = logicAmount.mul(state.pool.supplyIndex[asset]);
         }
 
@@ -224,7 +224,9 @@ library Pool {
         borrowInterestRate = InterestModel.polynomialInterestModel(borrowRatio);
         supplyInterestRate = borrowInterestRate.mul(_borrow).div(_supply);
 
-        return (borrowInterestRate, supplyInterestRate);
+        return (
+            borrowInterestRate.mul(Consts.INTEREST_RATE_BASE()).div(Decimal.one()), supplyInterestRate.mul(Consts.INTEREST_RATE_BASE()).div(Decimal.one())
+        );
     }
 
     function _updateIndex(
@@ -249,7 +251,7 @@ library Pool {
         returns (uint256)
     {
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(_readLogicSupplyOf(state, asset, user), currentSupplyIndex);
+        return Decimal.mul(PoolToken(state.pool.poolToken[asset]).balanceOf(user), currentSupplyIndex);
     }
 
     function _getPoolBorrowOf(
@@ -275,7 +277,7 @@ library Pool {
         returns (uint256)
     {
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(_readTotalLogicSupply(state, asset), currentSupplyIndex);
+        return Decimal.mul(PoolToken(state.pool.poolToken[asset]).totalSupply(), currentSupplyIndex);
     }
 
     function _getPoolTotalBorrow(
@@ -309,29 +311,6 @@ library Pool {
         currentSupplyIndex = Decimal.mul(state.pool.supplyIndex[asset], Decimal.onePlus(supplyInterestRate));
 
         return (currentSupplyIndex, currentBorrowIndex);
-    }
-
-    function _readLogicSupplyOf(
-        Store.State storage state,
-        address asset,
-        address user
-    )
-        internal
-        view
-        returns (uint256)
-    {
-        return PoolToken(state.pool.poolToken[asset]).balanceOf(user);
-    }
-
-    function _readTotalLogicSupply(
-        Store.State storage state,
-        address asset
-    )
-        internal
-        view
-        returns (uint256)
-    {
-        return PoolToken(state.pool.poolToken[asset]).totalSupply();
     }
 
 }
