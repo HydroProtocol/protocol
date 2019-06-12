@@ -1489,4 +1489,71 @@ contract('Match', async accounts => {
 
         await limitAndMarketTestMatch(testConfig);
     });
+
+    it.only('match with a not participant relayer', async () => {
+        await hydro.exitIncentiveSystem({ from: relayer });
+
+        const testConfig = {
+            baseAssetFilledAmounts: [toWei('1')],
+            baseAssetConfig: {
+                name: 'TestToken',
+                symbol: 'TT',
+                decimals: 18,
+                initBalances: {
+                    [u1]: toWei(20)
+                }
+            },
+            quoteAssetConfig: {
+                name: 'Wrapped Ethereum',
+                symbol: 'WETH',
+                decimals: 18,
+                initBalances: {
+                    [u2]: toWei(10)
+                }
+            },
+            takerOrderParam: {
+                trader: u1,
+                relayer,
+                version: 2,
+                side: 'sell',
+                type: 'limit',
+                expiredAtSeconds: 3500000000,
+                asMakerFeeRate: 0,
+                asTakerFeeRate: 0,
+                baseAssetAmount: toWei('1'),
+                quoteAssetAmount: toWei('1'),
+                gasTokenAmount: toWei('0')
+            },
+            makerOrdersParams: [
+                {
+                    trader: u2,
+                    relayer,
+                    version: 2,
+                    side: 'buy',
+                    type: 'limit',
+                    expiredAtSeconds: 3500000000,
+                    makerRebateRate: 0,
+                    asMakerFeeRate: 0,
+                    asTakerFeeRate: 0,
+                    quoteAssetAmount: toWei('1'),
+                    baseAssetAmount: toWei('1'),
+                    gasTokenAmount: toWei('0')
+                }
+            ],
+            assertDiffs: {
+                TT: {
+                    [u1]: toWei('-1'),
+                    [u2]: toWei('1'),
+                    [relayer]: toWei('0')
+                },
+                WETH: {
+                    [u1]: toWei('1'),
+                    [u2]: toWei('-1'),
+                    [relayer]: toWei('0')
+                }
+            }
+        };
+
+        await limitAndMarketTestMatch(testConfig);
+    });
 });
