@@ -28,7 +28,7 @@ const mineAt = async (fn, timestamp) => {
 
     try {
         const promise = fn();
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 100));
         await mine(timestamp);
         return await promise;
     } finally {
