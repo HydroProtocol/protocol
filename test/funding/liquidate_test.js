@@ -1,16 +1,16 @@
 require('../utils/hooks');
-// const assert = require('assert');
+const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const Oracle = artifacts.require('./Oracle.sol');
 // const TestToken = artifacts.require('./helper/TestToken.sol');
 
-const { newMarket } = require('../utils/assets');
-const { toWei, pp, getUserKey, etherAsset } = require('../utils');
+const { newMarket, depositMarket } = require('../utils/assets');
+const { toWei, pp, getUserKey } = require('../utils');
 const { mineAt } = require('../utils/evm');
 // const { buildOrder } = require('../utils/order');
 
 contract('Liquidate', accounts => {
-    let hydro, oracle, time;
+    let marketID, hydro, oracle, time, ethAsset, usdAsset;
 
     const CollateralAccountStatus = {
         Normal: 0,
@@ -27,8 +27,6 @@ contract('Liquidate', accounts => {
     const u1 = accounts[4];
     const u2 = accounts[5];
     const u3 = accounts[6];
-
-    let marketID, USDAddr;
 
     beforeEach(async () => {
         const res = await newMarket({
@@ -61,9 +59,10 @@ contract('Liquidate', accounts => {
         });
 
         marketID = res.marketID;
-        USDAddr = res.quoteAsset.address;
+        ethAsset = res.baseAsset;
+        usdAsset = res.quoteAsset;
 
-        await mineAt(() => hydro.supplyPool(USDAddr, toWei('10000'), { from: u1 }), time);
+        await mineAt(() => hydro.supplyPool(usdAsset.address, toWei('10000'), { from: u1 }), time);
     });
 
     it('should be a health position if there is no debt', async () => {
@@ -80,7 +79,10 @@ contract('Liquidate', accounts => {
     });
 
     it("should be a health position if there aren't many debts", async () => {
-        await mineAt(() => hydro.borrow(USDAddr, toWei('100'), marketID, { from: u2 }), time);
+        await mineAt(
+            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
+            time
+        );
         let accountDetails = await hydro.getAccountDetails(u2, marketID);
 
         assert.equal(accountDetails.liquidable, false);
@@ -95,12 +97,15 @@ contract('Liquidate', accounts => {
     });
 
     it('should be a unhealthy position if there are too many debts', async () => {
-        await mineAt(() => hydro.borrow(USDAddr, toWei('100'), marketID, { from: u2 }), time);
+        await mineAt(
+            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
+            time
+        );
 
-        // ether price drop to 1
+        // ether price drop to 10
         await mineAt(
             () =>
-                oracle.setPrice(etherAsset, toWei('1'), {
+                oracle.setPrice(ethAsset.address, toWei('10'), {
                     from: accounts[0]
                 }),
             time
@@ -111,13 +116,60 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.liquidable, true);
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('100'));
-        assert.equal(accountDetails.balancesTotalUSDValue, toWei('101'));
+        assert.equal(accountDetails.balancesTotalUSDValue, toWei('110'));
 
         await hydro.liquidateAccount(u2, marketID);
         // account is liquidated
         accountDetails = await hydro.getAccountDetails(u2, marketID);
+        assert.equal(accountDetails.liquidable, false);
         assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
     });
-});
 
-//should be able to liquidate unhealthy account
+    it('should not be able to operator to liquidating account', async () => {
+        await mineAt(
+            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
+            time
+        );
+
+        // ether price drop to 10
+        await mineAt(
+            () =>
+                oracle.setPrice(ethAsset.address, toWei('10'), {
+                    from: accounts[0]
+                }),
+            time
+        );
+
+        await hydro.liquidateAccount(u2, marketID);
+        let accountDetails = await hydro.getAccountDetails(u2, marketID);
+        assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
+
+        // can't transfer funds in
+        await assert.rejects(
+            depositMarket(marketID, usdAsset, u2, toWei('100')),
+            /CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT/
+        );
+
+        // can't transfer funds out
+        await assert.rejects(
+            hydro.transfer(
+                ethAsset.address,
+                {
+                    category: 1,
+                    marketID,
+                    user: u2
+                },
+                {
+                    category: 0,
+                    marketID: 0,
+                    user: u2
+                },
+                toWei('1'),
+                {
+                    from: u2
+                }
+            ),
+            /CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT/
+        );
+    });
+});

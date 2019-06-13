@@ -93,6 +93,21 @@ library Transfer {
         return wallet.balances[asset];
     }
 
+    function validPath(
+        Store.State storage state,
+        Types.WalletPath memory path
+    )
+        internal
+        view
+    {
+        if (path.category == Types.WalletCategory.CollateralAccount) {
+            Types.CollateralAccount storage account = state.accounts[path.user][path.marketID];
+            if (account.status == Types.CollateralAccountStatus.Liquid) {
+                revert("CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT");
+            }
+        }
+    }
+
     /** @dev Invoking internal funds transfer.
       */
     function transferFrom(
@@ -104,6 +119,9 @@ library Transfer {
     )
         internal
     {
+        validPath(state, fromWalletPath);
+        validPath(state, toWalletPath);
+
         Types.Wallet storage fromWallet = fromWalletPath.getWallet(state);
         Types.Wallet storage toWallet = toWalletPath.getWallet(state);
 

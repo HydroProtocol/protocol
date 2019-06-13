@@ -53,8 +53,12 @@ library CollateralAccounts {
             quoteUSDPrice.mul(account.wallet.balances[market.quoteAsset])
         ).div(Consts.ORACLE_PRICE_BASE());
 
-        details.liquidable = details.balancesTotalUSDValue <
+        if (account.status == Types.CollateralAccountStatus.Normal) {
+            details.liquidable = details.balancesTotalUSDValue <
             details.debtsTotalUSDValue.mul(liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
+        } else {
+            details.liquidable = false;
+        }
     }
 
     /**

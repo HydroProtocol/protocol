@@ -200,6 +200,7 @@ const createAssets = async configs => {
 module.exports = {
     createAssets,
     createAsset,
+    depositMarket,
     supply,
     newMarket
 };
