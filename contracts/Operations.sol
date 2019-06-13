@@ -33,6 +33,7 @@ import "./interfaces/IOracle.sol";
  * Only owner can use this contract functions
  */
 contract Operations is Ownable, GlobalStore, Modifiers {
+
     function addMarket(
         Types.Market calldata market
     )
@@ -40,7 +41,10 @@ contract Operations is Ownable, GlobalStore, Modifiers {
         onlyOwner
         requireMarketAssetsValid(market)
         requireMarketNotExist(market)
+        decimalLessOrEquanThanOne(market.auctionRatioStart)
+        decimalLessOrEquanThanOne(market.auctionRatioPerBlock)
     {
+        uint16 marketID = state.marketsCount;
         Markets.addMarket(state, market);
     }
 
@@ -71,5 +75,39 @@ contract Operations is Ownable, GlobalStore, Modifiers {
         onlyOwner
     {
         Discount.changeDiscountConfig(state, newConfig);
+    }
+
+    function changeAuctionParams(
+        uint16 marketID,
+        uint256 newAuctionRatioStart,
+        uint256 newAuctionRatioPerBlock
+    )
+        external
+        onlyOwner
+        decimalLessOrEquanThanOne(newAuctionRatioStart)
+        decimalLessOrEquanThanOne(newAuctionRatioPerBlock)
+    {
+        state.markets[marketID].auctionRatioStart = newAuctionRatioStart;
+        state.markets[marketID].auctionRatioPerBlock = newAuctionRatioPerBlock;
+    }
+
+    function changeAuctionInitiatorRewardRatio(
+        uint256 newInitiatorRewardRatio
+    )
+        external
+        onlyOwner
+        decimalLessOrEquanThanOne(newInitiatorRewardRatio)
+    {
+        state.auction.initiatorRewardRatio = newInitiatorRewardRatio;
+    }
+
+    function changeInsuranceRatio(
+        uint256 newInsuranceRatio
+    )
+        external
+        onlyOwner
+        decimalLessOrEquanThanOne(newInsuranceRatio)
+    {
+        state.insuranceRatio = newInsuranceRatio;
     }
 }

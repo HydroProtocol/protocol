@@ -19,6 +19,7 @@
 pragma solidity 0.5.8;
 
 import "./GlobalStore.sol";
+import "./lib/Decimal.sol";
 
 contract Modifiers is GlobalStore {
     modifier requireAssetExist(
@@ -64,6 +65,13 @@ contract Modifiers is GlobalStore {
         _;
     }
 
+    modifier decimalLessOrEquanThanOne(
+        uint256 d
+    ) {
+        require(d <= Decimal.one(), "DECIMAL_GREATER_THAN_ONE");
+        _;
+    }
+
     function isAssetExist(
         address asset
     )
@@ -89,4 +97,5 @@ contract Modifiers is GlobalStore {
 
         return false;
     }
+
 }

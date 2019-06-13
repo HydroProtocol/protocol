@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity 0.5.8;
+pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./SafeMath.sol";
@@ -25,6 +25,7 @@ import "./Math.sol";
 import "./Consts.sol";
 import "./Store.sol";
 import "./Signature.sol";
+import "./Decimal.sol";
 
 library Types {
     enum LoanSource {
@@ -87,6 +88,9 @@ library Types {
 
         address baseAsset;
         address quoteAsset;
+
+        uint256 auctionRatioStart;
+        uint256 auctionRatioPerBlock;
     }
 
     struct CollateralAccount {
@@ -114,8 +118,9 @@ library Types {
         uint16 marketID;
 
         address borrower;
-        address debtAsset;
+        address initiator;
 
+        address debtAsset;
         address collateralAsset;
     }
 
@@ -209,9 +214,20 @@ library Types {
 }
 
 library Auction {
-    function ratio(Types.Auction memory auction) internal view returns (uint256) {
-        uint256 currentRatio = block.number - auction.startBlockNumber;
-        return currentRatio < 100 ? currentRatio : 100;
+    using SafeMath for uint256;
+
+    function ratio(
+        Types.Auction memory auction,
+        Store.State storage state
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 increasedRatio = Decimal.mul(block.number - auction.startBlockNumber, state.markets[auction.marketID].auctionRatioPerBlock);
+        uint256 initRatio = state.markets[auction.marketID].auctionRatioStart;
+        uint256 totalRatio = initRatio.add(increasedRatio);
+        return totalRatio < Decimal.one() ? totalRatio : Decimal.one();
     }
 }
 

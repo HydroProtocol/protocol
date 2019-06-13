@@ -107,8 +107,8 @@ library Pool {
         // round ceil
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
         uint256 withdrawAmount = amount;
-        if (PoolToken(state.pool.poolToken[asset]).balanceOf(user) < logicAmount) {
-            logicAmount = PoolToken(state.pool.poolToken[asset]).balanceOf(user);
+        if (_getLogicSupplyOf(state, asset, user) < logicAmount) {
+            logicAmount = _getLogicSupplyOf(state, asset, user);
             withdrawAmount = Decimal.mul(logicAmount, state.pool.supplyIndex[asset]);
         }
 
@@ -236,7 +236,9 @@ library Pool {
 
         uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
         borrowInterestRate = InterestModel.polynomialInterestModel(borrowRatio);
-        supplyInterestRate = borrowInterestRate.mul(_borrow).div(_supply);
+        uint256 borrowInterest = Decimal.mul(_borrow, borrowInterestRate);
+        uint256 supplyInterest = Decimal.mul(borrowInterest, Decimal.one().sub(state.insuranceRatio));
+        supplyInterestRate = Decimal.divFloor(supplyInterest, _supply);
 
         return (
             borrowInterestRate, supplyInterestRate
@@ -250,6 +252,14 @@ library Pool {
         internal
     {
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, asset);
+
+        uint256 logicBorrow = state.pool.logicTotalBorrow.balances[asset];
+        uint256 logicSupply = _getTotalLogicSupply(state, asset);
+        uint256 borrowInterest = Decimal.mul(logicBorrow, currentBorrowIndex.sub(state.pool.borrowIndex[asset]));
+        uint256 supplyInterest = Decimal.mul(logicSupply, currentSupplyIndex.sub(state.pool.supplyIndex[asset]));
+
+        state.insuranceWallet.balances[asset] = state.insuranceWallet.balances[asset].add(borrowInterest.sub(supplyInterest));
+
         state.pool.supplyIndex[asset] = currentSupplyIndex;
         state.pool.borrowIndex[asset] = currentBorrowIndex;
         state.pool.indexStartTime[asset] = block.timestamp;
@@ -265,7 +275,7 @@ library Pool {
         returns (uint256)
     {
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(PoolToken(state.pool.poolToken[asset]).balanceOf(user), currentSupplyIndex);
+        return Decimal.mul(_getLogicSupplyOf(state, asset, user), currentSupplyIndex);
     }
 
     function _getPoolBorrowOf(
@@ -291,7 +301,7 @@ library Pool {
         returns (uint256)
     {
         (uint256 currentSupplyIndex, ) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(PoolToken(state.pool.poolToken[asset]).totalSupply(), currentSupplyIndex);
+        return Decimal.mul(_getTotalLogicSupply(state, asset), currentSupplyIndex);
     }
 
     function _getPoolTotalBorrow(
@@ -325,6 +335,29 @@ library Pool {
         currentSupplyIndex = Decimal.mul(state.pool.supplyIndex[asset], Decimal.onePlus(supplyInterestRate));
 
         return (currentSupplyIndex, currentBorrowIndex);
+    }
+
+    function _getLogicSupplyOf(
+        Store.State storage state,
+        address asset,
+        address user
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        return PoolToken(state.pool.poolToken[asset]).balanceOf(user);
+    }
+
+    function _getTotalLogicSupply(
+        Store.State storage state,
+        address asset
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        return PoolToken(state.pool.poolToken[asset]).totalSupply();
     }
 
 }
