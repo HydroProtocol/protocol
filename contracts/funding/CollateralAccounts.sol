@@ -39,7 +39,7 @@ library CollateralAccounts {
     {
         Types.CollateralAccount storage account = state.accounts[user][marketID];
         Types.Market storage market = state.markets[marketID];
-
+        details.status = account.status;
         uint256 liquidateRate = state.markets[marketID].liquidateRate;
 
         uint256 baseUSDPrice = state.oracles[market.baseAsset].getPrice(market.baseAsset);
