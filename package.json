@@ -21,6 +21,6 @@
     "ethereumjs-abi": "^0.6.7",
     "ethers": "^4.0.29",
     "prettier": "1.17.1",
-    "solidity-coverage": "^0.6.0-beta.5"
+    "@davidqhr/solidity-coverage": "0.6.0-beta.5"
   }
 }
