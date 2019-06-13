@@ -109,7 +109,7 @@ library Pool {
         uint256 withdrawAmount = amount;
         if (PoolToken(state.pool.poolToken[asset]).balanceOf(user) < logicAmount) {
             logicAmount = PoolToken(state.pool.poolToken[asset]).balanceOf(user);
-            withdrawAmount = logicAmount.mul(state.pool.supplyIndex[asset]);
+            withdrawAmount = Decimal.mul(logicAmount, state.pool.supplyIndex[asset]);
         }
 
         // transfer asset
@@ -200,6 +200,20 @@ library Pool {
         state.pool.supplyAnnualInterestRate[asset] = supplyInterestRate;
     }
 
+    function _getBorrowRatio(
+        Store.State storage state,
+        address asset
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 _supply = _getPoolTotalSupply(state, asset);
+        uint256 _borrow = _getPoolTotalBorrow(state, asset);
+        uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
+        return borrowRatio;
+    }
+
     // get interestRate
     function _getInterestRate(
         Store.State storage state,
@@ -214,7 +228,7 @@ library Pool {
         uint256 _supply = _getPoolTotalSupply(state, asset);
         uint256 _borrow = _getPoolTotalBorrow(state, asset).add(extraBorrowAmount);
 
-        require(_supply >= _borrow, "BORROW_EXCEED_LIMITATION");
+        require(_supply >= _borrow, "BORROW_EXCEED_SUPPLY");
 
         if (_supply == 0) {
             return (0, 0);
@@ -225,7 +239,7 @@ library Pool {
         supplyInterestRate = borrowInterestRate.mul(_borrow).div(_supply);
 
         return (
-            borrowInterestRate.mul(Consts.INTEREST_RATE_BASE()).div(Decimal.one()), supplyInterestRate.mul(Consts.INTEREST_RATE_BASE()).div(Decimal.one())
+            borrowInterestRate, supplyInterestRate
         );
     }
 

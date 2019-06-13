@@ -130,6 +130,18 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return CollateralAccounts.getDetails(state, user, marketID);
     }
 
+    function getAccountBalance(
+        address asset,
+        address user,
+        uint16 marketID
+    )
+        external
+        view
+        returns (uint256)
+    {
+        return state.accounts[user][marketID].wallet.balances[asset];
+    }
+
     ////////////////////
     // Pool Functions //
     ////////////////////
@@ -181,7 +193,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return Pool._getPoolSupplyOf(state, asset, user);
     }
 
-    function getPoolInterestRate(
+    function getInterestRate(
         address asset,
         uint256 extraBorrowAmount
     )
@@ -238,6 +250,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
             asset,
             amount
         );
+        require(!CollateralAccounts.getDetails(state, msg.sender, marketID).liquidable, "CAN_NOT_BORROW_MORE_THAN_COLLATERAL");
     }
 
     function repay(

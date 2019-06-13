@@ -28,8 +28,9 @@ const mineAt = async (fn, timestamp) => {
 
     try {
         const promise = fn();
+        await new Promise(resolve => setTimeout(resolve, 100));
         await mine(timestamp);
-        await promise;
+        return await promise;
     } finally {
         await minerStart();
     }
@@ -68,5 +69,6 @@ module.exports = {
     jsonRpcCall,
     revert,
     snapshot,
-    updateTimestamp
+    updateTimestamp,
+    mineAt
 };

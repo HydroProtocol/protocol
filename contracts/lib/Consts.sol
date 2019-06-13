@@ -31,10 +31,6 @@ library Consts {
         return 31536000;
     }
 
-    function INTEREST_RATE_BASE() internal pure returns (uint256) {
-        return 10000;
-    }
-
     function FEE_RATE_BASE() internal pure returns (uint256) {
         return 10000;
     }
