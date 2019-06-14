@@ -104,14 +104,31 @@ library CollateralAccounts {
         address collateralAsset;
         address debtAsset;
 
-        if(account.wallet.balances[market.baseAsset] > 0) {
-            // quote asset is debt, base asset is collateral
-            collateralAsset = market.baseAsset;
-            debtAsset = market.quoteAsset;
+        uint256 leftBaseAssetDebt = Pool._getPoolBorrowOf(state, market.baseAsset, user, marketID);
+        uint256 leftQuoteAssetDebt = Pool._getPoolBorrowOf(state, market.quoteAsset, user, marketID);
+
+        if (leftBaseAssetDebt == 0 && leftQuoteAssetDebt == 0) {
+            // no auction
         } else {
-            // base asset is debt, quote asset is collateral
-            collateralAsset = market.quoteAsset;
-            debtAsset = market.baseAsset;
+            if(account.wallet.balances[market.baseAsset] > 0) {
+                // quote asset is debt, base asset is collateral
+                collateralAsset = market.baseAsset;
+                debtAsset = market.quoteAsset;
+            } else {
+                // base asset is debt, quote asset is collateral
+                collateralAsset = market.quoteAsset;
+                debtAsset = market.baseAsset;
+            }
+
+            Auctions.create(
+                state,
+                marketID,
+                user,
+                msg.sender,
+                debtAsset,
+                collateralAsset
+            );
+            account.status = Types.CollateralAccountStatus.Liquid;
         }
 
         account.status = Types.CollateralAccountStatus.Liquid;

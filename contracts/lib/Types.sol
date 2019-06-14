@@ -126,6 +126,14 @@ library Types {
         address collateralAsset;
     }
 
+    struct AuctionDetails {
+        address debtAsset;
+        address collateralAsset;
+        uint256 leftDebtAmount;
+        uint256 leftCollateralAmount;
+        uint256 ratio;
+    }
+
     struct Order {
         address trader;
         address relayer;
