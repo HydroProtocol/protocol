@@ -16,7 +16,7 @@
 
 */
 
-pragma solidity 0.5.8;
+pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import { Types } from "./Types.sol";
@@ -113,9 +113,6 @@ library Store {
 
         // total borrow
         Types.Wallet logicTotalBorrow;
-        Types.Wallet logicTotalSupply;
-
-        mapping (address => Types.Wallet) logicSupply;
 
         // user => marketID => wallet
         mapping (address => mapping (uint16 => Types.Wallet)) logicBorrow;
@@ -124,9 +121,22 @@ library Store {
         mapping (address => address) poolToken;
     }
 
-    struct State {
+    struct AuctionState {
+
         // count of auctions
         uint32 auctionsCount;
+
+        // all auctions
+        mapping(uint32 => Types.Auction) auctions;
+
+        // current auctions
+        uint32[] currentAuctions;
+
+        // auction initiator reward ratio
+        uint256 initiatorRewardRatio;
+    }
+
+    struct State {
 
         uint16 marketsCount;
 
@@ -138,16 +148,19 @@ library Store {
         // all markets
         mapping(uint16 => Types.Market) markets;
 
-        // all auctions
-        mapping(uint32 => Types.Auction) auctions;
-
         // user balances
         mapping(address => Types.Wallet) wallets;
+
+        // insurance balances
+        Types.Wallet insuranceWallet;
+        uint256 insuranceRatio;
 
         PoolState pool;
 
         ExchangeState exchange;
 
         RelayerState relayer;
+
+        AuctionState auction;
     }
 }

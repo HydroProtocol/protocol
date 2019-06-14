@@ -132,4 +132,5 @@ library Transfer {
 
         Events.logTransfer(asset, fromWalletPath, toWalletPath, amount);
     }
+
 }
