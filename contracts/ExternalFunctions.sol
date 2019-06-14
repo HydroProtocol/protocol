@@ -29,6 +29,7 @@ import "./funding/Markets.sol";
 import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
 import "./funding/BatchActions.sol";
+import "./funding/Auctions.sol";
 
 import "./lib/Transfer.sol";
 import "./lib/Types.sol";
@@ -279,6 +280,29 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         returns (address)
     {
         return state.pool.poolToken[asset];
+    }
+
+    /////////////////////////
+    // Insurance Functions //
+    /////////////////////////
+
+    function getInsuranceBalance(
+        address asset
+    )
+        external
+        view
+        requireAssetExist(asset)
+        returns (uint256)
+    {
+        return state.insuranceWallet.balances[asset];
+    }
+
+    function badDebt(
+        uint32 auctionID
+    )
+        external
+    {
+        Auctions.badDebt(state, auctionID);
     }
 
     ///////////////////////
