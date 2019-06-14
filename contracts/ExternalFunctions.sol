@@ -91,15 +91,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     // Collateral Account Functions //
     //////////////////////////////////
 
-    function liquidateAccounts(
-        address[] calldata users,
-        uint16[] calldata marketIDs
-    )
-        external
-    {
-        CollateralAccounts.liquidateMulti(state, users, marketIDs);
-    }
-
     function liquidateAccount(
         address user,
         uint16 marketID
@@ -159,6 +150,15 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         returns (Types.AuctionDetails memory details)
     {
         return Auctions.getAuctionDetails(state, auctionID);
+    }
+
+    function fillAuctionWithAmount(
+        uint32 auctionID,
+        uint256 amount
+    )
+        external
+    {
+        return Auctions.fillAuctionWithAmount(state, auctionID, amount);
     }
 
     ////////////////////
@@ -383,6 +383,10 @@ contract ExternalFunctions is GlobalStore, Modifiers {
 
     function marketBalanceOf(uint16 marketID, address asset, address user) external view returns (uint256) {
         return Transfer.balanceOf(state,  WalletPath.getMarketPath(user, marketID), asset);
+    }
+
+    function getMarketTransferableAmount(uint16 marketID, address asset, address user) external view returns (uint256) {
+        return CollateralAccounts.getTransferableAmount(state, marketID, user, asset);
     }
 
     /** fallback function to allow deposit ether into this contract */

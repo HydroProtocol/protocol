@@ -234,7 +234,7 @@ library Auction {
         view
         returns (uint256)
     {
-        uint256 increasedRatio = Decimal.mul(block.number - auction.startBlockNumber, state.markets[auction.marketID].auctionRatioPerBlock);
+        uint256 increasedRatio = (block.number - auction.startBlockNumber).mul(state.markets[auction.marketID].auctionRatioPerBlock);
         uint256 initRatio = state.markets[auction.marketID].auctionRatioStart;
         uint256 totalRatio = initRatio.add(increasedRatio);
         return totalRatio < Decimal.one() ? totalRatio : Decimal.one();

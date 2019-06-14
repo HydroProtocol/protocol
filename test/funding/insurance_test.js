@@ -2,7 +2,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
 const { toWei } = require('../utils');
-const { mineAt, updateTimestamp, getBlockTimestamp } = require('../utils/evm');
+const { mineAt, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const PoolToken = artifacts.require('./funding/PoolToken.sol');
 

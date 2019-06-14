@@ -2,7 +2,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
 const { toWei } = require('../utils');
-const { mineAt, updateTimestamp, getBlockTimestamp } = require('../utils/evm');
+const { mineAt, mine, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const PoolToken = artifacts.require('./funding/PoolToken.sol');
 
@@ -98,7 +98,7 @@ contract('Pool', accounts => {
         assert.equal(interestRate[0].toString(), toWei(0.025)); // borrow interestRate 2.5%
         assert.equal(interestRate[1].toString(), toWei(0.0025)); // supply interestRate 0.25%'
         // test interest accumulate in 90 days
-        await updateTimestamp(initTime + 86400 * 90);
+        await mine(initTime + 86400 * 90);
         assert.equal(
             (await hydro.getPoolTotalSupply(USDAddr)).toString(),
             '1000616438356164383000'

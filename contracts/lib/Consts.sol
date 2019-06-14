@@ -55,6 +55,10 @@ library Consts {
         return 100;
     }
 
+    function WITHDRAW_RATE_BASE() internal pure returns (uint256) {
+        return 100;
+    }
+
     function ETHEREUM_TOKEN_ADDRESS() internal pure returns (address) {
         return address(0);
     }

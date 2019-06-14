@@ -25,6 +25,7 @@ import "./SafeERC20.sol";
 import "./Consts.sol";
 import "./Store.sol";
 import "./Types.sol";
+import "../funding/CollateralAccounts.sol";
 
 library Transfer {
     using SafeMath for uint256;
@@ -93,7 +94,25 @@ library Transfer {
         return wallet.balances[asset];
     }
 
-    function validPath(
+    function validTransferOut(
+        Store.State storage state,
+        Types.WalletPath memory path,
+        address asset,
+        uint256 amount
+    )
+        internal
+        view
+    {
+        if (path.category == Types.WalletCategory.CollateralAccount) {
+            uint256 transferableAmount = CollateralAccounts.getTransferableAmount(state, path.marketID, path.user, asset);
+
+            if (transferableAmount < amount) {
+                revert("NO_ENOUGH_TRANSFERABLE_AMOUNT");
+            }
+        }
+    }
+
+    function validTransferIn(
         Store.State storage state,
         Types.WalletPath memory path
     )
@@ -119,8 +138,8 @@ library Transfer {
     )
         internal
     {
-        validPath(state, fromWalletPath);
-        validPath(state, toWalletPath);
+        validTransferOut(state, fromWalletPath, asset, amount);
+        validTransferIn(state, toWalletPath);
 
         Types.Wallet storage fromWallet = fromWalletPath.getWallet(state);
         Types.Wallet storage toWallet = toWalletPath.getWallet(state);

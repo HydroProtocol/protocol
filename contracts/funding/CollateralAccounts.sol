@@ -25,6 +25,7 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../funding/Auctions.sol";
 import "../lib/Types.sol";
+import "./Pool.sol";
 
 library CollateralAccounts {
     using SafeMath for uint256;
@@ -61,19 +62,39 @@ library CollateralAccounts {
         }
     }
 
-    /**
-     * Liquidate multiple collateral account at once
-     */
-    function liquidateMulti(
+    function getTransferableAmount(
         Store.State storage state,
-        address[] memory users,
-        uint16[] memory marketIDs
+        uint16 marketID,
+        address user,
+        address asset
     )
         internal
+        view
+        returns (uint256)
     {
-        for( uint256 i = 0; i < users.length; i++ ) {
-            liquidate(state, users[i], marketIDs[i]);
+        Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
+
+        // liquidating or liquidable account can't move asset
+        if (details.status == Types.CollateralAccountStatus.Liquid || details.liquidable) {
+            return 0;
         }
+
+        // no debt, can move all assets out
+        if (details.debtsTotalUSDValue == 0) {
+            return state.accounts[user][marketID].wallet.balances[asset];
+        }
+
+        // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
+        uint256 transferableUSDValueBar = details.debtsTotalUSDValue.mul(state.markets[marketID].withdrawRate).div(Consts.WITHDRAW_RATE_BASE());
+
+        if(transferableUSDValueBar > details.balancesTotalUSDValue) {
+            return 0;
+        }
+
+        uint256 asserUSDPrice = state.oracles[asset].getPrice(asset);
+
+        // round down
+        return (details.balancesTotalUSDValue - transferableUSDValueBar).mul(Consts.ORACLE_PRICE_BASE()).div(asserUSDPrice);
     }
 
     /**
