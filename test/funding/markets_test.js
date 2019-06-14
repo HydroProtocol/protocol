@@ -19,7 +19,7 @@ contract('Markets', accounts => {
     });
 
     it('owner can add market', async () => {
-        await newMarket({
+        const { baseAsset, quoteAsset } = await newMarket({
             assetConfigs: [
                 {
                     symbol: 'ETH',
@@ -35,6 +35,10 @@ contract('Markets', accounts => {
                 }
             ]
         });
+
+        const market = await hydro.getMarket(0);
+        assert.equal(market.baseAsset, baseAsset.address);
+        assert.equal(market.quoteAsset, quoteAsset.address);
     });
 
     it('can not add invalid market, same quote and base', async () => {

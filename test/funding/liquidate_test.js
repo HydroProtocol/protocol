@@ -38,7 +38,10 @@ contract('Liquidate', accounts => {
                     name: 'ETH',
                     decimals: 18,
                     oraclePrice: toWei('100'),
-                    collateralRate: 15000
+                    collateralRate: 15000,
+                    initBalances: {
+                        [u1]: toWei('30')
+                    }
                 },
                 {
                     symbol: 'USD',
@@ -63,6 +66,7 @@ contract('Liquidate', accounts => {
         usdAsset = res.quoteAsset;
 
         await mineAt(() => hydro.supplyPool(usdAsset.address, toWei('10000'), { from: u1 }), time);
+        await mineAt(() => hydro.supplyPool(ethAsset.address, toWei('10'), { from: u1 }), time);
     });
 
     it('should be a health position if there is no debt', async () => {
@@ -153,7 +157,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
     });
 
-    it('liquidation with debt left should result in an auction', async () => {
+    it('liquidation with debt left should result in an auction #1', async () => {
         await mineAt(
             () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
             time
@@ -195,6 +199,63 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.collateralAsset, ethAsset.address);
         assert.equal(auctionDetails.leftCollateralAmount, toWei('1'));
         assert.equal(auctionDetails.leftDebtAmount, '561643835616400');
+        assert.equal(auctionDetails.ratio, toWei('0.01'));
+    });
+
+    it('liquidation with debt left should result in an auction #2', async () => {
+        // this test will borrow eth, and use usd as collateral
+        await depositMarket(marketID, usdAsset, u2, toWei('100'));
+        await hydro.transfer(
+            ethAsset.address,
+            {
+                category: 1,
+                marketID,
+                user: u2
+            },
+            {
+                category: 0,
+                marketID,
+                user: u2
+            },
+            toWei('1'),
+            { from: u2 }
+        );
+
+        await mineAt(
+            () => hydro.borrow(ethAsset.address, toWei('1'), marketID, { from: u2 }),
+            time
+        );
+        // u2 has 1 eth debt
+        assert.equal(await hydro.getPoolBorrowOf(ethAsset.address, u2, marketID), toWei('1'));
+        // u2 has 100 usd and 1 eth in account
+        assert.equal(await hydro.marketBalanceOf(marketID, usdAsset.address, u2), toWei('100'));
+        assert.equal(await hydro.marketBalanceOf(marketID, ethAsset.address, u2), toWei('1'));
+
+        // usd price
+        await mineAt(
+            () =>
+                oracle.setPrice(usdAsset.address, toWei('0'), {
+                    from: accounts[0]
+                }),
+            time
+        );
+        assert.equal(await hydro.getAuctionsCount(), '0');
+        // As the price changed, he can't repay the debt.
+        await mineAt(() => hydro.liquidateAccount(u2, marketID), time + 86400);
+        // u2 should have some eth debt
+        assert(
+            (await hydro.getPoolBorrowOf(ethAsset.address, u2, marketID)).gt('0'),
+            'debt should larger than 0'
+        );
+        assert.equal(await hydro.getAuctionsCount(), '1');
+        // u2 account is liquidated, status is Liqudate
+        accountDetails = await hydro.getAccountDetails(u2, marketID);
+        assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
+        const auctionDetails = await hydro.getAuctionDetails('0');
+        assert.equal(auctionDetails.debtAsset, ethAsset.address);
+        assert.equal(auctionDetails.collateralAsset, usdAsset.address);
+        assert.equal(auctionDetails.leftCollateralAmount, toWei('100'));
+        assert.equal(auctionDetails.leftDebtAmount, '68493150684931');
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     });
 
@@ -282,6 +343,28 @@ contract('Liquidate', accounts => {
         // Debt:
         //   100 USD
         // transferable amount = ((100 + 100) - (100 * 2)) / 100
+        assert.equal(
+            await hydro.getMarketTransferableAmount(marketID, usdAsset.address, u2),
+            toWei('0')
+        );
+
+        assert.equal(
+            await hydro.getMarketTransferableAmount(marketID, ethAsset.address, u2),
+            toWei('0')
+        );
+    });
+
+    it('should return correct transferable amount #3', async () => {
+        await mineAt(
+            () => hydro.borrow(usdAsset.address, toWei('200'), marketID, { from: u2 }),
+            time
+        );
+
+        // Collateral:
+        //   1 eth  = 100USD
+        //   200 USD = 200USD
+        // Debt:
+        //   200 USD
         assert.equal(
             await hydro.getMarketTransferableAmount(marketID, usdAsset.address, u2),
             toWei('0')
@@ -396,7 +479,7 @@ contract('Liquidate', accounts => {
         // u2 has a 1 eth collateral, usd value is 100
 
         let accountDetails = await hydro.getAccountDetails(u2, marketID);
-
+        assert.equal(await hydro.isAccountLiquidable(u2, marketID), true);
         assert.equal(accountDetails.liquidable, true);
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('100'));

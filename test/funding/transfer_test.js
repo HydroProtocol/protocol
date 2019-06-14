@@ -43,6 +43,15 @@ contract('Transfer', accounts => {
         assert.equal(balanceAfter.sub(balanceBefore).toString(), toWei('1'));
     });
 
+    it('deposit ether successfully (fallback function)', async () => {
+        const balanceBefore = await hydro.balanceOf(etherAsset, user);
+
+        await hydro.send(toWei('1'));
+        const balanceAfter = await hydro.balanceOf(etherAsset, user);
+
+        assert.equal(balanceAfter.sub(balanceBefore).toString(), toWei('1'));
+    });
+
     it('deposit ether unsuccessfully', async () => {
         // msg value and amount not equal
         await assert.rejects(

@@ -2,12 +2,18 @@ require('../utils/hooks');
 
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
+const HydroToken = artifacts.require('./HydroToken.sol');
 
 contract('Discount', accounts => {
-    let hydro;
+    let hydro, hot;
 
     before(async () => {
         hydro = await Hydro.deployed();
+        hot = await HydroToken.deployed();
+    });
+
+    it('can get hot address', async () => {
+        assert.equal(await hydro.getHydroTokenAddress(), hot.address);
     });
 
     it('can change discount', async () => {
