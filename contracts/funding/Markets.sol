@@ -24,16 +24,6 @@ import "../lib/Events.sol";
 import "../interfaces/IOracle.sol";
 
 library Markets {
-    function getMarket(
-        Store.State storage state,
-        uint16 marketID
-    )
-        internal
-        view
-        returns (Types.Market memory)
-    {
-        return state.markets[marketID];
-    }
 
     function getAllMarketsCount(
         Store.State storage state

@@ -6,7 +6,7 @@ const { mineAt, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const Oracle = artifacts.require('./Oracle.sol');
 
-contract('Pool', accounts => {
+contract('Insurance', accounts => {
     let hydro;
     let ETHAddr;
     let USDAddr;
