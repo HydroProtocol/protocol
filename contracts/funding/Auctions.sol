@@ -85,7 +85,7 @@ library Auctions {
 
         // reset account state if all debts are paid
         if (leftDebtAmount <= repayAmount) {
-            auctionEnd(state, id);
+            auctionEnd(state, auctionID);
         }
     }
 
@@ -141,7 +141,7 @@ library Auctions {
             state.pool.logicBorrow[borrower][marketID].balances[debtAsset] = 0;
         }
 
-        auctionEnd(state, id);
+        auctionEnd(state, auctionID);
     }
 
     function auctionEnd(
