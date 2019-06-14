@@ -72,10 +72,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.debtsTotalUSDValue, '0');
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('100'));
 
-        await hydro.liquidateAccount(u1, marketID);
-        // account is not liquidatable, status should be normal
-        accountDetails = await hydro.getAccountDetails(u2, marketID);
-        assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
+        await assert.rejects(hydro.liquidateAccount(u1, marketID), /ACCOUNT_NOT_LIQUIDABLE/);
     });
 
     it("should be a health position if there aren't many debts", async () => {
@@ -90,10 +87,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('100'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('200'));
 
-        await hydro.liquidateAccount(u1, marketID);
-        // account is not liquidatable, status should be normal
-        accountDetails = await hydro.getAccountDetails(u2, marketID);
-        assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
+        await assert.rejects(hydro.liquidateAccount(u1, marketID), /ACCOUNT_NOT_LIQUIDABLE/);
     });
 
     it('should be a unhealthy position if there are too many debts', async () => {

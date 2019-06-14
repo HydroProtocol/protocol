@@ -200,20 +200,6 @@ library Pool {
         state.pool.supplyAnnualInterestRate[asset] = supplyInterestRate;
     }
 
-    function _getBorrowRatio(
-        Store.State storage state,
-        address asset
-    )
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 _supply = _getPoolTotalSupply(state, asset);
-        uint256 _borrow = _getPoolTotalBorrow(state, asset);
-        uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
-        return borrowRatio;
-    }
-
     // get interestRate
     function _getInterestRate(
         Store.State storage state,
@@ -255,8 +241,8 @@ library Pool {
 
         uint256 logicBorrow = state.pool.logicTotalBorrow.balances[asset];
         uint256 logicSupply = _getTotalLogicSupply(state, asset);
-        uint256 borrowInterest = Decimal.mul(logicBorrow, currentBorrowIndex.sub(state.pool.borrowIndex[asset]));
-        uint256 supplyInterest = Decimal.mul(logicSupply, currentSupplyIndex.sub(state.pool.supplyIndex[asset]));
+        uint256 borrowInterest = Decimal.mul(logicBorrow, currentBorrowIndex).sub(Decimal.mul(logicBorrow, state.pool.borrowIndex[asset]));
+        uint256 supplyInterest = Decimal.mul(logicSupply, currentSupplyIndex).sub(Decimal.mul(logicSupply, state.pool.supplyIndex[asset]));
 
         state.insuranceWallet.balances[asset] = state.insuranceWallet.balances[asset].add(borrowInterest.sub(supplyInterest));
 

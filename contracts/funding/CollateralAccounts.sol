@@ -106,13 +106,11 @@ library CollateralAccounts {
         uint16 marketID
     )
         internal
-        returns (bool)
+        returns (uint32)
     {
         Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
-        if (!details.liquidable) {
-            return false;
-        }
+        require(details.liquidable, "ACCOUNT_NOT_LIQUIDABLE");
 
         Types.Market storage market = state.markets[marketID];
         Types.CollateralAccount storage account = state.accounts[user][marketID];
@@ -150,8 +148,15 @@ library CollateralAccounts {
             account.status = Types.CollateralAccountStatus.Liquid;
         }
 
-        // TODO: should we emit an event called Liquidate, as we force repay ???
+        account.status = Types.CollateralAccountStatus.Liquid;
 
-        return true;
+        return Auctions.create(
+            state,
+            marketID,
+            user,
+            msg.sender,
+            debtAsset,
+            collateralAsset
+        );
     }
 }

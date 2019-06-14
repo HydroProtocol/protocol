@@ -85,17 +85,7 @@ library Auctions {
 
         // reset account state if all debts are paid
         if (leftDebtAmount <= repayAmount) {
-            Events.logAuctionFinished(auctionID);
-            auction.open = false;
-            Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
-            account.status = Types.CollateralAccountStatus.Normal;
-
-            for (uint32 i = 0; i < state.auction.currentAuctions.length; i++){
-                if (state.auction.currentAuctions[i] == auctionID){
-                    state.auction.currentAuctions[i] = state.auction.currentAuctions[state.auction.currentAuctions.length-1];
-                    state.auction.currentAuctions.length--;
-                }
-            }
+            auctionEnd(state, id);
         }
     }
 
@@ -134,14 +124,13 @@ library Auctions {
         );
 
         // transfer borrower balance back to insurance
-        // TODO refactor
-        state.insuranceWallet.balances[debtAsset] = state.insuranceWallet.balances[debtAsset].add(
-            state.accounts[borrower][marketID].wallet.balances[debtAsset]
-        );
+        state.insuranceWallet.balances[debtAsset] = state.insuranceWallet.balances[debtAsset].add(state.accounts[borrower][marketID].wallet.balances[debtAsset]);
+        state.accounts[borrower][marketID].wallet.balances[debtAsset] = 0;
 
-        state.insuranceWallet.balances[collateralAsset] = state.insuranceWallet.balances[collateralAsset].add(
-            state.accounts[borrower][marketID].wallet.balances[collateralAsset]
-        );
+        state.insuranceWallet.balances[collateralAsset] = state.insuranceWallet.balances[collateralAsset].add(state.accounts[borrower][marketID].wallet.balances[collateralAsset]);
+        state.accounts[borrower][marketID].wallet.balances[collateralAsset] = 0;
+
+
 
         uint256 badDebtAmount = Pool._getPoolBorrowOf(state, debtAsset, borrower, marketID);
 
@@ -151,6 +140,28 @@ library Auctions {
             state.pool.supplyIndex[debtAsset] = Decimal.divFloor(actualSupply, totalLogicSupply);
             state.pool.logicBorrow[borrower][marketID].balances[debtAsset] = 0;
         }
+
+        auctionEnd(state, id);
+    }
+
+    function auctionEnd(
+        Store.State storage state,
+        uint32 auctionID
+    )
+        internal
+    {
+        Types.Auction storage auction = state.auction.auctions[auctionID];
+
+        auction.open = false;
+        Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
+        account.status = Types.CollateralAccountStatus.Normal;
+        for (uint i = 0; i<state.auction.currentAuctions.length; i++){
+            if (state.auction.currentAuctions[i]==auctionID){
+                state.auction.currentAuctions[i] = state.auction.currentAuctions[state.auction.currentAuctions.length-1];
+                state.auction.currentAuctions.length--;
+            }
+        }
+        Events.logAuctionFinished(auctionID);
     }
 
     /**
@@ -166,6 +177,7 @@ library Auctions {
         address collateralAsset
     )
         internal
+        returns (uint32)
     {
         uint32 id = state.auction.auctionsCount++;
 
@@ -184,6 +196,8 @@ library Auctions {
         state.auction.currentAuctions.push(id);
 
         Events.logAuctionCreate(id);
+
+        return id;
     }
 
     function getAuctionDetails(
