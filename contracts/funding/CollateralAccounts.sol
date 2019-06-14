@@ -70,10 +70,14 @@ library CollateralAccounts {
         uint16[] memory marketIDs
     )
         internal
+        returns (uint32[] memory)
     {
+        uint32[] memory auctionIDs = new uint32[](users.length);
         for( uint256 i = 0; i < users.length; i++ ) {
-            liquidate(state, users[i], marketIDs[i]);
+            uint32 auctionID = liquidate(state, users[i], marketIDs[i]);
+            auctionIDs[i] = auctionID;
         }
+        return auctionIDs;
     }
 
     /**
@@ -85,13 +89,11 @@ library CollateralAccounts {
         uint16 marketID
     )
         internal
-        returns (bool)
+        returns (uint32)
     {
         Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
-        if (!details.liquidable) {
-            return false;
-        }
+        require(details.liquidable, "ACCOUNT_NOT_LIQUIDABLE");
 
         Types.Market storage market = state.markets[marketID];
         Types.CollateralAccount storage account = state.accounts[user][marketID];
@@ -112,7 +114,9 @@ library CollateralAccounts {
             debtAsset = market.baseAsset;
         }
 
-        Auctions.create(
+        account.status = Types.CollateralAccountStatus.Liquid;
+
+        return Auctions.create(
             state,
             marketID,
             user,
@@ -120,8 +124,5 @@ library CollateralAccounts {
             debtAsset,
             collateralAsset
         );
-
-        account.status = Types.CollateralAccountStatus.Liquid;
-        return true;
     }
 }

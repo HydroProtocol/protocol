@@ -2,9 +2,9 @@ require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
 const { toWei } = require('../utils');
-const { mineAt, updateTimestamp, getBlockTimestamp } = require('../utils/evm');
+const { mineAt, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
-const PoolToken = artifacts.require('./funding/PoolToken.sol');
+const Oracle = artifacts.require('./Oracle.sol');
 
 contract('Pool', accounts => {
     let hydro;
@@ -84,5 +84,70 @@ contract('Pool', accounts => {
         interestRate = await hydro.getInterestRate(USDAddr, 0);
         assert.equal(interestRate[0].toString(), toWei(0.025)); // borrow interestRate 2.5%
         assert.equal(interestRate[1].toString(), toWei(0.00225)); // supply interestRate 0.225%
+    });
+
+    it('check insurance balance', async () => {
+        await mineAt(
+            async () => hydro.supplyPool(USDAddr, toWei('1000'), { from: u1 }),
+            initTime + 86400 * 90
+        );
+        assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '61643835616438500');
+    });
+
+    it('bad debt liquidation [insurance payable]', async () => {
+        await mineAt(async () => hydro.changeInsuranceRatio(toWei('0.9')), initTime);
+        await mineAt(async () => hydro.borrow(USDAddr, toWei('900'), 0, { from: u2 }), initTime);
+        await addCollateral(u2, USDAddr, toWei('20'), initTime + 90 * 86400);
+        const oracle = await Oracle.at(await hydro.getOracleOf(ETHAddr));
+        await mineAt(
+            async () => oracle.setPrice(ETHAddr, toWei(0), { from: accounts[0] }),
+            initTime + 90 * 86400
+        );
+        await mineAt(async () => hydro.liquidateAccount(u2, 0), initTime + 90 * 86400);
+        assert.equal(
+            (await hydro.getInsuranceBalance(USDAddr)).toString(),
+            '155342465753424658000'
+        );
+        assert.equal(
+            (await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(),
+            '152602739726027397000'
+        );
+        await mineAt(async () => hydro.badDebt(0), initTime + 90 * 86400);
+        assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '2739726027397261000');
+        assert.equal((await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(), '0');
+        assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
+        assert.equal((await hydro.getAccountDetails(u2, 0)).debtsTotalUSDValue, '0');
+        assert.equal((await hydro.getAccountDetails(u2, 0)).balancesTotalUSDValue, '0');
+    });
+
+    it('bad debt liquidation [insurance non-payable]', async () => {
+        await mineAt(async () => hydro.changeInsuranceRatio(toWei('0.9')), initTime);
+        await mineAt(async () => hydro.borrow(USDAddr, toWei('900'), 0, { from: u2 }), initTime);
+        await addCollateral(u2, USDAddr, toWei('10'), initTime + 90 * 86400);
+        const oracle = await Oracle.at(await hydro.getOracleOf(ETHAddr));
+        await mineAt(
+            async () => oracle.setPrice(ETHAddr, toWei(0), { from: accounts[0] }),
+            initTime + 90 * 86400
+        );
+        await mineAt(async () => hydro.liquidateAccount(u2, 0), initTime + 90 * 86400);
+        assert.equal(
+            (await hydro.getInsuranceBalance(USDAddr)).toString(),
+            '155342465753424658000'
+        );
+        assert.equal(
+            (await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(),
+            '162602739726027397000'
+        );
+        assert.equal(
+            (await hydro.getPoolTotalSupply(USDAddr)).toString(),
+            '1017260273972602739000'
+        );
+        await mineAt(async () => hydro.badDebt(0), initTime + 90 * 86400);
+        assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '0');
+        assert.equal((await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(), '0');
+        assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
+        assert.equal((await hydro.getAccountDetails(u2, 0)).debtsTotalUSDValue, '0');
+        assert.equal((await hydro.getAccountDetails(u2, 0)).balancesTotalUSDValue, '0');
+        assert.equal((await hydro.getPoolTotalSupply(USDAddr)).toString(), toWei('1010'));
     });
 });

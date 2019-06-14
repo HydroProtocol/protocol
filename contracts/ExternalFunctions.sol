@@ -87,6 +87,16 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return state.markets[marketID];
     }
 
+    function getOracleOf(
+        address asset
+    )
+        external
+        view
+        returns (address)
+    {
+        return address(state.oracles[asset]);
+    }
+
     //////////////////////////////////
     // Collateral Account Functions //
     //////////////////////////////////
@@ -96,8 +106,9 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         uint16[] calldata marketIDs
     )
         external
+        returns (uint32[] memory)
     {
-        CollateralAccounts.liquidateMulti(state, users, marketIDs);
+        return CollateralAccounts.liquidateMulti(state, users, marketIDs);
     }
 
     function liquidateAccount(
@@ -105,8 +116,9 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         uint16 marketID
     )
         external
+        returns (uint32)
     {
-        CollateralAccounts.liquidate(state, user, marketID);
+        return CollateralAccounts.liquidate(state, user, marketID);
     }
 
     function isAccountLiquidable(
