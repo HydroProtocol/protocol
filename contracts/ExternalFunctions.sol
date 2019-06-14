@@ -106,7 +106,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         uint16 marketID
     )
         external
-        returns (uint32)
+        returns (bool, uint32)
     {
         return CollateralAccounts.liquidate(state, user, marketID);
     }

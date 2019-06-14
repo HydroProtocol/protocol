@@ -106,7 +106,7 @@ library CollateralAccounts {
         uint16 marketID
     )
         internal
-        returns (uint32)
+        returns (bool, uint32)
     {
         Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
@@ -126,6 +126,7 @@ library CollateralAccounts {
 
         if (leftBaseAssetDebt == 0 && leftQuoteAssetDebt == 0) {
             // no auction
+            return (false, 0);
         } else {
             if(account.wallet.balances[market.baseAsset] > 0) {
                 // quote asset is debt, base asset is collateral
@@ -137,7 +138,9 @@ library CollateralAccounts {
                 debtAsset = market.baseAsset;
             }
 
-            Auctions.create(
+            account.status = Types.CollateralAccountStatus.Liquid;
+
+            uint32 newAuctionID = Auctions.create(
                 state,
                 marketID,
                 user,
@@ -145,18 +148,8 @@ library CollateralAccounts {
                 debtAsset,
                 collateralAsset
             );
-            account.status = Types.CollateralAccountStatus.Liquid;
+
+            return (true, newAuctionID);
         }
-
-        account.status = Types.CollateralAccountStatus.Liquid;
-
-        return Auctions.create(
-            state,
-            marketID,
-            user,
-            msg.sender,
-            debtAsset,
-            collateralAsset
-        );
     }
 }
