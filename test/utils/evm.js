@@ -65,10 +65,15 @@ const updateTimestamp = timestamp =>
         );
     });
 
+const getBlockTimestamp = async () => {
+    return (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
+};
+
 module.exports = {
     jsonRpcCall,
     revert,
     snapshot,
     updateTimestamp,
-    mineAt
+    mineAt,
+    getBlockTimestamp
 };

@@ -33,7 +33,7 @@ library Auctions {
 
     function fillAuctionWithAmount(
         Store.State storage state,
-        uint16 id,
+        uint32 id,
         uint256 repayAmount
     )
         internal
@@ -86,7 +86,7 @@ library Auctions {
         // reset account state if all debts are paid
         if (leftDebtAmount <= repayAmount) {
             Events.logAuctionFinished(id);
-
+            auction.open = false;
             Types.CollateralAccount storage account = state.accounts[borrower][marketID];
             account.status = Types.CollateralAccountStatus.Normal;
 
@@ -101,12 +101,13 @@ library Auctions {
 
     function badDebt(
         Store.State storage state,
-        uint16 id
+        uint32 id
     )
         internal
     {
         Types.Auction storage auction = state.auction.auctions[id];
         uint256 ratio = auction.ratio(state);
+        require(auction.open, "AUCTION_CLOSED");
         require(ratio == Decimal.one(), "AUCTION_NOT_END");
 
         address borrower = auction.borrower;
@@ -170,6 +171,7 @@ library Auctions {
 
         Types.Auction memory auction = Types.Auction({
             id: id,
+            open: true,
             startBlockNumber: uint32(block.number),
             marketID: marketID,
             borrower: borrower,

@@ -112,6 +112,7 @@ library Types {
 
     struct Auction {
         uint32 id;
+        bool open;
 
         // To calculate the ratio
         uint32 startBlockNumber;

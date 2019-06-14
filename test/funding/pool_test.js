@@ -2,7 +2,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
 const { toWei } = require('../utils');
-const { mineAt, updateTimestamp, snapshot, revert } = require('../utils/evm');
+const { mineAt, updateTimestamp, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const PoolToken = artifacts.require('./funding/PoolToken.sol');
 
@@ -15,7 +15,6 @@ contract('Pool', accounts => {
     let hydro;
     let ETHAddr;
     let USDAddr;
-    let MarketId;
     let initTime;
     const u1 = accounts[4];
     const u2 = accounts[5];
@@ -49,7 +48,7 @@ contract('Pool', accounts => {
         await newMarket({
             assets: [{ address: ETHAddr }, { address: USDAddr }]
         });
-        MarketId = 0;
+        initTime = await getBlockTimestamp();
     });
 
     const addCollateral = async (user, asset, amount, timestamp) => {
@@ -77,7 +76,6 @@ contract('Pool', accounts => {
     };
 
     beforeEach(async () => {
-        initTime = Math.round(new Date().getTime() / 1000) + 1000;
         await mineAt(async () => hydro.supplyPool(USDAddr, toWei('1000'), { from: u1 }), initTime);
         await addCollateral(u2, ETHAddr, toWei('1'), initTime);
         await mineAt(async () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }), initTime);
@@ -224,9 +222,9 @@ contract('Pool', accounts => {
     });
 
     it('can not withdraw from pool if free inventory not enough', async () => {
-        await hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 });
+        await mineAt(async () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }), initTime);
         await assert.rejects(
-            hydro.withdrawPool(USDAddr, toWei('1000'), { from: u1 }),
+            mineAt(async () => hydro.withdrawPool(USDAddr, toWei('1000'), { from: u1 }), initTime),
             /BORROW_EXCEED_SUPPLY/
         );
     });
