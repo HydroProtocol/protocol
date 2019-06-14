@@ -142,6 +142,24 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return state.accounts[user][marketID].wallet.balances[asset];
     }
 
+    function getAuctionsCount()
+        external
+        view
+        returns (uint32)
+    {
+        return state.auction.auctionsCount;
+    }
+
+    function getAuctionDetails(
+        uint32 auctionID
+    )
+        external
+        view
+        returns (Types.AuctionDetails memory details)
+    {
+        return Auctions.getAuctionDetails(state, auctionID);
+    }
+
     ////////////////////
     // Pool Functions //
     ////////////////////

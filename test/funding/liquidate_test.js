@@ -172,4 +172,83 @@ contract('Liquidate', accounts => {
             /CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT/
         );
     });
+
+    it('liquidation without debt should not result in an auction', async () => {
+        await mineAt(
+            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
+            time
+        );
+
+        // u2 has 100 usd debt
+        assert.equal(await hydro.getPoolBorrowOf(usdAsset.address, u2, marketID), toWei('100'));
+
+        // ether price drop to 10
+        await mineAt(
+            () =>
+                oracle.setPrice(ethAsset.address, toWei('10'), {
+                    from: accounts[0]
+                }),
+            time
+        );
+
+        assert.equal(await hydro.getAuctionsCount(), '0');
+
+        // Since we hack the blocktime, there is no interest occured from borrowed usd asset yet.
+        // And u2 hasn't use the usd asset. So his debt can be repaied directly.
+        // Finially, there should be no auction, as there is no debt.
+        await mineAt(() => hydro.liquidateAccount(u2, marketID), time);
+
+        // u2 debt is force repaied, and no auction created
+        assert.equal(await hydro.getPoolBorrowOf(usdAsset.address, u2, marketID), '0');
+        assert.equal(await hydro.getAuctionsCount(), '0');
+
+        // u2 account is still useable, status is normal
+        accountDetails = await hydro.getAccountDetails(u2, marketID);
+        assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
+    });
+
+    it.only('liquidation with debt left should result in an auction', async () => {
+        await mineAt(
+            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
+            time
+        );
+
+        // u2 has 100 usd debt
+        assert.equal(await hydro.getPoolBorrowOf(usdAsset.address, u2, marketID), toWei('100'));
+
+        // ether price drop to 10
+        await mineAt(
+            () =>
+                oracle.setPrice(ethAsset.address, toWei('10'), {
+                    from: accounts[0]
+                }),
+            time
+        );
+
+        assert.equal(await hydro.getAuctionsCount(), '0');
+
+        // After one day, there is interest occured from borrowed usd asset.
+        // And u2 hasn't use the usd asset. But as there is some interest already.
+        // Finially, he can't repay the debt.
+        await mineAt(() => hydro.liquidateAccount(u2, marketID), time + 86400);
+
+        // u2 should have some usd debt
+        assert(
+            (await hydro.getPoolBorrowOf(usdAsset.address, u2, marketID)).gt('0'),
+            'debt should larger than 0'
+        );
+
+        assert.equal(await hydro.getAuctionsCount(), '1');
+
+        // u2 account is liquidated, status is Liqudate
+        accountDetails = await hydro.getAccountDetails(u2, marketID);
+        assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
+
+        const auctionDetails = await hydro.getAuctionDetails('0');
+        assert.equal(auctionDetails.debtAsset, usdAsset.address);
+        assert.equal(auctionDetails.collateralAsset, ethAsset.address);
+        assert.equal(auctionDetails.leftCollateralAmount, toWei('1'));
+        assert.equal(auctionDetails.leftDebtAmount, '561643835616400');
+        assert.equal(auctionDetails.ratio, toWei('0.01'));
+    });
 });
