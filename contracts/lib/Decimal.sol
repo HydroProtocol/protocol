@@ -24,11 +24,7 @@ import { SafeMath } from "./SafeMath.sol";
 library Decimal {
     using SafeMath for uint256;
 
-    // ============ Constants ============
-
     uint256 constant BASE = 10**18;
-
-    // ============ Functions ============
 
     function one()
         internal

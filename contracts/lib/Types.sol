@@ -251,7 +251,7 @@ library BalancePath {
         }
     }
 
-    function getBalancePath(
+    function getCommonPath(
         address user
     )
         internal

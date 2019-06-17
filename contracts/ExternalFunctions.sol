@@ -366,11 +366,11 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     ////////////////////////
 
     function deposit(address asset, uint256 amount) external payable {
-        Transfer.depositFor(state, asset, msg.sender, BalancePath.getBalancePath(msg.sender), amount);
+        Transfer.depositFor(state, asset, msg.sender, BalancePath.getCommonPath(msg.sender), amount);
     }
 
     function withdraw(address asset, uint256 amount) external {
-        Transfer.withdrawFrom(state, asset, BalancePath.getBalancePath(msg.sender), msg.sender, amount);
+        Transfer.withdrawFrom(state, asset, BalancePath.getCommonPath(msg.sender), msg.sender, amount);
     }
 
     function transfer(
@@ -388,7 +388,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     }
 
     function balanceOf(address asset, address user) external view returns (uint256) {
-        return Transfer.balanceOf(state,  BalancePath.getBalancePath(user), asset);
+        return Transfer.balanceOf(state,  BalancePath.getCommonPath(user), asset);
     }
 
     function marketBalanceOf(uint16 marketID, address asset, address user) external view returns (uint256) {
@@ -402,7 +402,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     /** fallback function to allow deposit ether into this contract */
     function () external payable {
         // deposit ${msg.value} ether for ${msg.sender}
-        Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, BalancePath.getBalancePath(msg.sender), msg.value);
+        Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, BalancePath.getCommonPath(msg.sender), msg.value);
     }
 
     ////////////////////////

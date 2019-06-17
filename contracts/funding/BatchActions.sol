@@ -89,7 +89,7 @@ library BatchActions {
         internal
     {
         (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
-        Transfer.depositFor(state, asset, msg.sender, BalancePath.getBalancePath(msg.sender), amount);
+        Transfer.depositFor(state, asset, msg.sender, BalancePath.getCommonPath(msg.sender), amount);
     }
 
     function withdraw(
@@ -99,7 +99,7 @@ library BatchActions {
         internal
     {
         (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
-        Transfer.withdrawFrom(state, asset, BalancePath.getBalancePath(msg.sender), msg.sender, amount);
+        Transfer.withdrawFrom(state, asset, BalancePath.getCommonPath(msg.sender), msg.sender, amount);
     }
 
     function transfer(

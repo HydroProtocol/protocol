@@ -19,7 +19,7 @@
 pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
-import { Types } from "./Types.sol";
+import "./Types.sol";
 
 library Events {
     //////////////////
