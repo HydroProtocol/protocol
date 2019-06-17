@@ -97,7 +97,7 @@ library Auctions {
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
         uint256 ratio = auction.ratio(state);
-        require(auction.open, "AUCTION_CLOSED");
+        require(auction.status == Types.AuctionStatus.InProgress, "AUCTION_CLOSED");
         require(ratio == Decimal.one(), "AUCTION_NOT_END");
 
         address borrower = auction.borrower;
@@ -152,7 +152,7 @@ library Auctions {
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
 
-        auction.open = false;
+        auction.status = Types.AuctionStatus.Finished;
         Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
         account.status = Types.CollateralAccountStatus.Normal;
         for (uint i = 0; i<state.auction.currentAuctions.length; i++){
@@ -183,7 +183,7 @@ library Auctions {
 
         Types.Auction memory auction = Types.Auction({
             id: id,
-            open: true,
+            status: Types.AuctionStatus.InProgress,
             startBlockNumber: uint32(block.number),
             marketID: marketID,
             borrower: borrower,

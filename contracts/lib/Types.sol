@@ -33,6 +33,11 @@ library Types {
         P2P
     }
 
+    enum AuctionStatus {
+        InProgress,
+        Finished
+    }
+
     enum CollateralAccountStatus {
         Normal,
         Liquid
@@ -112,7 +117,7 @@ library Types {
 
     struct Auction {
         uint32 id;
-        bool open;
+        AuctionStatus status;
 
         // To calculate the ratio
         uint32 startBlockNumber;
