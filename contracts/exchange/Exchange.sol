@@ -455,7 +455,8 @@ library Exchange {
         settleResult.incomeToken = orderAddressSet.quoteAsset;
         settleResult.outputToken = orderAddressSet.baseAsset;
 
-        uint256 totalTakerQuoteTokenFilledAmount = 0;
+        uint256 totalFee = 0;
+
         Types.WalletPath memory relayerWalletPath = Types.WalletPath({
             user: orderAddressSet.relayer,
             marketID: 0,
@@ -482,13 +483,18 @@ library Exchange {
                 state,
                 orderAddressSet.quoteAsset,
                 results[i].makerWalletPath,
-                relayerWalletPath,
+                results[i].takerWalletPath,
                 amount
             );
 
-            totalTakerQuoteTokenFilledAmount = totalTakerQuoteTokenFilledAmount.add(
-                results[i].quoteAssetFilledAmount.sub(results[i].takerFee)
-            );
+            settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(amount);
+
+            totalFee = totalFee.
+                add(results[i].takerFee).
+                add(results[i].makerFee).
+                add(results[i].makerGasFee).
+                add(results[i].takerGasFee).
+                sub(results[i].makerRebate);
 
             Events.logExchangeMatch(results[i], orderAddressSet);
         }
@@ -496,12 +502,12 @@ library Exchange {
         transferFrom(
             state,
             orderAddressSet.quoteAsset,
-            relayerWalletPath,
             results[0].takerWalletPath,
-            totalTakerQuoteTokenFilledAmount.sub(results[0].takerGasFee)
+            relayerWalletPath,
+            totalFee
         );
 
-        settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(totalTakerQuoteTokenFilledAmount.sub(results[0].takerGasFee));
+        settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.sub(totalFee);
     }
 
     /**
