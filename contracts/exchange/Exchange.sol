@@ -24,7 +24,6 @@ import "./Relayer.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Math.sol";
 import "../lib/Signature.sol";
-import "../lib/Errors.sol";
 import "../lib/Store.sol";
 import "../lib/Types.sol";
 import "../lib/Transfer.sol";
@@ -61,8 +60,8 @@ library Exchange {
         internal
         returns (Types.MatchSettleResult memory)
     {
-        require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), Errors.INVALID_SENDER());
-        require(!params.takerOrderParam.isMakerOnly(), Errors.MAKER_ONLY_ORDER_CANNOT_BE_TAKER());
+        require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), "INVALID_SENDER");
+        require(!params.takerOrderParam.isMakerOnly(), "MAKER_ONLY_ORDER_CANNOT_BE_TAKER");
 
         bool isParticipantRelayer = Relayer.isParticipant(state, params.orderAddressSet.relayer);
         uint256 takerFeeRate = getTakerFeeRate(state, params.takerOrderParam, isParticipantRelayer);
@@ -72,8 +71,8 @@ library Exchange {
         Types.MatchResult[] memory results = new Types.MatchResult[](params.makerOrderParams.length);
 
         for (uint256 i = 0; i < params.makerOrderParams.length; i++) {
-            require(!params.makerOrderParams[i].isMarketOrder(), Errors.MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER());
-            require(params.takerOrderParam.isSell() != params.makerOrderParams[i].isSell(), Errors.INVALID_SIDE());
+            require(!params.makerOrderParams[i].isMarketOrder(), "MAKER_ORDER_CAN_NOT_BE_MARKET_ORDER");
+            require(params.takerOrderParam.isSell() != params.makerOrderParams[i].isSell(), "INVALID_SIDE");
             validatePrice(params.takerOrderParam, params.makerOrderParams[i]);
 
             OrderInfo memory makerOrderInfo = getOrderInfo(state, params.makerOrderParams[i], params.orderAddressSet);
@@ -115,7 +114,7 @@ library Exchange {
     )
         internal
     {
-        require(order.trader == msg.sender, Errors.INVALID_TRADER());
+        require(order.trader == msg.sender, "INVALID_TRADER");
 
         bytes32 orderHash = order.getHash();
         state.exchange.cancelled[orderHash] = true;
@@ -140,7 +139,7 @@ library Exchange {
         view
         returns (OrderInfo memory orderInfo)
     {
-        require(orderParam.getOrderVersion() == Consts.SUPPORTED_ORDER_VERSION(), Errors.ORDER_VERSION_NOT_SUPPORTED());
+        require(orderParam.getOrderVersion() == Consts.SUPPORTED_ORDER_VERSION(), "ORDER_VERSION_NOT_SUPPORTED");
 
         Types.Order memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
         orderInfo.orderHash = order.getHash();
@@ -157,10 +156,14 @@ library Exchange {
             status = uint8(Types.OrderStatus.CANCELLED);
         }
 
-        require(status == uint8(Types.OrderStatus.FILLABLE), Errors.ORDER_IS_NOT_FILLABLE());
+        require(
+            status == uint8(Types.OrderStatus.FILLABLE),
+            "ORDER_IS_NOT_FILLABLE"
+        );
+
         require(
             Signature.isValidSignature(orderInfo.orderHash, orderParam.trader, orderParam.signature),
-            Errors.INVALID_ORDER_SIGNATURE()
+            "INVALID_ORDER_SIGNATURE"
         );
 
         orderInfo.balancePath = orderParam.getBalancePathFromOrderData();
@@ -230,7 +233,7 @@ library Exchange {
     {
         uint256 left = takerOrderParam.quoteAssetAmount.mul(makerOrderParam.baseAssetAmount);
         uint256 right = takerOrderParam.baseAssetAmount.mul(makerOrderParam.quoteAssetAmount);
-        require(takerOrderParam.isSell() ? left <= right : left >= right, Errors.INVALID_MATCH());
+        require(takerOrderParam.isSell() ? left <= right : left >= right, "INVALID_MATCH");
     }
 
     /**
@@ -276,14 +279,14 @@ library Exchange {
 
         if(!takerOrderParam.isMarketBuy()) {
             takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.baseAssetFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.baseAssetAmount, Errors.TAKER_ORDER_OVER_MATCH());
+            require(takerOrderInfo.filledAmount <= takerOrderParam.baseAssetAmount, "TAKER_ORDER_OVER_MATCH");
         } else {
             takerOrderInfo.filledAmount = takerOrderInfo.filledAmount.add(result.quoteAssetFilledAmount);
-            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteAssetAmount, Errors.TAKER_ORDER_OVER_MATCH());
+            require(takerOrderInfo.filledAmount <= takerOrderParam.quoteAssetAmount, "TAKER_ORDER_OVER_MATCH");
         }
 
         makerOrderInfo.filledAmount = makerOrderInfo.filledAmount.add(result.baseAssetFilledAmount);
-        require(makerOrderInfo.filledAmount <= makerOrderParam.baseAssetAmount, Errors.MAKER_ORDER_OVER_MATCH());
+        require(makerOrderInfo.filledAmount <= makerOrderParam.baseAssetAmount, "MAKER_ORDER_OVER_MATCH");
 
         result.maker = makerOrderParam.trader;
         result.taker = takerOrderParam.trader;
