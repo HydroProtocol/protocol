@@ -33,7 +33,7 @@ import "./interfaces/IOracle.sol";
  */
 contract Operations is Ownable, GlobalStore, Modifiers {
 
-    function addMarket(
+    function createMarket(
         Types.Market memory market
     )
         public
@@ -46,7 +46,7 @@ contract Operations is Ownable, GlobalStore, Modifiers {
         requireDecimalGreaterThanOne(market.withdrawRate)
     {
         state.markets[state.marketsCount++] = market;
-        Events.logMarketCreate(market);
+        Events.logCreateMarket(market);
     }
 
     function updateMarket(

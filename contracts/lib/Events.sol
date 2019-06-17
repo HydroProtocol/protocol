@@ -51,10 +51,10 @@ library Events {
     // Admin Actions //
     ///////////////////
 
-    event MarketCreate(Types.Market asset);
+    event CreateMarket(Types.Market market);
 
-    function logMarketCreate(Types.Market memory market) internal {
-        emit MarketCreate(market);
+    function logCreateMarket(Types.Market memory market) internal {
+        emit CreateMarket(market);
     }
 
     event UpdateMarket(

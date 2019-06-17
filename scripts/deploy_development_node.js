@@ -52,7 +52,7 @@ module.exports = async () => {
             18
         );
 
-        await hydro.addMarket({
+        await hydro.createMarket({
             liquidateRate: toWei('1'),
             withdrawRate: toWei('2'),
             baseAsset: hotToken.address,
@@ -61,7 +61,7 @@ module.exports = async () => {
             auctionRatioPerBlock: '10000000000000000'
         });
 
-        await hydro.addMarket({
+        await hydro.createMarket({
             liquidateRate: toWei('1'),
             withdrawRate: toWei('2'),
             baseAsset: hotToken.address,
