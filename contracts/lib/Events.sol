@@ -57,10 +57,60 @@ library Events {
         emit MarketCreate(market);
     }
 
-    event DiscountConfigChange(bytes32 newConfig);
+    event UpdateMarket(
+        uint16 marketID,
+        uint256 newAuctionRatioStart,
+        uint256 newAuctionRatioPerBlock,
+        uint256 newLiquidateRate,
+        uint256 newWithdrawRate
+    );
 
-    function logDiscountConfigChange(bytes32 newConfig) internal {
-        emit DiscountConfigChange(newConfig);
+    function logUpdateMarket(
+        uint16 marketID,
+        uint256 newAuctionRatioStart,
+        uint256 newAuctionRatioPerBlock,
+        uint256 newLiquidateRate,
+        uint256 newWithdrawRate
+    )
+        internal
+    {
+        emit UpdateMarket(
+            marketID,
+            newAuctionRatioStart,
+            newAuctionRatioPerBlock,
+            newLiquidateRate,
+            newWithdrawRate
+        );
+    }
+
+    event UpdateDiscountConfig(bytes32 newConfig);
+
+    function logUpdateDiscountConfig(bytes32 newConfig) internal {
+        emit UpdateDiscountConfig(newConfig);
+    }
+
+    event RegisterAsset(address asset, address oracleAddress, address poolTokenAddress);
+
+    function logRegisterAsset(address asset, address oracleAddress, address poolTokenAddress) internal {
+        emit RegisterAsset(asset, oracleAddress, poolTokenAddress);
+    }
+
+    event UpdateAssetOracle(address asset, address oracleAddress);
+
+    function logUpdateAssetOracle(address asset, address oracleAddress) internal {
+        emit UpdateAssetOracle(asset, oracleAddress);
+    }
+
+    event UpdateAuctionInitiatorRewardRatio(uint256 newInitiatorRewardRatio);
+
+    function logUpdateAuctionInitiatorRewardRatio(uint256 newInitiatorRewardRatio) internal {
+        emit UpdateAuctionInitiatorRewardRatio(newInitiatorRewardRatio);
+    }
+
+    event UpdateInsuranceRatio(uint256 newInsuranceRatio);
+
+    function logUpdateInsuranceRatio(uint256 newInsuranceRatio) internal {
+        emit UpdateInsuranceRatio(newInsuranceRatio);
     }
 
     /////////////

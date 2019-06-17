@@ -45,8 +45,8 @@ contract('Insurance', accounts => {
             assets: [{ address: ETHAddr }, { address: USDAddr }]
         });
         MarketID = 0;
-        await hydro.changeInsuranceRatio(toWei('0.1'));
-        await hydro.changeAuctionParams(MarketID, toWei('1'), toWei('0.01'));
+        await hydro.updateInsuranceRatio(toWei('0.1'));
+        await hydro.updateMarket(MarketID, toWei('1'), toWei('0.01'), toWei('1.2'), toWei('2'));
         initTime = await getBlockTimestamp();
     });
 
@@ -95,7 +95,7 @@ contract('Insurance', accounts => {
     });
 
     it('bad debt liquidation [insurance payable]', async () => {
-        await mineAt(async () => hydro.changeInsuranceRatio(toWei('0.9')), initTime);
+        await mineAt(async () => hydro.updateInsuranceRatio(toWei('0.9')), initTime);
         await mineAt(async () => hydro.borrow(USDAddr, toWei('900'), 0, { from: u2 }), initTime);
         await addCollateral(u2, USDAddr, toWei('20'), initTime + 90 * 86400);
         const oracle = await Oracle.at(await hydro.getOracleOf(ETHAddr));
@@ -121,7 +121,7 @@ contract('Insurance', accounts => {
     });
 
     it('bad debt liquidation [insurance non-payable]', async () => {
-        await mineAt(async () => hydro.changeInsuranceRatio(toWei('0.9')), initTime);
+        await mineAt(async () => hydro.updateInsuranceRatio(toWei('0.9')), initTime);
         await mineAt(async () => hydro.borrow(USDAddr, toWei('900'), 0, { from: u2 }), initTime);
         await addCollateral(u2, USDAddr, toWei('10'), initTime + 90 * 86400);
         const oracle = await Oracle.at(await hydro.getOracleOf(ETHAddr));

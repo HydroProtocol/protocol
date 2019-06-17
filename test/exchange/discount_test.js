@@ -17,7 +17,7 @@ contract('Discount', accounts => {
     });
 
     it('can change discount', async () => {
-        await hydro.changeDiscountConfig(
+        await hydro.updateDiscountConfig(
             '0x040a000027106400004e205a000075305000009c404600000000000000000000',
             { from: accounts[0] }
         );
@@ -37,7 +37,7 @@ contract('Discount', accounts => {
 
     it('cannot change discount without permissions', async () => {
         await assert.rejects(
-            hydro.changeDiscountConfig(
+            hydro.updateDiscountConfig(
                 '0x040a000027106400004e205a000075305000009c404600000000000000000000',
                 { from: accounts[1] }
             ),

@@ -7,7 +7,6 @@ BigNumber.config({
 });
 
 module.exports = async () => {
-
     try {
         const hotToken = await TestToken.new('HOT', 'HOT', 18);
         console.log('HOT', hotToken.address);
@@ -24,28 +23,52 @@ module.exports = async () => {
         const hydro = await Hydro.new(hotToken.address);
         console.log('Hydro', hydro.address);
 
-        await hydro.registerAsset(hotToken.address, "0xf000000000000000000000000000000000000000", "hotToken", "hotToken", 18);
-        await hydro.registerAsset(tokenDAI.address, "0xf000000000000000000000000000000000000000", "tokenDAI", "tokenDAI", 18);
-        await hydro.registerAsset(tokenUSDC.address, "0xf000000000000000000000000000000000000000", "tokenUSDC", "tokenUSDC", 18);
-        await hydro.registerAsset(tokenUSDT.address, "0xf000000000000000000000000000000000000000", "tokenUSDT", "tokenUSDT", 18);
+        await hydro.registerAsset(
+            hotToken.address,
+            '0xf000000000000000000000000000000000000000',
+            'hotToken',
+            'hotToken',
+            18
+        );
+        await hydro.registerAsset(
+            tokenDAI.address,
+            '0xf000000000000000000000000000000000000000',
+            'tokenDAI',
+            'tokenDAI',
+            18
+        );
+        await hydro.registerAsset(
+            tokenUSDC.address,
+            '0xf000000000000000000000000000000000000000',
+            'tokenUSDC',
+            'tokenUSDC',
+            18
+        );
+        await hydro.registerAsset(
+            tokenUSDT.address,
+            '0xf000000000000000000000000000000000000000',
+            'tokenUSDT',
+            'tokenUSDT',
+            18
+        );
 
         await hydro.addMarket({
-            liquidateRate: 100,
-            withdrawRate: 200,
+            liquidateRate: toWei('1'),
+            withdrawRate: toWei('2'),
             baseAsset: hotToken.address,
             quoteAsset: tokenDAI.address,
             auctionRatioStart: '10000000000000000',
             auctionRatioPerBlock: '10000000000000000'
-        })
+        });
 
         await hydro.addMarket({
-            liquidateRate: 100,
-            withdrawRate: 200,
+            liquidateRate: toWei('1'),
+            withdrawRate: toWei('2'),
             baseAsset: hotToken.address,
             quoteAsset: tokenUSDC.address,
             auctionRatioStart: '10000000000000000',
             auctionRatioPerBlock: '10000000000000000'
-        })
+        });
 
         process.exit(0);
     } catch (e) {

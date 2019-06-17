@@ -65,10 +65,24 @@ contract Modifiers is GlobalStore {
         _;
     }
 
-    modifier decimalLessOrEquanThanOne(
+    modifier requireOracleAddressValid(
+        address oracleAddress
+    ) {
+        require(oracleAddress != address(0), "ORACLE_ADDRESS_NOT_VALID");
+        _;
+    }
+
+    modifier requireDecimalLessOrEquanThanOne(
         uint256 d
     ) {
         require(d <= Decimal.one(), "DECIMAL_GREATER_THAN_ONE");
+        _;
+    }
+
+    modifier requireDecimalGreaterThanOne(
+        uint256 d
+    ) {
+        require(d > Decimal.one(), "DECIMAL_LESS_OR_EQUAL_THAN_ONE");
         _;
     }
 

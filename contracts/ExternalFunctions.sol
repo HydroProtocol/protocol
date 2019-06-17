@@ -25,7 +25,6 @@ import "./Modifiers.sol";
 import "./exchange/Exchange.sol";
 import "./exchange/Relayer.sol";
 
-import "./funding/Markets.sol";
 import "./funding/Pool.sol";
 import "./funding/CollateralAccounts.sol";
 import "./funding/BatchActions.sol";
@@ -77,7 +76,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         view
         returns (uint256)
     {
-        return Markets.getAllMarketsCount(state);
+        return state.marketsCount;
     }
 
     function getMarket(uint16 marketID)

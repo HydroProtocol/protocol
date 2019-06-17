@@ -81,14 +81,14 @@ library Types {
     }
 
     struct Market {
-        // If the collateralRate is below this rate, the account will be liquidated
-        uint16 liquidateRate;
-
-        // If the collateralRate is above this rate, the account asset balance can be withdrawed
-        uint16 withdrawRate;
-
         address baseAsset;
         address quoteAsset;
+
+        // If the collateralRate is below this rate, the account will be liquidated
+        uint256 liquidateRate;
+
+        // If the collateralRate is above this rate, the account asset balance can be withdrawed
+        uint256 withdrawRate;
 
         uint256 auctionRatioStart;
         uint256 auctionRatioPerBlock;

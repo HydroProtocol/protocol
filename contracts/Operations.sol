@@ -25,7 +25,6 @@ import "./Modifiers.sol";
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
 import "./funding/Pool.sol";
-import "./funding/Markets.sol";
 import "./exchange/Discount.sol";
 import "./interfaces/IOracle.sol";
 
@@ -35,16 +34,47 @@ import "./interfaces/IOracle.sol";
 contract Operations is Ownable, GlobalStore, Modifiers {
 
     function addMarket(
-        Types.Market calldata market
+        Types.Market memory market
     )
-        external
+        public
         onlyOwner
         requireMarketAssetsValid(market)
         requireMarketNotExist(market)
-        decimalLessOrEquanThanOne(market.auctionRatioStart)
-        decimalLessOrEquanThanOne(market.auctionRatioPerBlock)
+        requireDecimalLessOrEquanThanOne(market.auctionRatioStart)
+        requireDecimalLessOrEquanThanOne(market.auctionRatioPerBlock)
+        requireDecimalGreaterThanOne(market.liquidateRate)
+        requireDecimalGreaterThanOne(market.withdrawRate)
     {
-        Markets.addMarket(state, market);
+        state.markets[state.marketsCount++] = market;
+        Events.logMarketCreate(market);
+    }
+
+    function updateMarket(
+        uint16 marketID,
+        uint256 newAuctionRatioStart,
+        uint256 newAuctionRatioPerBlock,
+        uint256 newLiquidateRate,
+        uint256 newWithdrawRate
+    )
+        external
+        onlyOwner
+        requireDecimalLessOrEquanThanOne(newAuctionRatioStart)
+        requireDecimalLessOrEquanThanOne(newAuctionRatioPerBlock)
+        requireDecimalGreaterThanOne(newLiquidateRate)
+        requireDecimalGreaterThanOne(newWithdrawRate)
+    {
+        state.markets[marketID].auctionRatioStart = newAuctionRatioStart;
+        state.markets[marketID].auctionRatioPerBlock = newAuctionRatioPerBlock;
+        state.markets[marketID].liquidateRate = newLiquidateRate;
+        state.markets[marketID].withdrawRate = newWithdrawRate;
+
+        Events.logUpdateMarket(
+            marketID,
+            newAuctionRatioStart,
+            newAuctionRatioPerBlock,
+            newLiquidateRate,
+            newWithdrawRate
+        );
     }
 
     function registerAsset(
@@ -56,57 +86,76 @@ contract Operations is Ownable, GlobalStore, Modifiers {
     )
         external
         onlyOwner
+        requireOracleAddressValid(oracleAddress)
         requireAssetNotExist(asset)
     {
         state.oracles[asset] = IOracle(oracleAddress);
         Pool.initializeAssetPool(state, asset);
-        Pool.createPoolToken(state, asset, poolTokenName, poolTokenSymbol, poolTokenDecimals);
-        // TODO event
+
+        address poolTokenAddress = Pool.createPoolToken(
+            state,
+            asset,
+            poolTokenName,
+            poolTokenSymbol,
+            poolTokenDecimals
+        );
+
+        Events.logRegisterAsset(
+            asset,
+            oracleAddress,
+            poolTokenAddress
+        );
+    }
+
+    function updateAssetOracle(
+        address asset,
+        address oracleAddress
+    )
+        external
+        onlyOwner
+        requireOracleAddressValid(oracleAddress)
+        requireAssetExist(asset)
+    {
+        state.oracles[asset] = IOracle(oracleAddress);
+
+        Events.logUpdateAssetOracle(
+            asset,
+            oracleAddress
+        );
     }
 
     /**
      * @param newConfig A data blob representing the new discount config. Details on format above.
      */
-    function changeDiscountConfig(
+    function updateDiscountConfig(
         bytes32 newConfig
     )
         external
         onlyOwner
     {
-        Discount.changeDiscountConfig(state, newConfig);
+        state.exchange.discountConfig = newConfig;
+        Events.logUpdateDiscountConfig(newConfig);
     }
 
-    function changeAuctionParams(
-        uint16 marketID,
-        uint256 newAuctionRatioStart,
-        uint256 newAuctionRatioPerBlock
-    )
-        external
-        onlyOwner
-        decimalLessOrEquanThanOne(newAuctionRatioStart)
-        decimalLessOrEquanThanOne(newAuctionRatioPerBlock)
-    {
-        state.markets[marketID].auctionRatioStart = newAuctionRatioStart;
-        state.markets[marketID].auctionRatioPerBlock = newAuctionRatioPerBlock;
-    }
-
-    function changeAuctionInitiatorRewardRatio(
+    function updateAuctionInitiatorRewardRatio(
         uint256 newInitiatorRewardRatio
     )
         external
         onlyOwner
-        decimalLessOrEquanThanOne(newInitiatorRewardRatio)
+        requireDecimalLessOrEquanThanOne(newInitiatorRewardRatio)
     {
         state.auction.initiatorRewardRatio = newInitiatorRewardRatio;
+        Events.logUpdateAuctionInitiatorRewardRatio(newInitiatorRewardRatio);
     }
 
-    function changeInsuranceRatio(
+    function updateInsuranceRatio(
         uint256 newInsuranceRatio
     )
         external
         onlyOwner
-        decimalLessOrEquanThanOne(newInsuranceRatio)
+        requireDecimalLessOrEquanThanOne(newInsuranceRatio)
     {
-        state.insuranceRatio = newInsuranceRatio;
+        state.pool.insuranceRatio = newInsuranceRatio;
+        Events.logUpdateInsuranceRatio(newInsuranceRatio);
     }
 }

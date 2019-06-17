@@ -118,17 +118,4 @@ library Discount {
         // Make sure our discount algorithm never returns a higher rate than the base.
         require(result <= Consts.DISCOUNT_RATE_BASE(), "DISCOUNT_ERROR");
     }
-
-    /**
-     * @param newConfig A data blob representing the new discount config. Details on format above.
-     */
-    function changeDiscountConfig(
-        Store.State storage state,
-        bytes32 newConfig
-    )
-        internal
-    {
-        state.exchange.discountConfig = newConfig;
-        Events.logDiscountConfigChange(newConfig);
-    }
 }

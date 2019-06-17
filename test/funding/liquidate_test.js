@@ -30,8 +30,8 @@ contract('Liquidate', accounts => {
 
     beforeEach(async () => {
         const res = await newMarket({
-            liquidateRate: 120,
-            withdrawRate: 200,
+            liquidateRate: toWei('1.2'),
+            withdrawRate: toWei('2'),
             assetConfigs: [
                 {
                     symbol: 'ETH',
@@ -501,7 +501,7 @@ contract('Liquidate', accounts => {
 
     it('auction', async () => {
         const initiaior = accounts[0];
-        await hydro.changeAuctionInitiatorRewardRatio(toWei('0.05'));
+        await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
         await createLiquidatingAccount();
 
         for (let i = 0; i < 48; i++) await mine(time);

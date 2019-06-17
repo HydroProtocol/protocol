@@ -65,8 +65,8 @@ const newMarket = async marketConfig => {
     const hydro = await Hydro.deployed();
 
     const res = await hydro.addMarket({
-        liquidateRate: liquidateRate || 120,
-        withdrawRate: withdrawRate || 200,
+        liquidateRate: liquidateRate || toWei('1.2'),
+        withdrawRate: withdrawRate || toWei('2'),
         baseAsset: baseAsset.address,
         quoteAsset: quoteAsset.address,
         auctionRatioStart: toWei('0.01'),

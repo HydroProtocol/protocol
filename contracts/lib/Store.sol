@@ -104,6 +104,8 @@ library Store {
     }
 
     struct PoolState {
+        uint256 insuranceRatio;
+
         mapping (address => uint256) borrowIndex; // decimal
         mapping (address => uint256) supplyIndex; // decimal
         mapping (address => uint256) indexStartTime; // timestamp
@@ -153,7 +155,6 @@ library Store {
 
         // insurance balances
         mapping(address => uint256) insuranceBalances;
-        uint256 insuranceRatio;
 
         PoolState pool;
 

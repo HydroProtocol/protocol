@@ -21,6 +21,7 @@ pragma experimental ABIEncoderV2;
 
 
 import "../lib/Store.sol";
+import "../lib/Decimal.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../funding/Auctions.sol";
@@ -41,7 +42,6 @@ library CollateralAccounts {
         Types.CollateralAccount storage account = state.accounts[user][marketID];
         Types.Market storage market = state.markets[marketID];
         details.status = account.status;
-        uint256 liquidateRate = state.markets[marketID].liquidateRate;
 
         uint256 baseUSDPrice = state.oracles[market.baseAsset].getPrice(market.baseAsset);
         uint256 quoteUSDPrice = state.oracles[market.quoteAsset].getPrice(market.quoteAsset);
@@ -56,7 +56,7 @@ library CollateralAccounts {
 
         if (account.status == Types.CollateralAccountStatus.Normal) {
             details.liquidable = details.balancesTotalUSDValue <
-            details.debtsTotalUSDValue.mul(liquidateRate).div(Consts.LIQUIDATE_RATE_BASE());
+                Decimal.mul(details.debtsTotalUSDValue, state.markets[marketID].liquidateRate);
         } else {
             details.liquidable = false;
         }
@@ -85,7 +85,7 @@ library CollateralAccounts {
         }
 
         // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
-        uint256 transferableUSDValueBar = details.debtsTotalUSDValue.mul(state.markets[marketID].withdrawRate).div(Consts.WITHDRAW_RATE_BASE());
+        uint256 transferableUSDValueBar = Decimal.mul(details.debtsTotalUSDValue, state.markets[marketID].withdrawRate);
 
         if(transferableUSDValueBar > details.balancesTotalUSDValue) {
             return 0;

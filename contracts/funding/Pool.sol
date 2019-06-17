@@ -39,9 +39,16 @@ library Pool {
         uint8 decimals
     )
         internal
+        returns (address)
     {
-        require(state.pool.poolToken[originAssetAddress] == address(0), "POOL_TOKEN_ALREADY_EXIST");
-        state.pool.poolToken[originAssetAddress] = address(new PoolToken(name, symbol, decimals));
+        require(
+            state.pool.poolToken[originAssetAddress] == address(0),
+            "POOL_TOKEN_ALREADY_EXIST"
+        );
+
+        address poolTokenAddress = address(new PoolToken(name, symbol, decimals));
+        state.pool.poolToken[originAssetAddress] = poolTokenAddress;
+        return poolTokenAddress;
     }
 
     // create new pool
@@ -223,7 +230,7 @@ library Pool {
         uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
         borrowInterestRate = InterestModel.polynomialInterestModel(borrowRatio);
         uint256 borrowInterest = Decimal.mul(_borrow, borrowInterestRate);
-        uint256 supplyInterest = Decimal.mul(borrowInterest, Decimal.one().sub(state.insuranceRatio));
+        uint256 supplyInterest = Decimal.mul(borrowInterest, Decimal.one().sub(state.pool.insuranceRatio));
         supplyInterestRate = Decimal.divFloor(supplyInterest, _supply);
 
         return (
