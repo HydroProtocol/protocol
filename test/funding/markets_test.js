@@ -8,10 +8,24 @@ const assert = require('assert');
 contract('Markets', accounts => {
     let hydro;
 
-    const fakeOracleAddress = '0xffffffffffffffffffffffffffffffffffffffff';
+    const fakeOracleAddress = '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF';
 
     before(async () => {
         hydro = await Hydro.deployed();
+    });
+
+    it('can register asset', async () => {
+        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
+        assert.equal(await hydro.getOracleOf(etherAsset), fakeOracleAddress);
+    });
+
+    it('can update asset oracle', async () => {
+        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
+        assert.equal(await hydro.getOracleOf(etherAsset), fakeOracleAddress);
+
+        const changedOracleAddress = '0x1111111111111111111111111111111111111111';
+        await hydro.updateAssetOracle(etherAsset, changedOracleAddress);
+        assert.equal(await hydro.getOracleOf(etherAsset), changedOracleAddress);
     });
 
     it('no markets at first', async () => {
