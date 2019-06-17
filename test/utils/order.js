@@ -20,8 +20,8 @@ const getOrderSignature = async (order, baseAsset, quoteAsset) => {
 };
 
 const buildOrder = async (orderParam, baseAssetAddress, quoteAssetAddress) => {
-    if (orderParam.walletPath) {
-        assert.equal(orderParam.walletPath.user, orderParam.trader);
+    if (orderParam.balancePath) {
+        assert.equal(orderParam.balancePath.user, orderParam.trader);
     }
 
     const order = {
@@ -37,7 +37,7 @@ const buildOrder = async (orderParam, baseAssetAddress, quoteAssetAddress) => {
             orderParam.makerRebateRate || '0',
             Math.round(Math.random() * 10000000),
             false,
-            orderParam.walletPath
+            orderParam.balancePath
         ),
         baseAssetAmount: orderParam.baseAssetAmount,
         quoteAssetAmount: orderParam.quoteAssetAmount,

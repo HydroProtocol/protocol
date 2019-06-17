@@ -41,13 +41,13 @@ library Auctions {
         Types.Auction storage auction = state.auction.auctions[auctionID];
 
         uint256 leftDebtAmount = Pool._getPoolBorrowOf(state, auction.debtAsset, auction.borrower, auction.marketID);
-        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset];
+        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
         // transfer valid repay amount from msg.sender to auction.borrower
         uint256 validRepayAmount = repayAmount < leftDebtAmount ? repayAmount : leftDebtAmount;
 
-        state.wallets[msg.sender].balances[auction.debtAsset] = state.wallets[msg.sender].balances[auction.debtAsset].sub(validRepayAmount);
-        state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.debtAsset] = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.debtAsset].add(
+        state.balances[msg.sender][auction.debtAsset] = state.balances[msg.sender][auction.debtAsset].sub(validRepayAmount);
+        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset].add(
             validRepayAmount
         );
 
@@ -66,20 +66,20 @@ library Auctions {
         uint256 amountForBorrower = amountToProcess.sub(amountForBidder).sub(amountForInitiator);
 
         // update collateralAmount
-        state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset] = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset].sub(
+        state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset] = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset].sub(
             amountToProcess
         );
 
         // bidder receive collateral
-        state.wallets[msg.sender].balances[auction.collateralAsset] = state.wallets[msg.sender].balances[auction.collateralAsset].add(amountForBidder);
+        state.balances[msg.sender][auction.collateralAsset] = state.balances[msg.sender][auction.collateralAsset].add(amountForBidder);
 
         // initiator receive collateral
-        state.wallets[auction.initiator].balances[auction.collateralAsset] = state.wallets[auction.initiator].balances[auction.collateralAsset].add(
+        state.balances[auction.initiator][auction.collateralAsset] = state.balances[auction.initiator][auction.collateralAsset].add(
             amountForInitiator
         );
 
         // auction.borrower receive collateral
-        state.wallets[auction.borrower].balances[auction.collateralAsset] = state.wallets[auction.borrower].balances[auction.collateralAsset].add(amountForBorrower);
+        state.balances[auction.borrower][auction.collateralAsset] = state.balances[auction.borrower][auction.collateralAsset].add(amountForBorrower);
 
         Events.logFillAuction(auctionID, repayAmount);
 
@@ -106,14 +106,14 @@ library Auctions {
         address collateralAsset = auction.collateralAsset;
 
         // transfer insurance balance to borrower
-        uint256 insuranceBalance = state.insuranceWallet.balances[debtAsset];
-        state.accounts[borrower][marketID].wallet.balances[debtAsset] = state.accounts[borrower][marketID].wallet.balances[debtAsset].add(
+        uint256 insuranceBalance = state.insuranceBalances[debtAsset];
+        state.accounts[borrower][marketID].balances[debtAsset] = state.accounts[borrower][marketID].balances[debtAsset].add(
             insuranceBalance
         );
 
         // TODO: emit an event
 
-        state.insuranceWallet.balances[debtAsset] = 0;
+        state.insuranceBalances[debtAsset] = 0;
 
         Pool.repay(
             state,
@@ -124,13 +124,11 @@ library Auctions {
         );
 
         // transfer borrower balance back to insurance
-        state.insuranceWallet.balances[debtAsset] = state.insuranceWallet.balances[debtAsset].add(state.accounts[borrower][marketID].wallet.balances[debtAsset]);
-        state.accounts[borrower][marketID].wallet.balances[debtAsset] = 0;
+        state.insuranceBalances[debtAsset] = state.insuranceBalances[debtAsset].add(state.accounts[borrower][marketID].balances[debtAsset]);
+        state.accounts[borrower][marketID].balances[debtAsset] = 0;
 
-        state.insuranceWallet.balances[collateralAsset] = state.insuranceWallet.balances[collateralAsset].add(state.accounts[borrower][marketID].wallet.balances[collateralAsset]);
-        state.accounts[borrower][marketID].wallet.balances[collateralAsset] = 0;
-
-
+        state.insuranceBalances[collateralAsset] = state.insuranceBalances[collateralAsset].add(state.accounts[borrower][marketID].balances[collateralAsset]);
+        state.accounts[borrower][marketID].balances[collateralAsset] = 0;
 
         uint256 badDebtAmount = Pool._getPoolBorrowOf(state, debtAsset, borrower, marketID);
 
@@ -138,7 +136,7 @@ library Auctions {
             uint256 totalLogicSupply = Pool._getTotalLogicSupply(state, debtAsset);
             uint256 actualSupply = Pool._getPoolTotalSupply(state, debtAsset).sub(badDebtAmount);
             state.pool.supplyIndex[debtAsset] = Decimal.divFloor(actualSupply, totalLogicSupply);
-            state.pool.logicBorrow[borrower][marketID].balances[debtAsset] = 0;
+            state.pool.logicBorrow[borrower][marketID][debtAsset] = 0;
         }
 
         auctionEnd(state, auctionID);
@@ -213,7 +211,7 @@ library Auctions {
         details.debtAsset = auction.debtAsset;
         details.collateralAsset = auction.collateralAsset;
         details.leftDebtAmount = Pool._getPoolBorrowOf(state, auction.debtAsset, auction.borrower, auction.marketID);
-        details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].wallet.balances[auction.collateralAsset];
+        details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
         details.ratio = auction.ratio(state);
     }
 }

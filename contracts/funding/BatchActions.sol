@@ -89,7 +89,7 @@ library BatchActions {
         internal
     {
         (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
-        Transfer.depositFor(state, asset, msg.sender, WalletPath.getBalancePath(msg.sender), amount);
+        Transfer.depositFor(state, asset, msg.sender, BalancePath.getBalancePath(msg.sender), amount);
     }
 
     function withdraw(
@@ -99,7 +99,7 @@ library BatchActions {
         internal
     {
         (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
-        Transfer.withdrawFrom(state, asset, WalletPath.getBalancePath(msg.sender), msg.sender, amount);
+        Transfer.withdrawFrom(state, asset, BalancePath.getBalancePath(msg.sender), msg.sender, amount);
     }
 
     function transfer(
@@ -110,15 +110,15 @@ library BatchActions {
     {
         (
             address asset,
-            Types.WalletPath memory fromWalletPath,
-            Types.WalletPath memory toWalletPath,
+            Types.BalancePath memory fromBalancePath,
+            Types.BalancePath memory toBalancePath,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (address, Types.WalletPath, Types.WalletPath, uint256));
+        ) = abi.decode(action.encodedParams, (address, Types.BalancePath, Types.BalancePath, uint256));
 
-        require(fromWalletPath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
-        require(toWalletPath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
+        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
+        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
 
-        Transfer.transferFrom(state, asset, fromWalletPath, toWalletPath, amount);
+        Transfer.transferFrom(state, asset, fromBalancePath, toBalancePath, amount);
     }
 
     function borrow(

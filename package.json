@@ -7,7 +7,7 @@
     "funding_test": "truffle test test/funding/*.js",
     "compile": "truffle compile",
     "coverage": "solidity-coverage",
-    "node": "ganache-cli -l 0x1fffffffffffff -g 1  -v --debug  --allowUnlimitedContractSize -m \" elephant potato mind luggage remind desk tourist valve license flame favorite tilt\""
+    "node": "ganache-cli -l 0x1fffffffffffff -g 1 --allowUnlimitedContractSize -m \" elephant potato mind luggage remind desk tourist valve license flame favorite tilt\""
   },
   "dependencies": {
     "bignumber.js": "^7.2.1",

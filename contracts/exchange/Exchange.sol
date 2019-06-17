@@ -47,7 +47,7 @@ library Exchange {
     struct OrderInfo {
         bytes32 orderHash;
         uint256 filledAmount;
-        Types.WalletPath walletPath;
+        Types.BalancePath balancePath;
     }
 
     /**
@@ -163,7 +163,7 @@ library Exchange {
             Errors.INVALID_ORDER_SIGNATURE()
         );
 
-        orderInfo.walletPath = orderParam.getWalletPathFromOrderData();
+        orderInfo.balancePath = orderParam.getBalancePathFromOrderData();
 
         return orderInfo;
     }
@@ -262,8 +262,8 @@ library Exchange {
         result.baseAssetFilledAmount = baseAssetFilledAmount;
         result.quoteAssetFilledAmount = convertBaseToQuote(makerOrderParam, baseAssetFilledAmount);
 
-        result.takerWalletPath = takerOrderInfo.walletPath;
-        result.makerWalletPath = makerOrderInfo.walletPath;
+        result.takerBalancePath = takerOrderInfo.balancePath;
+        result.makerBalancePath = makerOrderInfo.balancePath;
 
         // Each order only pays gas once, so only pay gas when nothing has been filled yet.
         if (takerOrderInfo.filledAmount == 0) {
@@ -457,18 +457,18 @@ library Exchange {
 
         uint256 totalFee = 0;
 
-        Types.WalletPath memory relayerWalletPath = Types.WalletPath({
+        Types.BalancePath memory relayerBalancePath = Types.BalancePath({
             user: orderAddressSet.relayer,
             marketID: 0,
-            category: Types.WalletCategory.Balance
+            category: Types.BalanceCategory.Common
         });
 
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
                 orderAddressSet.baseAsset,
-                results[i].takerWalletPath,
-                results[i].makerWalletPath,
+                results[i].takerBalancePath,
+                results[i].makerBalancePath,
                 results[i].baseAssetFilledAmount
             );
 
@@ -482,8 +482,8 @@ library Exchange {
             transferFrom(
                 state,
                 orderAddressSet.quoteAsset,
-                results[i].makerWalletPath,
-                results[i].takerWalletPath,
+                results[i].makerBalancePath,
+                results[i].takerBalancePath,
                 amount
             );
 
@@ -502,8 +502,8 @@ library Exchange {
         transferFrom(
             state,
             orderAddressSet.quoteAsset,
-            results[0].takerWalletPath,
-            relayerWalletPath,
+            results[0].takerBalancePath,
+            relayerBalancePath,
             totalFee
         );
 
@@ -547,18 +547,18 @@ library Exchange {
         settleResult.outputToken = orderAddressSet.quoteAsset;
 
         uint256 totalFee = 0;
-        Types.WalletPath memory relayerWalletPath = Types.WalletPath({
+        Types.BalancePath memory relayerBalancePath = Types.BalancePath({
             user: orderAddressSet.relayer,
             marketID: 0,
-            category: Types.WalletCategory.Balance
+            category: Types.BalanceCategory.Common
         });
 
         for (uint256 i = 0; i < results.length; i++) {
             transferFrom(
                 state,
                 orderAddressSet.baseAsset,
-                results[i].makerWalletPath,
-                results[i].takerWalletPath,
+                results[i].makerBalancePath,
+                results[i].takerBalancePath,
                 results[i].baseAssetFilledAmount
             );
 
@@ -572,8 +572,8 @@ library Exchange {
             transferFrom(
                 state,
                 orderAddressSet.quoteAsset,
-                results[i].takerWalletPath,
-                results[i].makerWalletPath,
+                results[i].takerBalancePath,
+                results[i].makerBalancePath,
                 amount
             );
 
@@ -592,8 +592,8 @@ library Exchange {
         transferFrom(
             state,
             orderAddressSet.quoteAsset,
-            results[0].takerWalletPath,
-            relayerWalletPath,
+            results[0].takerBalancePath,
+            relayerBalancePath,
             totalFee
         );
 
@@ -605,8 +605,8 @@ library Exchange {
     function transferFrom(
         Store.State storage state,
         address asset,
-        Types.WalletPath memory fromPath,
-        Types.WalletPath memory toPath,
+        Types.BalancePath memory fromPath,
+        Types.BalancePath memory toPath,
         uint256 amount
     )
         internal

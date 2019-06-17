@@ -50,8 +50,8 @@ library CollateralAccounts {
             quoteUSDPrice.mul(Pool._getPoolBorrowOf(state, market.quoteAsset, user, marketID))
         ).div(Consts.ORACLE_PRICE_BASE());
 
-        details.balancesTotalUSDValue = baseUSDPrice.mul(account.wallet.balances[market.baseAsset]).add(
-            quoteUSDPrice.mul(account.wallet.balances[market.quoteAsset])
+        details.balancesTotalUSDValue = baseUSDPrice.mul(account.balances[market.baseAsset]).add(
+            quoteUSDPrice.mul(account.balances[market.quoteAsset])
         ).div(Consts.ORACLE_PRICE_BASE());
 
         if (account.status == Types.CollateralAccountStatus.Normal) {
@@ -81,7 +81,7 @@ library CollateralAccounts {
 
         // no debt, can move all assets out
         if (details.debtsTotalUSDValue == 0) {
-            return state.accounts[user][marketID].wallet.balances[asset];
+            return state.accounts[user][marketID].balances[asset];
         }
 
         // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
@@ -115,8 +115,8 @@ library CollateralAccounts {
         Types.Market storage market = state.markets[marketID];
         Types.CollateralAccount storage account = state.accounts[user][marketID];
 
-        Pool.repay(state, user, marketID, market.baseAsset, account.wallet.balances[market.baseAsset]);
-        Pool.repay(state, user, marketID, market.quoteAsset, account.wallet.balances[market.quoteAsset]);
+        Pool.repay(state, user, marketID, market.baseAsset, account.balances[market.baseAsset]);
+        Pool.repay(state, user, marketID, market.quoteAsset, account.balances[market.quoteAsset]);
 
         address collateralAsset;
         address debtAsset;
@@ -128,7 +128,7 @@ library CollateralAccounts {
             // no auction
             return (false, 0);
         } else {
-            if(account.wallet.balances[market.baseAsset] > 0) {
+            if(account.balances[market.baseAsset] > 0) {
                 // quote asset is debt, base asset is collateral
                 collateralAsset = market.baseAsset;
                 debtAsset = market.quoteAsset;

@@ -142,7 +142,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         view
         returns (uint256)
     {
-        return state.accounts[user][marketID].wallet.balances[asset];
+        return state.accounts[user][marketID].balances[asset];
     }
 
     function getAuctionsCount()
@@ -323,7 +323,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return state.insuranceWallet.balances[asset];
+        return state.insuranceBalances[asset];
     }
 
     function badDebt(
@@ -367,33 +367,33 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     ////////////////////////
 
     function deposit(address asset, uint256 amount) external payable {
-        Transfer.depositFor(state, asset, msg.sender, WalletPath.getBalancePath(msg.sender), amount);
+        Transfer.depositFor(state, asset, msg.sender, BalancePath.getBalancePath(msg.sender), amount);
     }
 
     function withdraw(address asset, uint256 amount) external {
-        Transfer.withdrawFrom(state, asset, WalletPath.getBalancePath(msg.sender), msg.sender, amount);
+        Transfer.withdrawFrom(state, asset, BalancePath.getBalancePath(msg.sender), msg.sender, amount);
     }
 
     function transfer(
         address asset,
-        Types.WalletPath calldata fromWalletPath,
-        Types.WalletPath calldata toWalletPath,
+        Types.BalancePath calldata fromBalancePath,
+        Types.BalancePath calldata toBalancePath,
         uint256 amount
     )
         external
     {
-        require(fromWalletPath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
-        require(toWalletPath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER"); // should we allow to transfer to other ??
+        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
+        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER"); // should we allow to transfer to other ??
 
-        Transfer.transferFrom(state, asset, fromWalletPath, toWalletPath, amount);
+        Transfer.transferFrom(state, asset, fromBalancePath, toBalancePath, amount);
     }
 
     function balanceOf(address asset, address user) external view returns (uint256) {
-        return Transfer.balanceOf(state,  WalletPath.getBalancePath(user), asset);
+        return Transfer.balanceOf(state,  BalancePath.getBalancePath(user), asset);
     }
 
     function marketBalanceOf(uint16 marketID, address asset, address user) external view returns (uint256) {
-        return Transfer.balanceOf(state,  WalletPath.getMarketPath(user, marketID), asset);
+        return Transfer.balanceOf(state,  BalancePath.getMarketPath(user, marketID), asset);
     }
 
     function getMarketTransferableAmount(uint16 marketID, address asset, address user) external view returns (uint256) {
@@ -403,7 +403,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     /** fallback function to allow deposit ether into this contract */
     function () external payable {
         // deposit ${msg.value} ether for ${msg.sender}
-        Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, WalletPath.getBalancePath(msg.sender), msg.value);
+        Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, BalancePath.getBalancePath(msg.sender), msg.value);
     }
 
     ////////////////////////

@@ -112,10 +112,10 @@ library Store {
         mapping (address => uint256) supplyAnnualInterestRate; // decimal
 
         // total borrow
-        Types.Wallet logicTotalBorrow;
+        mapping(address => uint256) logicTotalBorrow;
 
-        // user => marketID => wallet
-        mapping (address => mapping (uint16 => Types.Wallet)) logicBorrow;
+        // user => marketID => balances
+        mapping (address => mapping (uint16 => mapping(address => uint256))) logicBorrow;
 
         // pool token
         mapping (address => address) poolToken;
@@ -149,10 +149,10 @@ library Store {
         mapping(uint16 => Types.Market) markets;
 
         // user balances
-        mapping(address => Types.Wallet) wallets;
+        mapping(address => mapping(address => uint256)) balances;
 
         // insurance balances
-        Types.Wallet insuranceWallet;
+        mapping(address => uint256) insuranceBalances;
         uint256 insuranceRatio;
 
         PoolState pool;

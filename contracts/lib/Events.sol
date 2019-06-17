@@ -27,23 +27,23 @@ library Events {
     //////////////////
 
     // some assets move into contract
-    event Deposit(address asset, address from, Types.WalletPath toPath, uint256 amount);
+    event Deposit(address asset, address from, Types.BalancePath toPath, uint256 amount);
 
-    function logDeposit(address asset, address from, Types.WalletPath memory toPath, uint256 amount) internal {
+    function logDeposit(address asset, address from, Types.BalancePath memory toPath, uint256 amount) internal {
         emit Deposit(asset, from, toPath, amount);
     }
 
     // some assets move out of contract
-    event Withdraw(address asset, Types.WalletPath fromPath, address to, uint256 amount);
+    event Withdraw(address asset, Types.BalancePath fromPath, address to, uint256 amount);
 
-    function logWithdraw(address asset, Types.WalletPath memory fromPath, address to, uint256 amount) internal {
+    function logWithdraw(address asset, Types.BalancePath memory fromPath, address to, uint256 amount) internal {
         emit Withdraw(asset, fromPath, to, amount);
     }
 
     // internal assets movement
-    event Transfer(address asset, Types.WalletPath fromPath, Types.WalletPath toPath, uint256 amount);
+    event Transfer(address asset, Types.BalancePath fromPath, Types.BalancePath toPath, uint256 amount);
 
-    function logTransfer(address asset, Types.WalletPath memory fromPath, Types.WalletPath memory toPath, uint256 amount) internal {
+    function logTransfer(address asset, Types.BalancePath memory fromPath, Types.BalancePath memory toPath, uint256 amount) internal {
         emit Transfer(asset, fromPath, toPath, amount);
     }
 

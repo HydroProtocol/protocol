@@ -44,7 +44,6 @@ contract Operations is Ownable, GlobalStore, Modifiers {
         decimalLessOrEquanThanOne(market.auctionRatioStart)
         decimalLessOrEquanThanOne(market.auctionRatioPerBlock)
     {
-        uint16 marketID = state.marketsCount;
         Markets.addMarket(state, market);
     }
 

@@ -46,7 +46,7 @@ const generateOrderData = (
     makerRebateRate,
     salt,
     isMakerOnly,
-    walletPath
+    balancePath
 ) => {
     let res = '0x';
     res += addLeadingZero(new BigNumber(version).toString(16), 2);
@@ -59,8 +59,8 @@ const generateOrderData = (
     res += addLeadingZero(new BigNumber(salt).toString(16), 8 * 2);
     res += isMakerOnly ? '01' : '00';
 
-    if (walletPath) {
-        res += '01' + addLeadingZero(new BigNumber(walletPath.marketID).toString(16), 2 * 2);
+    if (balancePath) {
+        res += '01' + addLeadingZero(new BigNumber(balancePath.marketID).toString(16), 2 * 2);
     } else {
         res += '000000';
     }

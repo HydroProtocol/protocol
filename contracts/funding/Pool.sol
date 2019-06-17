@@ -70,7 +70,7 @@ library Pool {
     )
         internal
     {
-        Types.Wallet storage wallet = state.wallets[user];
+        mapping(address => uint256) storage balances = state.balances[user];
 
         // update index
         _updateIndex(state, asset);
@@ -80,7 +80,7 @@ library Pool {
         uint256 logicAmount = Decimal.divFloor(amount, state.pool.supplyIndex[asset]);
 
         // transfer asset
-        wallet.balances[asset] = wallet.balances[asset].sub(amount);
+        balances[asset] = balances[asset].sub(amount);
 
         // mint pool token
         PoolToken(state.pool.poolToken[asset]).mint(user, logicAmount);
@@ -98,7 +98,7 @@ library Pool {
         internal
         returns (uint256)
     {
-        Types.Wallet storage wallet = state.wallets[user];
+        mapping(address => uint256) storage balances = state.balances[user];
 
         // update index
         _updateIndex(state, asset);
@@ -113,7 +113,7 @@ library Pool {
         }
 
         // transfer asset
-        wallet.balances[asset] = wallet.balances[asset].add(withdrawAmount);
+        balances[asset] = balances[asset].add(withdrawAmount);
 
         // update logic amount
         PoolToken(state.pool.poolToken[asset]).burn(user, logicAmount);
@@ -133,7 +133,7 @@ library Pool {
     )
         internal
     {
-        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
+        mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
          // update index
         _updateIndex(state, asset);
@@ -142,11 +142,11 @@ library Pool {
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.borrowIndex[asset]);
 
         // transfer assets
-        wallet.balances[asset] = wallet.balances[asset].add(amount);
+        balances[asset] = balances[asset].add(amount);
 
         // update logic amount
-        state.pool.logicBorrow[user][marketID].balances[asset] = state.pool.logicBorrow[user][marketID].balances[asset].add(logicAmount);
-        state.pool.logicTotalBorrow.balances[asset] = state.pool.logicTotalBorrow.balances[asset].add(logicAmount);
+        state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].add(logicAmount);
+        state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].add(logicAmount);
 
         // update interest rate
         _updateInterestRate(state, asset);
@@ -162,7 +162,7 @@ library Pool {
         internal
         returns (uint256)
     {
-        Types.Wallet storage wallet = state.accounts[user][marketID].wallet;
+        mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
         // update index
         _updateIndex(state, asset);
@@ -171,17 +171,17 @@ library Pool {
         uint256 logicAmount = Decimal.divFloor(amount, state.pool.borrowIndex[asset]);
         uint256 repayAmount = amount;
         // repay all logic amount greater than debt
-        if (state.pool.logicBorrow[user][marketID].balances[asset] < logicAmount){
-            logicAmount = state.pool.logicBorrow[user][marketID].balances[asset];
+        if (state.pool.logicBorrow[user][marketID][asset] < logicAmount){
+            logicAmount = state.pool.logicBorrow[user][marketID][asset];
             repayAmount = Decimal.mul(logicAmount, state.pool.borrowIndex[asset]);
         }
 
         // transfer assets
-        wallet.balances[asset] = wallet.balances[asset].sub(repayAmount);
+        balances[asset] = balances[asset].sub(repayAmount);
 
         // update logic amount
-        state.pool.logicBorrow[user][marketID].balances[asset] = state.pool.logicBorrow[user][marketID].balances[asset].sub(logicAmount);
-        state.pool.logicTotalBorrow.balances[asset] = state.pool.logicTotalBorrow.balances[asset].sub(logicAmount);
+        state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].sub(logicAmount);
+        state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].sub(logicAmount);
 
         // update interest rate
         _updateInterestRate(state, asset);
@@ -239,12 +239,12 @@ library Pool {
     {
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, asset);
 
-        uint256 logicBorrow = state.pool.logicTotalBorrow.balances[asset];
+        uint256 logicBorrow = state.pool.logicTotalBorrow[asset];
         uint256 logicSupply = _getTotalLogicSupply(state, asset);
         uint256 borrowInterest = Decimal.mul(logicBorrow, currentBorrowIndex).sub(Decimal.mul(logicBorrow, state.pool.borrowIndex[asset]));
         uint256 supplyInterest = Decimal.mul(logicSupply, currentSupplyIndex).sub(Decimal.mul(logicSupply, state.pool.supplyIndex[asset]));
 
-        state.insuranceWallet.balances[asset] = state.insuranceWallet.balances[asset].add(borrowInterest.sub(supplyInterest));
+        state.insuranceBalances[asset] = state.insuranceBalances[asset].add(borrowInterest.sub(supplyInterest));
 
         state.pool.supplyIndex[asset] = currentSupplyIndex;
         state.pool.borrowIndex[asset] = currentBorrowIndex;
@@ -275,7 +275,7 @@ library Pool {
         returns (uint256)
     {
         (, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(state.pool.logicBorrow[user][marketID].balances[asset], currentBorrowIndex);
+        return Decimal.mul(state.pool.logicBorrow[user][marketID][asset], currentBorrowIndex);
     }
 
     function _getPoolTotalSupply(
@@ -299,7 +299,7 @@ library Pool {
         returns (uint256)
     {
         (, uint256 currentBorrowIndex) = _getPoolCurrentIndex(state, asset);
-        return Decimal.mul(state.pool.logicTotalBorrow.balances[asset], currentBorrowIndex);
+        return Decimal.mul(state.pool.logicTotalBorrow[asset], currentBorrowIndex);
     }
 
     function _getPoolCurrentIndex(
