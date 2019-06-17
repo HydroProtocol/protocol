@@ -23,7 +23,6 @@ import "../lib/Ownable.sol";
 import "../helper/StandardToken.sol";
 
 contract PoolToken is StandardToken, Ownable {
-
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -32,20 +31,38 @@ contract PoolToken is StandardToken, Ownable {
     event Mint(address indexed user, uint256 value);
     event Burn(address indexed user, uint256 value);
 
-    constructor (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) public {
+    constructor (
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 tokenDecimals
+    )
+        public
+    {
         name = tokenName;
         symbol = tokenSymbol;
         decimals = tokenDecimals;
         balances[msg.sender] = totalSupply;
     }
 
-    function mint(address user, uint256 value) public onlyOwner {
+    function mint(
+        address user,
+        uint256 value
+    )
+        public
+        onlyOwner
+    {
         balances[user] = balances[user].add(value);
         totalSupply = totalSupply.add(value);
         emit Mint(user, value);
     }
 
-    function burn(address user, uint256 value) public onlyOwner {
+    function burn(
+        address user,
+        uint256 value
+    )
+        public
+        onlyOwner
+    {
         balances[user] = balances[user].sub(value);
         totalSupply = totalSupply.sub(value);
         emit Burn(user, value);

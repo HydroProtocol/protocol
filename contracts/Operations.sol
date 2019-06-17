@@ -59,7 +59,7 @@ contract Operations is Ownable, GlobalStore, Modifiers {
         requireAssetNotExist(asset)
     {
         state.oracles[asset] = IOracle(oracleAddress);
-        Pool.createAssetPool(state, asset);
+        Pool.initializeAssetPool(state, asset);
         Pool.createPoolToken(state, asset, poolTokenName, poolTokenSymbol, poolTokenDecimals);
         // TODO event
     }

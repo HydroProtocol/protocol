@@ -133,8 +133,8 @@ library Auctions {
         uint256 badDebtAmount = Pool._getPoolBorrowOf(state, debtAsset, borrower, marketID);
 
         if (badDebtAmount > 0){
-            uint256 totalLogicSupply = Pool._getTotalLogicSupply(state, debtAsset);
-            uint256 actualSupply = Pool._getPoolTotalSupply(state, debtAsset).sub(badDebtAmount);
+            uint256 totalLogicSupply = Pool.getTotalLogicSupply(state, debtAsset);
+            uint256 actualSupply = Pool.getPoolTotalSupply(state, debtAsset).sub(badDebtAmount);
             state.pool.supplyIndex[debtAsset] = Decimal.divFloor(actualSupply, totalLogicSupply);
             state.pool.logicBorrow[borrower][marketID][debtAsset] = 0;
         }

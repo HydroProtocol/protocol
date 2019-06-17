@@ -184,7 +184,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return Pool._getPoolTotalBorrow(state, asset);
+        return Pool.getPoolTotalBorrow(state, asset);
     }
 
     function getPoolTotalSupply(
@@ -195,7 +195,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return Pool._getPoolTotalSupply(state, asset);
+        return Pool.getPoolTotalSupply(state, asset);
     }
 
     function getPoolBorrowOf(
@@ -232,7 +232,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
-        return Pool._getInterestRate(state, asset, extraBorrowAmount);
+        return Pool.getInterestRate(state, asset, extraBorrowAmount);
     }
 
     function supplyPool(
