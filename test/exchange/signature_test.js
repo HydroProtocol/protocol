@@ -89,18 +89,9 @@ contract('Signature', accounts => {
         const sha = toBuffer(orderHash);
         const sig = ecsign(sha, toBuffer(privateKey));
 
-        try {
-            await hydro.isValidSignature(
-                orderHash,
-                address,
-                formatSig(sig, SignatureType.INVALID),
-                {}
-            );
-        } catch (e) {
-            assert.ok(e.message.match(/INVALID_SIGN_METHOD/));
-            return;
-        }
-
-        assert(false, 'Should never get here');
+        await assert.rejects(
+            hydro.isValidSignature(orderHash, address, formatSig(sig, SignatureType.INVALID), {}),
+            /INVALID_SIGN_METHOD/
+        );
     });
 });

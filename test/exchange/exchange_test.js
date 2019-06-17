@@ -47,13 +47,6 @@ contract('CancelOrder', accounts => {
         let cancelled = await hydro.isOrderCancelled(hash);
         assert.equal(cancelled, false);
 
-        try {
-            await hydro.cancelOrder(order, { from: accounts[1] });
-        } catch (e) {
-            assert.ok(e.message.match(/revert/));
-            return;
-        }
-
-        assert(false, 'Should never get here');
+        await assert.rejects(hydro.cancelOrder(order, { from: accounts[1] }), /revert/);
     });
 });

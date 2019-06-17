@@ -39,27 +39,16 @@ contract('Ownable', accounts => {
     });
 
     it("can't transfer ownership to empty address", async () => {
-        try {
-            await hydro.transferOwnership('0x0000000000000000000000000000000000000000', {
+        await assert.rejects(
+            hydro.transferOwnership('0x0000000000000000000000000000000000000000', {
                 from: accounts[0]
-            });
-        } catch (e) {
-            assert.ok(e.message.match(/INVALID_OWNER/));
-            return;
-        }
-
-        assert(false, 'Should never get here');
+            }),
+            /INVALID_OWNER/
+        );
     });
 
     it("can't transfer ownership if not owner", async () => {
-        try {
-            await hydro.transferOwnership(accounts[3], { from: accounts[3] });
-        } catch (e) {
-            assert.ok(e.message.match(/revert/));
-            return;
-        }
-
-        assert(false, 'Should never get here');
+        await assert.rejects(hydro.transferOwnership(accounts[3], { from: accounts[3] }), /revert/);
     });
 
     it('should have no owner after renouncing', async () => {
@@ -69,13 +58,6 @@ contract('Ownable', accounts => {
     });
 
     it('should revert when trying to renounce but not owner', async () => {
-        try {
-            await hydro.renounceOwnership({ from: accounts[1] });
-        } catch (e) {
-            assert.ok(e.message.match(/revert/));
-            return;
-        }
-
-        assert(false, 'Should never get here');
+        assert.rejects(hydro.renounceOwnership({ from: accounts[1] }), /revert/);
     });
 });

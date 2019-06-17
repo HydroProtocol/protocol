@@ -1298,12 +1298,7 @@ contract('Match', async accounts => {
             ]
         };
 
-        try {
-            await limitAndMarketTestMatch(testConfig);
-            assert(false, 'Should never get here');
-        } catch (e) {
-            assert.ok(e.message.match(/revert/));
-        }
+        await assert.rejects(limitAndMarketTestMatch(testConfig), /revert/);
     });
 
     // invalid maker order
@@ -1358,12 +1353,7 @@ contract('Match', async accounts => {
             ]
         };
 
-        try {
-            await limitAndMarketTestMatch(testConfig);
-            assert(false, 'Should never get here');
-        } catch (e) {
-            assert.ok(e.message.match(/revert/));
-        }
+        await assert.rejects(limitAndMarketTestMatch(testConfig), /revert/);
     });
 
     it('match without fees', async () => {
