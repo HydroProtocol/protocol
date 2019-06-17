@@ -464,7 +464,7 @@ library Exchange {
         });
 
         for (uint256 i = 0; i < results.length; i++) {
-            transferFrom(
+            Transfer.transferFrom(
                 state,
                 orderAddressSet.baseAsset,
                 results[i].takerBalancePath,
@@ -479,7 +479,7 @@ library Exchange {
                     add(results[i].makerGasFee).
                     sub(results[i].makerRebate);
 
-            transferFrom(
+            Transfer.transferFrom(
                 state,
                 orderAddressSet.quoteAsset,
                 results[i].makerBalancePath,
@@ -499,7 +499,7 @@ library Exchange {
             Events.logExchangeMatch(results[i], orderAddressSet);
         }
 
-        transferFrom(
+        Transfer.transferFrom(
             state,
             orderAddressSet.quoteAsset,
             results[0].takerBalancePath,
@@ -554,7 +554,7 @@ library Exchange {
         });
 
         for (uint256 i = 0; i < results.length; i++) {
-            transferFrom(
+            Transfer.transferFrom(
                 state,
                 orderAddressSet.baseAsset,
                 results[i].makerBalancePath,
@@ -569,7 +569,7 @@ library Exchange {
                     sub(results[i].makerGasFee).
                     add(results[i].makerRebate);
 
-            transferFrom(
+            Transfer.transferFrom(
                 state,
                 orderAddressSet.quoteAsset,
                 results[i].takerBalancePath,
@@ -589,7 +589,7 @@ library Exchange {
             Events.logExchangeMatch(results[i], orderAddressSet);
         }
 
-        transferFrom(
+        Transfer.transferFrom(
             state,
             orderAddressSet.quoteAsset,
             results[0].takerBalancePath,
@@ -598,19 +598,5 @@ library Exchange {
         );
 
         settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(totalFee);
-    }
-
-    /**
-     */
-    function transferFrom(
-        Store.State storage state,
-        address asset,
-        Types.BalancePath memory fromPath,
-        Types.BalancePath memory toPath,
-        uint256 amount
-    )
-        internal
-    {
-        Transfer.transferFrom(state, asset, fromPath, toPath, amount);
     }
 }
