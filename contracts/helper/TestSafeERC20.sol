@@ -26,12 +26,19 @@ import "./TestToken.sol";
 contract TestSafeERC20 {
     address public tokenAddress;
 
-    constructor () public {
+    constructor ()
+        public
+    {
         tokenAddress = address(new TestToken("test", "test", 18));
     }
 
     // transfer token out
-    function transfer(address to, uint256 amount) public {
+    function transfer(
+        address to,
+        uint256 amount
+    )
+        public
+    {
         SafeERC20.safeTransfer(tokenAddress, to, amount);
     }
 }

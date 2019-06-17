@@ -45,7 +45,11 @@ library Math {
      * @param multiple The amount we want a proportion of
      * @return Boolean indicating if there is a rounding error when calculating the proportion
      */
-    function isRoundingError(uint256 numerator, uint256 denominator, uint256 multiple)
+    function isRoundingError(
+        uint256 numerator,
+        uint256 denominator,
+        uint256 multiple
+    )
         internal
         pure
         returns (bool)
@@ -67,7 +71,11 @@ library Math {
      * @param multiple The amount we want a proportion of
      * @return The final proportion of multiple rounded down
      */
-    function getPartialAmountFloor(uint256 numerator, uint256 denominator, uint256 multiple)
+    function getPartialAmountFloor(
+        uint256 numerator,
+        uint256 denominator,
+        uint256 multiple
+    )
         internal
         pure
         returns (uint256)
@@ -83,7 +91,14 @@ library Math {
      * @param b Unsigned integer
      * @return The smaller of the two integers
      */
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+    function min(
+        uint256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (uint256)
+    {
         return a < b ? a : b;
     }
 }

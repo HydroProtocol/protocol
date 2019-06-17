@@ -28,11 +28,20 @@ contract Oracle is Ownable {
     mapping(address => uint256) public tokenPrices;
 
     // price decimals is 18 (ORACLE_PRICE_BASE)
-    function setPrice(address asset, uint256 price) public onlyOwner {
+    function setPrice(
+        address asset,
+        uint256 price
+    ) public onlyOwner {
         tokenPrices[asset] = price;
     }
 
-    function getPrice(address asset) public view returns (uint256) {
+    function getPrice(
+        address asset
+    )
+        public
+        view
+        returns (uint256)
+    {
         return tokenPrices[asset];
     }
 }

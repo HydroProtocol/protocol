@@ -26,7 +26,13 @@ contract TestToken is StandardToken {
     uint8 public decimals = 18;
     uint public totalSupply = 1560000000 * 10**18;
 
-    constructor(string memory _name, string memory _symbol, uint8 _decimals) public {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals
+    )
+        public
+    {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;

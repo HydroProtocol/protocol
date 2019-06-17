@@ -39,7 +39,11 @@ library Signature {
      * @param signature The signature data passed along with the order to validate against
      * @return True if the calculated signature matches the order signature data, false otherwise.
      */
-    function isValidSignature(bytes32 hash, address signerAddress, Types.Signature memory signature)
+    function isValidSignature(
+        bytes32 hash,
+        address signerAddress,
+        Types.Signature memory signature
+    )
         internal
         pure
         returns (bool)

@@ -2,15 +2,18 @@
 
     Copyright 2019 The Hydro Protocol Foundation
 
-    Licensed under the Apache License, Version 2.0 (the "License");
+    Licensed under the Apache License,
+        Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
         http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
+    Unless required by applicable law or agreed to in writing,
+        software
     distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+        either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
 
@@ -27,24 +30,73 @@ library Events {
     //////////////////
 
     // some assets move into contract
-    event Deposit(address asset, address from, Types.BalancePath toPath, uint256 amount);
+    event Deposit(
+        address asset,
+        address from,
+        Types.BalancePath toPath,
+        uint256 amount
+    );
 
-    function logDeposit(address asset, address from, Types.BalancePath memory toPath, uint256 amount) internal {
-        emit Deposit(asset, from, toPath, amount);
+    function logDeposit(
+        address asset,
+        address from,
+        Types.BalancePath memory toPath,
+        uint256 amount
+    )
+        internal
+    {
+        emit Deposit(
+            asset,
+            from,
+            toPath,
+            amount
+        );
     }
 
     // some assets move out of contract
-    event Withdraw(address asset, Types.BalancePath fromPath, address to, uint256 amount);
+    event Withdraw(
+        address asset,
+        Types.BalancePath fromPath,
+        address to,
+        uint256 amount
+    );
 
-    function logWithdraw(address asset, Types.BalancePath memory fromPath, address to, uint256 amount) internal {
-        emit Withdraw(asset, fromPath, to, amount);
+    function logWithdraw(
+        address asset,
+        Types.BalancePath memory fromPath,
+        address to,
+        uint256 amount
+    )
+        internal
+    {
+        emit Withdraw(asset,
+            fromPath,
+            to,
+            amount
+        );
     }
 
     // internal assets movement
-    event Transfer(address asset, Types.BalancePath fromPath, Types.BalancePath toPath, uint256 amount);
+    event Transfer(
+        address asset,
+        Types.BalancePath fromPath,
+        Types.BalancePath toPath,
+        uint256 amount
+    );
 
-    function logTransfer(address asset, Types.BalancePath memory fromPath, Types.BalancePath memory toPath, uint256 amount) internal {
-        emit Transfer(asset, fromPath, toPath, amount);
+    function logTransfer(
+        address asset,
+        Types.BalancePath memory fromPath,
+        Types.BalancePath memory toPath,
+        uint256 amount
+    )
+        internal
+    {
+        emit Transfer(asset,
+            fromPath,
+            toPath,
+            amount
+        );
     }
 
     ///////////////////
@@ -53,7 +105,11 @@ library Events {
 
     event CreateMarket(Types.Market market);
 
-    function logCreateMarket(Types.Market memory market) internal {
+    function logCreateMarket(
+        Types.Market memory market
+    )
+        internal
+    {
         emit CreateMarket(market);
     }
 
@@ -85,31 +141,73 @@ library Events {
 
     event UpdateDiscountConfig(bytes32 newConfig);
 
-    function logUpdateDiscountConfig(bytes32 newConfig) internal {
+    function logUpdateDiscountConfig(
+        bytes32 newConfig
+    )
+        internal
+    {
         emit UpdateDiscountConfig(newConfig);
     }
 
-    event RegisterAsset(address asset, address oracleAddress, address poolTokenAddress);
+    event RegisterAsset(
+        address asset,
+        address oracleAddress,
+        address poolTokenAddress
+    );
 
-    function logRegisterAsset(address asset, address oracleAddress, address poolTokenAddress) internal {
-        emit RegisterAsset(asset, oracleAddress, poolTokenAddress);
+    function logRegisterAsset(
+        address asset,
+        address oracleAddress,
+        address poolTokenAddress
+    )
+        internal
+    {
+        emit RegisterAsset(asset,
+            oracleAddress,
+            poolTokenAddress
+        );
     }
 
-    event UpdateAssetOracle(address asset, address oracleAddress);
+    event UpdateAssetOracle(
+        address asset,
+        address oracleAddress
+    );
 
-    function logUpdateAssetOracle(address asset, address oracleAddress) internal {
-        emit UpdateAssetOracle(asset, oracleAddress);
+    function logUpdateAssetOracle(
+        address asset,
+        address oracleAddress
+    )
+        internal
+    {
+        emit UpdateAssetOracle(
+            asset,
+            oracleAddress
+        );
     }
 
-    event UpdateAuctionInitiatorRewardRatio(uint256 newInitiatorRewardRatio);
+    event UpdateAuctionInitiatorRewardRatio(
+        uint256 newInitiatorRewardRatio
+    );
 
-    function logUpdateAuctionInitiatorRewardRatio(uint256 newInitiatorRewardRatio) internal {
-        emit UpdateAuctionInitiatorRewardRatio(newInitiatorRewardRatio);
+    function logUpdateAuctionInitiatorRewardRatio(
+        uint256 newInitiatorRewardRatio
+    )
+        internal
+    {
+        emit UpdateAuctionInitiatorRewardRatio(
+            newInitiatorRewardRatio
+        );
     }
 
-    event UpdateInsuranceRatio(uint256 newInsuranceRatio);
+    event UpdateInsuranceRatio(
+        uint256 newInsuranceRatio
+    );
 
-    function logUpdateInsuranceRatio(uint256 newInsuranceRatio) internal {
+    function logUpdateInsuranceRatio(
+        uint256 newInsuranceRatio
+    )
+        internal
+    {
         emit UpdateInsuranceRatio(newInsuranceRatio);
     }
 
@@ -118,23 +216,46 @@ library Events {
     /////////////
 
     // an auction is created
-    event AuctionCreate(uint256 auctionID);
+    event AuctionCreate(
+        uint256 auctionID
+    );
 
-    function logAuctionCreate(uint256 auctionID) internal {
+    function logAuctionCreate(
+        uint256 auctionID
+    )
+        internal
+    {
         emit AuctionCreate(auctionID);
     }
 
     // a user filled an acution
-    event FillAuction(uint256 auctionID, uint256 filledAmount);
+    event FillAuction(
+        uint256 auctionID,
+        uint256 filledAmount
+    );
 
-    function logFillAuction(uint256 auctionID, uint256 filledAmount) internal {
-        emit FillAuction(auctionID, filledAmount);
+    function logFillAuction(
+        uint256 auctionID,
+        uint256 filledAmount
+    )
+        internal
+    {
+        emit FillAuction(
+            auctionID,
+            filledAmount
+        );
     }
 
     // an auction is finished
-    event AuctionFinished(uint256 auctionID);
+    event AuctionFinished(
+        uint256 auctionID
+    );
 
-    function logAuctionFinished(uint256 auctionID) internal {
+    function logAuctionFinished(
+        uint256 auctionID
+    )
+        internal
+    {
         emit AuctionFinished(auctionID);
     }
 
@@ -142,27 +263,61 @@ library Events {
     // Relayer //
     /////////////
 
-    event RelayerApproveDelegate(address indexed relayer, address indexed delegate);
+    event RelayerApproveDelegate(
+        address indexed relayer,
+        address indexed delegate
+    );
 
-    function logRelayerApproveDelegate(address relayer, address delegate) internal {
-        emit RelayerApproveDelegate(relayer, delegate);
+    function logRelayerApproveDelegate(
+        address relayer,
+        address delegate
+    )
+        internal
+    {
+        emit RelayerApproveDelegate(
+            relayer,
+            delegate
+        );
     }
 
-    event RelayerRevokeDelegate(address indexed relayer, address indexed delegate);
+    event RelayerRevokeDelegate(
+        address indexed relayer,
+        address indexed delegate
+    );
 
-    function logRelayerRevokeDelegate(address relayer, address delegate) internal {
-        emit RelayerRevokeDelegate(relayer, delegate);
+    function logRelayerRevokeDelegate(
+        address relayer,
+        address delegate
+    )
+        internal
+    {
+        emit RelayerRevokeDelegate(
+            relayer,
+            delegate
+        );
     }
 
-    event RelayerExit(address indexed relayer);
+    event RelayerExit(
+        address indexed relayer
+    );
 
-    function logRelayerExit(address relayer) internal {
+    function logRelayerExit(
+        address relayer
+    )
+        internal
+    {
         emit RelayerExit(relayer);
     }
 
-    event RelayerJoin(address indexed relayer);
+    event RelayerJoin(
+        address indexed relayer
+    );
 
-    function logRelayerJoin(address relayer) internal {
+    function logRelayerJoin(
+        address relayer
+    )
+        internal
+    {
         emit RelayerJoin(relayer);
     }
 
@@ -182,9 +337,15 @@ library Events {
         uint256 takerGasFee,
         uint256 baseAssetFilledAmount,
         uint256 quoteAssetFilledAmount
+
     );
 
-    function logExchangeMatch(Types.MatchResult memory result, Types.OrderAddressSet memory addressSet) internal {
+    function logExchangeMatch(
+        Types.MatchResult memory result,
+        Types.OrderAddressSet memory addressSet
+    )
+        internal
+    {
         emit ExchangeMatch(
             addressSet,
             result.maker,
@@ -197,12 +358,19 @@ library Events {
             result.takerGasFee,
             result.baseAssetFilledAmount,
             result.quoteAssetFilledAmount
+
         );
     }
 
-    event OrderCancel(bytes32 indexed orderHash);
+    event OrderCancel(
+        bytes32 indexed orderHash
+    );
 
-    function logOrderCancel(bytes32 orderHash) internal {
+    function logOrderCancel(
+        bytes32 orderHash
+    )
+        internal
+    {
         emit OrderCancel(orderHash);
     }
 }

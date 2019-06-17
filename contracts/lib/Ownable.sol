@@ -31,13 +31,19 @@ contract Ownable {
     );
 
     /** @dev The Ownable constructor sets the original `owner` of the contract to the sender account. */
-    constructor() internal {
+    constructor()
+        internal
+    {
         _owner = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
     }
 
     /** @return the address of the owner. */
-    function owner() public view returns(address) {
+    function owner()
+        public
+        view
+        returns(address)
+    {
         return _owner;
     }
 
@@ -48,7 +54,11 @@ contract Ownable {
     }
 
     /** @return true if `msg.sender` is the owner of the contract. */
-    function isOwner() public view returns(bool) {
+    function isOwner()
+        public
+        view
+        returns(bool)
+    {
         return msg.sender == _owner;
     }
 
@@ -57,7 +67,10 @@ contract Ownable {
      * It will not be possible to call the functions with the `onlyOwner`
      * modifier anymore.
      */
-    function renounceOwnership() public onlyOwner {
+    function renounceOwnership()
+        public
+        onlyOwner
+    {
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
     }
@@ -65,7 +78,12 @@ contract Ownable {
     /** @dev Allows the current owner to transfer control of the contract to a newOwner.
      * @param newOwner The address to transfer ownership to.
      */
-    function transferOwnership(address newOwner) public onlyOwner {
+    function transferOwnership(
+        address newOwner
+    )
+        public
+        onlyOwner
+    {
         require(newOwner != address(0), "INVALID_OWNER");
         emit OwnershipTransferred(_owner, newOwner);
         _owner = newOwner;

@@ -41,7 +41,13 @@ contract StandardToken {
     * @param _to The address to transfer to.
     * @param _amount The amount to be transferred.
     */
-    function transfer(address _to, uint256 _amount) public returns (bool) {
+    function transfer(
+        address _to,
+        uint256 _amount
+    )
+        public
+        returns (bool)
+    {
         require(_to != address(0), "TO_ADDRESS_IS_EMPTY");
         require(_amount <= balances[msg.sender], "BALANCE_NOT_ENOUGH");
 
@@ -67,7 +73,14 @@ contract StandardToken {
     * @param _to address The address which you want to transfer to
     * @param _amount uint256 the amount of tokens to be transferred
     */
-    function transferFrom(address _from, address _to, uint256 _amount) public returns (bool) {
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _amount
+    )
+        public
+        returns (bool)
+    {
         require(_to != address(0), "TO_ADDRESS_IS_EMPTY");
         require(_amount <= balances[_from], "BALANCE_NOT_ENOUGH");
         require(_amount <= allowed[_from][msg.sender], "ALLOWANCE_NOT_ENOUGH");
@@ -84,7 +97,13 @@ contract StandardToken {
     * @param _spender The address which will spend the funds.
     * @param _amount The amount of tokens to be spent.
     */
-    function approve(address _spender, uint256 _amount) public returns (bool) {
+    function approve(
+        address _spender,
+        uint256 _amount
+    )
+        public
+        returns (bool)
+    {
         allowed[msg.sender][_spender] = _amount;
         emit Approval(msg.sender, _spender, _amount);
         return true;
@@ -96,7 +115,14 @@ contract StandardToken {
     * @param _spender address The address which will spend the funds.
     * @return A uint256 specifying the amount of tokens still available for the spender.
     */
-    function allowance(address _owner, address _spender) public view returns (uint256) {
+    function allowance(
+        address _owner,
+        address _spender
+    )
+        public
+        view
+        returns (uint256)
+    {
         return allowed[_owner][_spender];
     }
 }

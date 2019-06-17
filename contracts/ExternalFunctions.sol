@@ -337,27 +337,43 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     // Relayer Functions //
     ///////////////////////
 
-    function approveDelegate(address delegate) external {
+    function approveDelegate(address delegate)
+        external
+    {
         Relayer.approveDelegate(state, delegate);
     }
 
-    function revokeDelegate(address delegate) external {
+    function revokeDelegate(address delegate)
+        external
+    {
         Relayer.revokeDelegate(state, delegate);
     }
 
-    function joinIncentiveSystem() external {
+    function joinIncentiveSystem()
+        external
+    {
         Relayer.joinIncentiveSystem(state);
     }
 
-    function exitIncentiveSystem() external {
+    function exitIncentiveSystem()
+        external
+    {
         Relayer.exitIncentiveSystem(state);
     }
 
-    function canMatchOrdersFrom(address relayer) external view returns (bool) {
+    function canMatchOrdersFrom(address relayer)
+        external
+        view
+        returns (bool)
+    {
         return Relayer.canMatchOrdersFrom(state, relayer);
     }
 
-    function isParticipant(address relayer) external view returns (bool) {
+    function isParticipant(address relayer)
+        external
+        view
+        returns (bool)
+    {
         return Relayer.isParticipant(state, relayer);
     }
 
@@ -365,11 +381,16 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     // Balances Functions //
     ////////////////////////
 
-    function deposit(address asset, uint256 amount) external payable {
+    function deposit(address asset, uint256 amount)
+        external
+        payable
+    {
         Transfer.depositFor(state, asset, msg.sender, BalancePath.getCommonPath(msg.sender), amount);
     }
 
-    function withdraw(address asset, uint256 amount) external {
+    function withdraw(address asset, uint256 amount)
+        external
+    {
         Transfer.withdrawFrom(state, asset, BalancePath.getCommonPath(msg.sender), msg.sender, amount);
     }
 
@@ -387,20 +408,46 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         Transfer.transferFrom(state, asset, fromBalancePath, toBalancePath, amount);
     }
 
-    function balanceOf(address asset, address user) external view returns (uint256) {
+    function balanceOf(
+        address asset,
+        address user
+    )
+        external
+        view
+        returns (uint256)
+    {
         return Transfer.balanceOf(state,  BalancePath.getCommonPath(user), asset);
     }
 
-    function marketBalanceOf(uint16 marketID, address asset, address user) external view returns (uint256) {
+    function marketBalanceOf(
+        uint16 marketID,
+        address asset,
+        address user
+    )
+        external
+        view
+        returns (uint256)
+    {
         return Transfer.balanceOf(state,  BalancePath.getMarketPath(user, marketID), asset);
     }
 
-    function getMarketTransferableAmount(uint16 marketID, address asset, address user) external view returns (uint256) {
+    function getMarketTransferableAmount(
+        uint16 marketID,
+        address asset,
+        address user
+    )
+        external
+        view
+        returns (uint256)
+    {
         return CollateralAccounts.getTransferableAmount(state, marketID, user, asset);
     }
 
     /** fallback function to allow deposit ether into this contract */
-    function () external payable {
+    function ()
+        external
+        payable
+    {
         // deposit ${msg.value} ether for ${msg.sender}
         Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, BalancePath.getCommonPath(msg.sender), msg.value);
     }
@@ -409,27 +456,57 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     // Exchange Functions //
     ////////////////////////
 
-    function cancelOrder(Types.Order calldata order) external {
+    function cancelOrder(
+        Types.Order calldata order
+    )
+        external
+    {
         Exchange.cancelOrder(state, order);
     }
 
-    function isOrderCancelled(bytes32 orderHash) external view returns(bool) {
+    function isOrderCancelled(
+        bytes32 orderHash
+    )
+        external
+        view
+        returns(bool)
+    {
         return state.exchange.cancelled[orderHash];
     }
 
-    function matchOrders(Types.MatchParams memory params) public {
+    function matchOrders(
+        Types.MatchParams memory params
+    )
+        public
+    {
         Exchange.matchOrders(state, params);
     }
 
-    function getDiscountedRate(address user) external view returns (uint256) {
+    function getDiscountedRate(
+        address user
+    )
+        external
+        view
+        returns (uint256)
+    {
         return Discount.getDiscountedRate(state, user);
     }
 
-    function getHydroTokenAddress() external view returns (address) {
+    function getHydroTokenAddress()
+        external
+        view
+        returns (address)
+    {
         return state.exchange.hotTokenAddress;
     }
 
-    function getOrderFilledAmount(bytes32 orderHash) external view returns (uint256) {
+    function getOrderFilledAmount(
+        bytes32 orderHash
+    )
+        external
+        view
+        returns (uint256)
+    {
         return state.exchange.filled[orderHash];
     }
 }

@@ -20,6 +20,7 @@ pragma solidity 0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./Relayer.sol";
+import "./Discount.sol";
 
 import "../lib/SafeMath.sol";
 import "../lib/Math.sol";
@@ -29,8 +30,6 @@ import "../lib/Types.sol";
 import "../lib/Transfer.sol";
 import "../lib/Events.sol";
 import "../lib/Transfer.sol";
-
-import "./Discount.sol";
 
 
 library Exchange {
