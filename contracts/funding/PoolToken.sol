@@ -22,10 +22,6 @@ pragma experimental ABIEncoderV2;
 import "../lib/Ownable.sol";
 import "../helper/StandardToken.sol";
 
-contract IHydroPool {
-    function redeemPoolToken(address to, uint256 value) public;
-}
-
 contract PoolToken is StandardToken, Ownable {
 
     string public name;
