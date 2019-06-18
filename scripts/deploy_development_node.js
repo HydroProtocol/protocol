@@ -35,34 +35,10 @@ module.exports = async () => {
         const etherAddress = '0x0000000000000000000000000000000000000000';
         await hydro.registerAsset(etherAddress, oracle.address, 'Ether', 'Ether', 18);
 
-        await hydro.registerAsset(
-            hotToken.address,
-            '0xf000000000000000000000000000000000000000',
-            'hotToken',
-            'hotToken',
-            18
-        );
-        await hydro.registerAsset(
-            tokenDAI.address,
-            '0xf000000000000000000000000000000000000000',
-            'tokenDAI',
-            'tokenDAI',
-            18
-        );
-        await hydro.registerAsset(
-            tokenUSDC.address,
-            '0xf000000000000000000000000000000000000000',
-            'tokenUSDC',
-            'tokenUSDC',
-            18
-        );
-        await hydro.registerAsset(
-            tokenUSDT.address,
-            '0xf000000000000000000000000000000000000000',
-            'tokenUSDT',
-            'tokenUSDT',
-            18
-        );
+        await hydro.registerAsset(hotToken.address, oracle.address, 'hotToken', 'hotToken', 18);
+        await hydro.registerAsset(tokenDAI.address, oracle.address, 'tokenDAI', 'tokenDAI', 18);
+        await hydro.registerAsset(tokenUSDC.address, oracle.address, 'tokenUSDC', 'tokenUSDC', 18);
+        await hydro.registerAsset(tokenUSDT.address, oracle.address, 'tokenUSDT', 'tokenUSDT', 18);
 
         await oracle.setPrice(etherAddress, toWei('100'));
         await oracle.setPrice(hotToken.address, toWei('0.1'));
