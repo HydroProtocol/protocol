@@ -1,10 +1,16 @@
 const TestToken = artifacts.require('./helper/TestToken.sol');
 const BigNumber = require('bignumber.js');
 const Hydro = artifacts.require('./Hydro.sol');
+const PriceOracle = artifacts.require('./PriceOracle.sol');
 
 BigNumber.config({
     EXPONENTIAL_AT: 1000
 });
+
+const wei = new BigNumber('1000000000000000000');
+const toWei = x => {
+    return new BigNumber(x).times(wei).toString();
+};
 
 module.exports = async () => {
     try {
@@ -22,6 +28,12 @@ module.exports = async () => {
 
         const hydro = await Hydro.new(hotToken.address);
         console.log('Hydro', hydro.address);
+
+        const oracle = await PriceOracle.new();
+        console.log('Oracle', oracle.address);
+
+        const etherAddress = '0x0000000000000000000000000000000000000000';
+        await hydro.registerAsset(etherAddress, oracle.address, 'Ether', 'Ether', 18);
 
         await hydro.registerAsset(
             hotToken.address,
@@ -52,8 +64,14 @@ module.exports = async () => {
             18
         );
 
+        await oracle.setPrice(etherAddress, toWei('100'));
+        await oracle.setPrice(hotToken.address, toWei('0.1'));
+        await oracle.setPrice(tokenDAI.address, toWei('1'));
+        await oracle.setPrice(tokenUSDC.address, toWei('1'));
+        await oracle.setPrice(tokenUSDT.address, toWei('1'));
+
         await hydro.createMarket({
-            liquidateRate: toWei('1'),
+            liquidateRate: toWei('1.1'),
             withdrawRate: toWei('2'),
             baseAsset: hotToken.address,
             quoteAsset: tokenDAI.address,
@@ -62,9 +80,27 @@ module.exports = async () => {
         });
 
         await hydro.createMarket({
-            liquidateRate: toWei('1'),
+            liquidateRate: toWei('1.1'),
             withdrawRate: toWei('2'),
             baseAsset: hotToken.address,
+            quoteAsset: tokenUSDC.address,
+            auctionRatioStart: '10000000000000000',
+            auctionRatioPerBlock: '10000000000000000'
+        });
+
+        await hydro.createMarket({
+            liquidateRate: toWei('1.1'),
+            withdrawRate: toWei('2'),
+            baseAsset: etherAddress,
+            quoteAsset: tokenDAI.address,
+            auctionRatioStart: '10000000000000000',
+            auctionRatioPerBlock: '10000000000000000'
+        });
+
+        await hydro.createMarket({
+            liquidateRate: toWei('1.1'),
+            withdrawRate: toWei('2'),
+            baseAsset: etherAddress,
             quoteAsset: tokenUSDC.address,
             auctionRatioStart: '10000000000000000',
             auctionRatioPerBlock: '10000000000000000'
