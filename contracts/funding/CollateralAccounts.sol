@@ -26,7 +26,7 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../funding/Auctions.sol";
 import "../lib/Types.sol";
-import "./Pool.sol";
+import "./LendingPool.sol";
 
 library CollateralAccounts {
     using SafeMath for uint256;
@@ -46,8 +46,8 @@ library CollateralAccounts {
         uint256 baseUSDPrice = state.oracles[market.baseAsset].getPrice(market.baseAsset);
         uint256 quoteUSDPrice = state.oracles[market.quoteAsset].getPrice(market.quoteAsset);
 
-        details.debtsTotalUSDValue = baseUSDPrice.mul(Pool.getPoolBorrowOf(state, market.baseAsset, user, marketID)).add(
-            quoteUSDPrice.mul(Pool.getPoolBorrowOf(state, market.quoteAsset, user, marketID))
+        details.debtsTotalUSDValue = baseUSDPrice.mul(LendingPool.getBorrowOf(state, market.baseAsset, user, marketID)).add(
+            quoteUSDPrice.mul(LendingPool.getBorrowOf(state, market.quoteAsset, user, marketID))
         ).div(Consts.ORACLE_PRICE_BASE());
 
         details.balancesTotalUSDValue = baseUSDPrice.mul(account.balances[market.baseAsset]).add(
@@ -115,14 +115,14 @@ library CollateralAccounts {
         Types.Market storage market = state.markets[marketID];
         Types.CollateralAccount storage account = state.accounts[user][marketID];
 
-        Pool.repay(state, user, marketID, market.baseAsset, account.balances[market.baseAsset]);
-        Pool.repay(state, user, marketID, market.quoteAsset, account.balances[market.quoteAsset]);
+        LendingPool.repay(state, user, marketID, market.baseAsset, account.balances[market.baseAsset]);
+        LendingPool.repay(state, user, marketID, market.quoteAsset, account.balances[market.quoteAsset]);
 
         address collateralAsset;
         address debtAsset;
 
-        uint256 leftBaseAssetDebt = Pool.getPoolBorrowOf(state, market.baseAsset, user, marketID);
-        uint256 leftQuoteAssetDebt = Pool.getPoolBorrowOf(state, market.quoteAsset, user, marketID);
+        uint256 leftBaseAssetDebt = LendingPool.getBorrowOf(state, market.baseAsset, user, marketID);
+        uint256 leftQuoteAssetDebt = LendingPool.getBorrowOf(state, market.quoteAsset, user, marketID);
 
         if (leftBaseAssetDebt == 0 && leftQuoteAssetDebt == 0) {
             // no auction

@@ -114,7 +114,7 @@ const deposit = async (token, user, amount) => {
 
 const supply = async (token, user, amount) => {
     const hydro = await Hydro.deployed();
-    await hydro.supplyPool(token.address, amount, {
+    await hydro.supply(token.address, amount, {
         from: user
     });
 };
@@ -124,7 +124,7 @@ const createAsset = async assetConfig => {
     const hydro = await Hydro.deployed();
     const owner = accounts[0];
 
-    const { initBalances, initCollaterals, initPool, oraclePrice } = assetConfig;
+    const { initBalances, initCollaterals, initLendingPool, oraclePrice } = assetConfig;
 
     let token;
 
@@ -179,10 +179,10 @@ const createAsset = async assetConfig => {
     //     }
     // }
 
-    // if (initPool) {
-    //     for (let j = 0; j < Object.keys(initPool).length; j++) {
-    //         const user = Object.keys(initPool)[j];
-    //         const amount = initPool[user];
+    // if (initLendingPool) {
+    //     for (let j = 0; j < Object.keys(initLendingPool).length; j++) {
+    //         const user = Object.keys(initLendingPool)[j];
+    //         const amount = initLendingPool[user];
     //         await depositAsset(token, user, amount);
     //         await supply(token, user, amount);
     //     }

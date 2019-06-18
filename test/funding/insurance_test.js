@@ -75,7 +75,7 @@ contract('Insurance', accounts => {
     };
 
     beforeEach(async () => {
-        await mineAt(async () => hydro.supplyPool(USDAddr, toWei('1000'), { from: u1 }), initTime);
+        await mineAt(async () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }), initTime);
         await addCollateral(u2, ETHAddr, toWei('1'), initTime);
         await mineAt(async () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }), initTime);
     });
@@ -88,7 +88,7 @@ contract('Insurance', accounts => {
 
     it('check insurance balance', async () => {
         await mineAt(
-            async () => hydro.supplyPool(USDAddr, toWei('1000'), { from: u1 }),
+            async () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }),
             initTime + 86400 * 90
         );
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '61643835616438500');
@@ -108,13 +108,10 @@ contract('Insurance', accounts => {
             (await hydro.getInsuranceBalance(USDAddr)).toString(),
             '155342465753424658000'
         );
-        assert.equal(
-            (await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(),
-            '152602739726027397000'
-        );
+        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '152602739726027397000');
         await mineAt(async () => hydro.badDebt(0), initTime + 90 * 86400);
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '2739726027397261000');
-        assert.equal((await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(), '0');
+        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).debtsTotalUSDValue, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).balancesTotalUSDValue, '0');
@@ -134,20 +131,14 @@ contract('Insurance', accounts => {
             (await hydro.getInsuranceBalance(USDAddr)).toString(),
             '155342465753424658000'
         );
-        assert.equal(
-            (await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(),
-            '162602739726027397000'
-        );
-        assert.equal(
-            (await hydro.getPoolTotalSupply(USDAddr)).toString(),
-            '1017260273972602739000'
-        );
+        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '162602739726027397000');
+        assert.equal((await hydro.getTotalSupply(USDAddr)).toString(), '1017260273972602739000');
         await mineAt(async () => hydro.badDebt(0), initTime + 90 * 86400);
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '0');
-        assert.equal((await hydro.getPoolBorrowOf(USDAddr, u2, 0)).toString(), '0');
+        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).debtsTotalUSDValue, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).balancesTotalUSDValue, '0');
-        assert.equal((await hydro.getPoolTotalSupply(USDAddr)).toString(), toWei('1010'));
+        assert.equal((await hydro.getTotalSupply(USDAddr)).toString(), toWei('1010'));
     });
 });

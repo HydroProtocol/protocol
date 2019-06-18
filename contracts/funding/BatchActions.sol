@@ -19,7 +19,7 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./Pool.sol";
+import "./LendingPool.sol";
 
 import "../lib/Store.sol";
 import "../lib/Transfer.sol";
@@ -133,7 +133,7 @@ library BatchActions {
             uint256 amount
         ) = abi.decode(action.encodedParams, (uint16, address, uint256));
 
-        Pool.borrow(state, msg.sender, marketID, asset, amount);
+        LendingPool.borrow(state, msg.sender, marketID, asset, amount);
     }
 
     function repay(
@@ -148,7 +148,7 @@ library BatchActions {
             uint256 amount
         ) = abi.decode(action.encodedParams, (uint16, address, uint256));
 
-        Pool.repay(state, msg.sender, marketID, asset, amount);
+        LendingPool.repay(state, msg.sender, marketID, asset, amount);
     }
 
     function supply(
@@ -162,7 +162,7 @@ library BatchActions {
             uint256 amount
         ) = abi.decode(action.encodedParams, (address, uint256));
 
-        Pool.supply(state, asset, amount, msg.sender);
+        LendingPool.supply(state, asset, amount, msg.sender);
     }
 
     function unsupply(
@@ -176,6 +176,6 @@ library BatchActions {
             uint256 amount
         ) = abi.decode(action.encodedParams, (address, uint256));
 
-        Pool.withdraw(state, asset, amount, msg.sender);
+        LendingPool.withdraw(state, asset, amount, msg.sender);
     }
 }

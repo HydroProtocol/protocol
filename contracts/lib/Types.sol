@@ -28,11 +28,6 @@ import "./Signature.sol";
 import "./Decimal.sol";
 
 library Types {
-    enum LoanSource {
-        Pool,
-        P2P
-    }
-
     enum AuctionStatus {
         InProgress,
         Finished

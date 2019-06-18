@@ -24,7 +24,7 @@ import "./Modifiers.sol";
 
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
-import "./funding/Pool.sol";
+import "./funding/LendingPool.sol";
 import "./exchange/Discount.sol";
 import "./interfaces/IPriceOracle.sol";
 
@@ -90,9 +90,9 @@ contract Operations is Ownable, GlobalStore, Modifiers {
         requireAssetNotExist(asset)
     {
         state.oracles[asset] = IPriceOracle(oracleAddress);
-        Pool.initializeAssetPool(state, asset);
+        LendingPool.initializeAssetLendingPool(state, asset);
 
-        address poolTokenAddress = Pool.createPoolToken(
+        address poolTokenAddress = LendingPool.createLendingPoolToken(
             state,
             asset,
             poolTokenName,

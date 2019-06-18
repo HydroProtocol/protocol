@@ -22,7 +22,7 @@ pragma experimental ABIEncoderV2;
 import "../lib/Ownable.sol";
 import "../helper/StandardToken.sol";
 
-contract PoolToken is StandardToken, Ownable {
+contract LendingPoolToken is StandardToken, Ownable {
     string public name;
     string public symbol;
     uint8 public decimals;

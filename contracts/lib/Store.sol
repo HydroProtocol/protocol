@@ -103,7 +103,7 @@ library Store {
         address hotTokenAddress;
     }
 
-    struct PoolState {
+    struct LendingPoolState {
         uint256 insuranceRatio;
 
         mapping (address => uint256) borrowIndex; // decimal
@@ -156,7 +156,7 @@ library Store {
         // insurance balances
         mapping(address => uint256) insuranceBalances;
 
-        PoolState pool;
+        LendingPoolState pool;
 
         ExchangeState exchange;
 

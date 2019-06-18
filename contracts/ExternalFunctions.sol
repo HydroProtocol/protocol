@@ -25,7 +25,7 @@ import "./Modifiers.sol";
 import "./exchange/Exchange.sol";
 import "./exchange/Relayer.sol";
 
-import "./funding/Pool.sol";
+import "./funding/LendingPool.sol";
 import "./funding/CollateralAccounts.sol";
 import "./funding/BatchActions.sol";
 import "./funding/Auctions.sol";
@@ -171,11 +171,11 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return Auctions.fillAuctionWithAmount(state, auctionID, amount);
     }
 
-    ////////////////////
-    // Pool Functions //
-    ////////////////////
+    ///////////////////////////
+    // LendingPool Functions //
+    ///////////////////////////
 
-    function getPoolTotalBorrow(
+    function getTotalBorrow(
         address asset
     )
         external
@@ -183,10 +183,10 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return Pool.getPoolTotalBorrow(state, asset);
+        return LendingPool.getTotalBorrow(state, asset);
     }
 
-    function getPoolTotalSupply(
+    function getTotalSupply(
         address asset
     )
         external
@@ -194,10 +194,10 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return Pool.getPoolTotalSupply(state, asset);
+        return LendingPool.getTotalSupply(state, asset);
     }
 
-    function getPoolBorrowOf(
+    function getBorrowOf(
         address asset,
         address user,
         uint16 marketID
@@ -207,10 +207,10 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireMarketIDAndAssetMatch(marketID, asset)
         returns (uint256)
     {
-        return Pool.getPoolBorrowOf(state, asset, user, marketID);
+        return LendingPool.getBorrowOf(state, asset, user, marketID);
     }
 
-    function getPoolSupplyOf(
+    function getSupplyOf(
         address asset,
         address user
     )
@@ -219,7 +219,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return Pool.getPoolSupplyOf(state, asset, user);
+        return LendingPool.getSupplyOf(state, asset, user);
     }
 
     function getInterestRates(
@@ -231,17 +231,17 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
-        return Pool.getInterestRates(state, asset, extraBorrowAmount);
+        return LendingPool.getInterestRates(state, asset, extraBorrowAmount);
     }
 
-    function supplyPool(
+    function supply(
         address asset,
         uint256 amount
     )
         external
         requireAssetExist(asset)
     {
-        Pool.supply(
+        LendingPool.supply(
             state,
             asset,
             amount,
@@ -249,14 +249,14 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         );
     }
 
-    function withdrawPool(
+    function unsupply(
         address asset,
         uint256 amount
     )
         external
         requireAssetExist(asset)
     {
-        Pool.withdraw(
+        LendingPool.withdraw(
             state,
             asset,
             amount,
@@ -272,7 +272,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         external
         requireMarketIDAndAssetMatch(marketID, asset)
     {
-        Pool.borrow(
+        LendingPool.borrow(
             state,
             msg.sender,
             marketID,
@@ -290,7 +290,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         external
         requireMarketIDAndAssetMatch(marketID, asset)
     {
-        Pool.repay(
+        LendingPool.repay(
             state,
             msg.sender,
             marketID,
@@ -299,7 +299,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         );
     }
 
-    function getPoolTokenAddress(
+    function getLendingPoolTokenAddress(
         address asset
     )
         external

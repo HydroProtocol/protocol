@@ -100,7 +100,7 @@
 //                 initBalances: {
 //                     [u1]: toWei('1000')
 //                 },
-//                 initPool: {
+//                 initLendingPool: {
 //                     [u1]: toWei('1000')
 //                 }
 //             }
@@ -195,7 +195,7 @@
 //                 initBalances: {
 //                     [u1]: toWei('1000')
 //                 },
-//                 initPool: {
+//                 initLendingPool: {
 //                     [u1]: toWei('1000')
 //                 }
 //             }
