@@ -99,6 +99,120 @@ library Events {
         );
     }
 
+    //////////////////
+    // Lending Pool //
+    //////////////////
+
+    event Borrow(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    );
+
+    function logBorrow(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Borrow(
+            user,
+            marketID,
+            asset,
+            amount
+        );
+    }
+
+    event Repay(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    );
+
+    function logRepay(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Repay(
+            user,
+            marketID,
+            asset,
+            amount
+        );
+    }
+
+    event Supply(
+        address user,
+        address asset,
+        uint256 amount
+    );
+
+    function logSupply(
+        address user,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Supply(
+            user,
+            asset,
+            amount
+        );
+    }
+
+    event Unsupply(
+        address user,
+        address asset,
+        uint256 amount
+    );
+
+    function logUnsupply(
+        address user,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Unsupply(
+            user,
+            asset,
+            amount
+        );
+    }
+
+    event Loss(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    );
+
+    function logLoss(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Loss(
+            user,
+            marketID,
+            asset,
+            amount
+        );
+    }
+
+
     ///////////////////
     // Admin Actions //
     ///////////////////
@@ -259,6 +373,32 @@ library Events {
         emit AuctionFinished(auctionID);
     }
 
+    event Compensation(
+        uint32 auctionID,
+        address debtAsset,
+        uint256 compensationAmount,
+        address collateralAsset,
+        uint256 collateralAmount
+    );
+
+    function logCompensation(
+        uint32 auctionID,
+        address debtAsset,
+        uint256 compensationAmount,
+        address collateralAsset,
+        uint256 collateralAmount
+    )
+        internal
+    {
+        emit Compensation(
+            auctionID,
+            debtAsset,
+            compensationAmount,
+            collateralAsset,
+            collateralAmount
+        );
+    }
+
     /////////////
     // Relayer //
     /////////////
@@ -325,7 +465,7 @@ library Events {
     // Exchange //
     //////////////
 
-    event ExchangeMatch(
+    event Match(
         Types.OrderAddressSet addressSet,
         address maker,
         address taker,
@@ -340,13 +480,13 @@ library Events {
 
     );
 
-    function logExchangeMatch(
+    function logMatch(
         Types.MatchResult memory result,
         Types.OrderAddressSet memory addressSet
     )
         internal
     {
-        emit ExchangeMatch(
+        emit Match(
             addressSet,
             result.maker,
             result.taker,
@@ -358,7 +498,6 @@ library Events {
             result.takerGasFee,
             result.baseAssetFilledAmount,
             result.quoteAssetFilledAmount
-
         );
     }
 
