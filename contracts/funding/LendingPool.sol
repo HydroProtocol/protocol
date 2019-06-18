@@ -206,6 +206,35 @@ library LendingPool {
         return repayAmount;
     }
 
+    function lose(
+        Store.State storage state,
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        uint256 totalLogicSupply = getTotalLogicSupply(
+            state,
+            asset
+        );
+
+        uint256 actualSupply = getTotalSupply(
+            state,
+            asset
+        ).sub(amount);
+
+        state.pool.supplyIndex[asset] = Decimal.divFloor(
+            actualSupply,
+            totalLogicSupply
+        );
+
+        state.pool.logicBorrow[user][marketID][asset] = 0;
+
+        Events.logLoss(user, marketID, asset, amount);
+    }
+
     function updateInterestRate(
         Store.State storage state,
         address asset
