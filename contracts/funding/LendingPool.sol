@@ -28,6 +28,7 @@ import "../lib/Events.sol";
 
 import "./InterestModel.sol";
 import "./LendingPoolToken.sol";
+import "./CollateralAccounts.sol";
 
 library LendingPool {
     using SafeMath for uint256;
@@ -163,6 +164,11 @@ library LendingPool {
 
         // update interest rate
         updateInterestRate(state, asset);
+
+        require(
+            !CollateralAccounts.getDetails(state, user, marketID).liquidable,
+            "MARKET_ACCOUNT_IS_LIQUIDABLE_AFTER_BORROW"
+        );
 
         Events.logBorrow(user, marketID, asset, amount);
     }

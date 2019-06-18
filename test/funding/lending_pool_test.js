@@ -194,7 +194,7 @@ contract('LendingPool', accounts => {
         await hydro.supply(USDAddr, toWei('5000'), { from: u1 });
         await assert.rejects(
             hydro.borrow(USDAddr, toWei('3000'), 0, { from: u2 }),
-            /CAN_NOT_BORROW_MORE_THAN_COLLATERAL/
+            /MARKET_ACCOUNT_IS_LIQUIDABLE_AFTER_BORROW/
         );
     });
 
