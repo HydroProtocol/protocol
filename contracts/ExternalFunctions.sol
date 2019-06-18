@@ -325,12 +325,12 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return state.insuranceBalances[asset];
     }
 
-    function badDebt(
+    function closeAbortiveAuction(
         uint32 auctionID
     )
         external
     {
-        Auctions.badDebt(state, auctionID);
+        Auctions.closeAbortiveAuction(state, auctionID);
     }
 
     ///////////////////////

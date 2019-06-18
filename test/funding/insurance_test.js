@@ -109,7 +109,7 @@ contract('Insurance', accounts => {
             '155342465753424658000'
         );
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '152602739726027397000');
-        await mineAt(async () => hydro.badDebt(0), initTime + 90 * 86400);
+        await mineAt(async () => hydro.closeAbortiveAuction(0), initTime + 90 * 86400);
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '2739726027397261000');
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
@@ -133,7 +133,7 @@ contract('Insurance', accounts => {
         );
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '162602739726027397000');
         assert.equal((await hydro.getTotalSupply(USDAddr)).toString(), '1017260273972602739000');
-        await mineAt(async () => hydro.badDebt(0), initTime + 90 * 86400);
+        await mineAt(async () => hydro.closeAbortiveAuction(0), initTime + 90 * 86400);
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '0');
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');

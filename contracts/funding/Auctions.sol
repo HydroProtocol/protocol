@@ -89,7 +89,7 @@ library Auctions {
         }
     }
 
-    function badDebt(
+    function closeAbortiveAuction(
         Store.State storage state,
         uint32 auctionID
     )
