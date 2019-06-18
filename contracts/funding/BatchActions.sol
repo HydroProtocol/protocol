@@ -88,8 +88,24 @@ library BatchActions {
     )
         internal
     {
-        (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
-        Transfer.depositFor(state, asset, msg.sender, BalancePath.getCommonPath(msg.sender), amount);
+        (
+            address asset,
+            uint256 amount
+        ) = abi.decode(
+            action.encodedParams,
+            (
+                address,
+                uint256
+            )
+        );
+
+        Transfer.depositFor(
+            state,
+            asset,
+            msg.sender,
+            BalancePath.getCommonPath(msg.sender),
+            amount
+        );
     }
 
     function withdraw(
@@ -98,8 +114,24 @@ library BatchActions {
     )
         internal
     {
-        (address asset, uint256 amount) = abi.decode(action.encodedParams, (address, uint256));
-        Transfer.withdrawFrom(state, asset, BalancePath.getCommonPath(msg.sender), msg.sender, amount);
+        (
+            address asset,
+            uint256 amount
+        ) = abi.decode(
+            action.encodedParams,
+            (
+                address,
+                uint256
+            )
+        );
+
+        Transfer.withdrawFrom(
+            state,
+            asset,
+            BalancePath.getCommonPath(msg.sender),
+            msg.sender,
+            amount
+        );
     }
 
     function transfer(
@@ -113,12 +145,26 @@ library BatchActions {
             Types.BalancePath memory fromBalancePath,
             Types.BalancePath memory toBalancePath,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (address, Types.BalancePath, Types.BalancePath, uint256));
+        ) = abi.decode(
+            action.encodedParams,
+            (
+                address,
+                Types.BalancePath,
+                Types.BalancePath,
+                uint256
+            )
+        );
 
         require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
         require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
 
-        Transfer.transferFrom(state, asset, fromBalancePath, toBalancePath, amount);
+        Transfer.transferFrom(
+            state,
+            asset,
+            fromBalancePath,
+            toBalancePath,
+            amount
+        );
     }
 
     function borrow(
@@ -131,9 +177,22 @@ library BatchActions {
             uint16 marketID,
             address asset,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (uint16, address, uint256));
+        ) = abi.decode(
+            action.encodedParams,
+            (
+                uint16,
+                address,
+                uint256
+            )
+        );
 
-        LendingPool.borrow(state, msg.sender, marketID, asset, amount);
+        LendingPool.borrow(
+            state,
+            msg.sender,
+            marketID,
+            asset,
+            amount
+        );
     }
 
     function repay(
@@ -146,9 +205,22 @@ library BatchActions {
             uint16 marketID,
             address asset,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (uint16, address, uint256));
+        ) = abi.decode(
+            action.encodedParams,
+            (
+                uint16,
+                address,
+                uint256
+            )
+        );
 
-        LendingPool.repay(state, msg.sender, marketID, asset, amount);
+        LendingPool.repay(
+            state,
+            msg.sender,
+            marketID,
+            asset,
+            amount
+        );
     }
 
     function supply(
@@ -160,9 +232,20 @@ library BatchActions {
         (
             address asset,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (address, uint256));
+        ) = abi.decode(
+            action.encodedParams,
+            (
+                address,
+                uint256
+            )
+        );
 
-        LendingPool.supply(state, asset, amount, msg.sender);
+        LendingPool.supply(
+            state,
+            asset,
+            amount,
+            msg.sender
+        );
     }
 
     function unsupply(
@@ -174,8 +257,19 @@ library BatchActions {
         (
             address asset,
             uint256 amount
-        ) = abi.decode(action.encodedParams, (address, uint256));
+        ) = abi.decode(
+            action.encodedParams,
+            (
+                address,
+                uint256
+            )
+        );
 
-        LendingPool.withdraw(state, asset, amount, msg.sender);
+        LendingPool.withdraw(
+            state,
+            asset,
+            amount,
+            msg.sender
+        );
     }
 }
