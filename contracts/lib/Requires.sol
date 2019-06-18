@@ -16,77 +16,98 @@
 
 */
 
-pragma solidity 0.5.8;
+pragma solidity ^0.5.8;
+pragma experimental ABIEncoderV2;
 
-import "./GlobalStore.sol";
-import "./lib/Decimal.sol";
+import "./Store.sol";
 
-contract Modifiers is GlobalStore {
-    modifier requireAssetExist(
+library Requires {
+    function requireAssetExist(
+        Store.State storage state,
         address asset
-    ) {
-        require(isAssetExist(asset), "ASSET_NOT_EXIST");
-        _;
+    )
+        internal
+        view
+    {
+        require(isAssetExist(state, asset), "ASSET_NOT_EXIST");
     }
 
-    modifier requireAssetNotExist(
+    function requireAssetNotExist(
+        Store.State storage state,
         address asset
-    ) {
-        require(!isAssetExist(asset), "ASSET_ALREADY_EXIST");
-        _;
+    )
+        internal
+        view
+    {
+        require(!isAssetExist(state, asset), "ASSET_ALREADY_EXIST");
     }
 
-    modifier requireMarketIDAndAssetMatch(
+    function requireMarketIDAndAssetMatch(
+        Store.State storage state,
         uint16 marketID,
         address asset
-    ) {
+    )
+        internal
+        view
+    {
         require(marketID < state.marketsCount, "MARKET_ID_NOT_EXIST");
-
         require(
             asset == state.markets[marketID].baseAsset || asset == state.markets[marketID].quoteAsset,
             "ASSET_NOT_BELONGS_TO_MARKET"
         );
-        _;
     }
 
-    modifier requireMarketNotExist(
+    function requireMarketNotExist(
+        Store.State storage state,
         Types.Market memory market
-    ) {
-        require(!isMarketExist(market), "MARKET_ALREADY_EXIST");
-        _;
+    )
+        internal
+        view
+    {
+        require(!isMarketExist(state, market), "MARKET_ALREADY_EXIST");
     }
 
-    modifier requireMarketAssetsValid(
+    function requireMarketAssetsValid(
+        Store.State storage state,
         Types.Market memory market
-    ) {
+    )
+        internal
+        view
+    {
         require(market.baseAsset != market.quoteAsset, "BASE_QUOTE_DUPLICATED");
-        require(isAssetExist(market.baseAsset), "MARKET_BASE_ASSET_NOT_EXIST");
-        require(isAssetExist(market.quoteAsset), "MARKET_QUOTE_ASSET_NOT_EXIST");
-        _;
+        require(isAssetExist(state, market.baseAsset), "MARKET_BASE_ASSET_NOT_EXIST");
+        require(isAssetExist(state, market.quoteAsset), "MARKET_QUOTE_ASSET_NOT_EXIST");
     }
 
-    modifier requirePriceOracleAddressValid(
+    function requirePriceOracleAddressValid(
         address oracleAddress
-    ) {
+    )
+        internal
+        pure
+    {
         require(oracleAddress != address(0), "ORACLE_ADDRESS_NOT_VALID");
-        _;
     }
 
-    modifier requireDecimalLessOrEquanThanOne(
-        uint256 d
-    ) {
-        require(d <= Decimal.one(), "DECIMAL_GREATER_THAN_ONE");
-        _;
+    function requireDecimalLessOrEquanThanOne(
+        uint256 decimal
+    )
+        internal
+        pure
+    {
+        require(decimal <= Decimal.one(), "DECIMAL_GREATER_THAN_ONE");
     }
 
-    modifier requireDecimalGreaterThanOne(
-        uint256 d
-    ) {
-        require(d > Decimal.one(), "DECIMAL_LESS_OR_EQUAL_THAN_ONE");
-        _;
+    function requireDecimalGreaterThanOne(
+        uint256 decimal
+    )
+        internal
+        pure
+    {
+        require(decimal > Decimal.one(), "DECIMAL_LESS_OR_EQUAL_THAN_ONE");
     }
 
     function isAssetExist(
+        Store.State storage state,
         address asset
     )
         internal
@@ -97,6 +118,7 @@ contract Modifiers is GlobalStore {
     }
 
     function isMarketExist(
+        Store.State storage state,
         Types.Market memory market
     )
         internal

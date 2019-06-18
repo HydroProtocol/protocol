@@ -25,6 +25,7 @@ import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Decimal.sol";
 import "../lib/Events.sol";
+import "../lib/Requires.sol";
 
 import "./InterestModel.sol";
 import "./LendingPoolToken.sol";
@@ -60,6 +61,8 @@ library LendingPool {
     )
         internal
     {
+        Requires.requireAssetNotExist(state, asset);
+
         state.pool.borrowIndex[asset] = Decimal.one();
         state.pool.supplyIndex[asset] = Decimal.one();
         state.pool.indexStartTime[asset] = block.timestamp;
@@ -79,6 +82,7 @@ library LendingPool {
     )
         internal
     {
+        Requires.requireAssetExist(state, asset);
         mapping(address => uint256) storage balances = state.balances[user];
 
         // update index
@@ -109,6 +113,7 @@ library LendingPool {
         internal
         returns (uint256)
     {
+        Requires.requireAssetExist(state, asset);
         mapping(address => uint256) storage balances = state.balances[user];
 
         // update index
@@ -147,6 +152,9 @@ library LendingPool {
     )
         internal
     {
+        Requires.requireAssetExist(state, asset);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
+
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
          // update index
@@ -183,6 +191,9 @@ library LendingPool {
         internal
         returns (uint256)
     {
+        Requires.requireAssetExist(state, asset);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
+
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
         // update index
@@ -316,6 +327,7 @@ library LendingPool {
         view
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
+        Requires.requireAssetExist(state, asset);
 
         uint256 _supply = getTotalSupply(state, asset);
         uint256 _borrow = getTotalBorrow(state, asset).add(extraBorrowAmount);
@@ -366,6 +378,8 @@ library LendingPool {
         view
         returns (uint256)
     {
+        Requires.requireAssetExist(state, asset);
+
         (uint256 currentSupplyIndex, ) = getCurrentIndex(state, asset);
         return Decimal.mul(getLogicSupplyOf(state, asset, user), currentSupplyIndex);
     }
@@ -380,6 +394,9 @@ library LendingPool {
         view
         returns (uint256)
     {
+        Requires.requireAssetExist(state, asset);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
+
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
         return Decimal.mul(state.pool.logicBorrow[user][marketID][asset], currentBorrowIndex);
     }
@@ -392,6 +409,8 @@ library LendingPool {
         view
         returns (uint256)
     {
+        Requires.requireAssetExist(state, asset);
+
         (uint256 currentSupplyIndex, ) = getCurrentIndex(state, asset);
         return Decimal.mul(getTotalLogicSupply(state, asset), currentSupplyIndex);
     }
@@ -404,6 +423,8 @@ library LendingPool {
         view
         returns (uint256)
     {
+        Requires.requireAssetExist(state, asset);
+
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
         return Decimal.mul(state.pool.logicTotalBorrow[asset], currentBorrowIndex);
     }
@@ -452,5 +473,4 @@ library LendingPool {
     {
         return LendingPoolToken(state.pool.poolToken[asset]).totalSupply();
     }
-
 }

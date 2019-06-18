@@ -20,8 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
-import "./Modifiers.sol";
-
+import "./lib/Requires.sol";
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
 import "./funding/LendingPool.sol";
@@ -31,20 +30,21 @@ import "./interfaces/IPriceOracle.sol";
 /**
  * Only owner can use this contract functions
  */
-contract Operations is Ownable, GlobalStore, Modifiers {
+contract Operations is Ownable, GlobalStore {
 
     function createMarket(
         Types.Market memory market
     )
         public
         onlyOwner
-        requireMarketAssetsValid(market)
-        requireMarketNotExist(market)
-        requireDecimalLessOrEquanThanOne(market.auctionRatioStart)
-        requireDecimalLessOrEquanThanOne(market.auctionRatioPerBlock)
-        requireDecimalGreaterThanOne(market.liquidateRate)
-        requireDecimalGreaterThanOne(market.withdrawRate)
     {
+        Requires.requireMarketAssetsValid(state, market);
+        Requires.requireMarketNotExist(state, market);
+        Requires.requireDecimalLessOrEquanThanOne(market.auctionRatioStart);
+        Requires.requireDecimalLessOrEquanThanOne(market.auctionRatioPerBlock);
+        Requires.requireDecimalGreaterThanOne(market.liquidateRate);
+        Requires.requireDecimalGreaterThanOne(market.withdrawRate);
+
         state.markets[state.marketsCount++] = market;
         Events.logCreateMarket(market);
     }
@@ -58,11 +58,12 @@ contract Operations is Ownable, GlobalStore, Modifiers {
     )
         external
         onlyOwner
-        requireDecimalLessOrEquanThanOne(newAuctionRatioStart)
-        requireDecimalLessOrEquanThanOne(newAuctionRatioPerBlock)
-        requireDecimalGreaterThanOne(newLiquidateRate)
-        requireDecimalGreaterThanOne(newWithdrawRate)
     {
+        Requires.requireDecimalLessOrEquanThanOne(newAuctionRatioStart);
+        Requires.requireDecimalLessOrEquanThanOne(newAuctionRatioPerBlock);
+        Requires.requireDecimalGreaterThanOne(newLiquidateRate);
+        Requires.requireDecimalGreaterThanOne(newWithdrawRate);
+
         state.markets[marketID].auctionRatioStart = newAuctionRatioStart;
         state.markets[marketID].auctionRatioPerBlock = newAuctionRatioPerBlock;
         state.markets[marketID].liquidateRate = newLiquidateRate;
@@ -86,11 +87,11 @@ contract Operations is Ownable, GlobalStore, Modifiers {
     )
         external
         onlyOwner
-        requirePriceOracleAddressValid(oracleAddress)
-        requireAssetNotExist(asset)
     {
-        state.oracles[asset] = IPriceOracle(oracleAddress);
         LendingPool.initializeAssetLendingPool(state, asset);
+
+        Requires.requirePriceOracleAddressValid(oracleAddress);
+        state.oracles[asset] = IPriceOracle(oracleAddress);
 
         address poolTokenAddress = LendingPool.createLendingPoolToken(
             state,
@@ -113,9 +114,10 @@ contract Operations is Ownable, GlobalStore, Modifiers {
     )
         external
         onlyOwner
-        requirePriceOracleAddressValid(oracleAddress)
-        requireAssetExist(asset)
     {
+        Requires.requirePriceOracleAddressValid(oracleAddress);
+        Requires.requireAssetExist(state, asset);
+
         state.oracles[asset] = IPriceOracle(oracleAddress);
 
         Events.logUpdateAssetPriceOracle(
@@ -142,8 +144,9 @@ contract Operations is Ownable, GlobalStore, Modifiers {
     )
         external
         onlyOwner
-        requireDecimalLessOrEquanThanOne(newInitiatorRewardRatio)
     {
+        Requires.requireDecimalLessOrEquanThanOne(newInitiatorRewardRatio);
+
         state.auction.initiatorRewardRatio = newInitiatorRewardRatio;
         Events.logUpdateAuctionInitiatorRewardRatio(newInitiatorRewardRatio);
     }
@@ -153,8 +156,9 @@ contract Operations is Ownable, GlobalStore, Modifiers {
     )
         external
         onlyOwner
-        requireDecimalLessOrEquanThanOne(newInsuranceRatio)
     {
+        Requires.requireDecimalLessOrEquanThanOne(newInsuranceRatio);
+
         state.pool.insuranceRatio = newInsuranceRatio;
         Events.logUpdateInsuranceRatio(newInsuranceRatio);
     }

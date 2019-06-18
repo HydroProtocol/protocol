@@ -20,7 +20,6 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
-import "./Modifiers.sol";
 
 import "./exchange/Exchange.sol";
 import "./exchange/Relayer.sol";
@@ -32,11 +31,12 @@ import "./funding/Auctions.sol";
 
 import "./lib/Transfer.sol";
 import "./lib/Types.sol";
+import "./lib/Requires.sol";
 
 /**
  * External Functions
  */
-contract ExternalFunctions is GlobalStore, Modifiers {
+contract ExternalFunctions is GlobalStore {
 
     ////////////////////////////
     // Batch Actions Function //
@@ -86,9 +86,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return state.markets[marketID];
     }
 
-    function getPriceOracleOf(
-        address asset
-    )
+    function getPriceOracleOf(address asset)
         external
         view
         returns (address)
@@ -140,9 +138,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return state.auction.auctionsCount;
     }
 
-    function getAuctionDetails(
-        uint32 auctionID
-    )
+    function getAuctionDetails(uint32 auctionID)
         external
         view
         returns (Types.AuctionDetails memory details)
@@ -163,23 +159,17 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     // LendingPool Functions //
     ///////////////////////////
 
-    function getTotalBorrow(
-        address asset
-    )
+    function getTotalBorrow(address asset)
         external
         view
-        requireAssetExist(asset)
         returns (uint256)
     {
         return LendingPool.getTotalBorrow(state, asset);
     }
 
-    function getTotalSupply(
-        address asset
-    )
+    function getTotalSupply(address asset)
         external
         view
-        requireAssetExist(asset)
         returns (uint256)
     {
         return LendingPool.getTotalSupply(state, asset);
@@ -192,7 +182,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     )
         external
         view
-        requireMarketIDAndAssetMatch(marketID, asset)
         returns (uint256)
     {
         return LendingPool.getBorrowOf(state, asset, user, marketID);
@@ -204,7 +193,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     )
         external
         view
-        requireAssetExist(asset)
         returns (uint256)
     {
         return LendingPool.getSupplyOf(state, asset, user);
@@ -216,7 +204,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     )
         external
         view
-        requireAssetExist(asset)
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
         return LendingPool.getInterestRates(state, asset, extraBorrowAmount);
@@ -227,7 +214,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         uint256 amount
     )
         external
-        requireAssetExist(asset)
     {
         LendingPool.supply(
             state,
@@ -242,7 +228,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         uint256 amount
     )
         external
-        requireAssetExist(asset)
     {
         LendingPool.withdraw(
             state,
@@ -258,7 +243,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         uint16 marketID
     )
         external
-        requireMarketIDAndAssetMatch(marketID, asset)
     {
         LendingPool.borrow(
             state,
@@ -275,7 +259,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         uint16 marketID
     )
         external
-        requireMarketIDAndAssetMatch(marketID, asset)
     {
         LendingPool.repay(
             state,
@@ -286,12 +269,9 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         );
     }
 
-    function getLendingPoolTokenAddress(
-        address asset
-    )
+    function getLendingPoolTokenAddress(address asset)
         external
         view
-        requireAssetExist(asset)
         returns (address)
     {
         return state.pool.poolToken[asset];
@@ -301,20 +281,15 @@ contract ExternalFunctions is GlobalStore, Modifiers {
     // Insurance Functions //
     /////////////////////////
 
-    function getInsuranceBalance(
-        address asset
-    )
+    function getInsuranceBalance(address asset)
         external
         view
-        requireAssetExist(asset)
         returns (uint256)
     {
         return state.pool.insuranceBalances[asset];
     }
 
-    function closeAbortiveAuction(
-        uint32 auctionID
-    )
+    function closeAbortiveAuction(uint32 auctionID)
         external
     {
         Auctions.closeAbortiveAuction(state, auctionID);
@@ -372,13 +347,25 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         external
         payable
     {
-        Transfer.depositFor(state, asset, msg.sender, BalancePath.getCommonPath(msg.sender), amount);
+        Transfer.depositFor(
+            state,
+            asset,
+            msg.sender,
+            BalancePath.getCommonPath(msg.sender),
+            amount
+        );
     }
 
     function withdraw(address asset, uint256 amount)
         external
     {
-        Transfer.withdrawFrom(state, asset, BalancePath.getCommonPath(msg.sender), msg.sender, amount);
+        Transfer.withdrawFrom(
+            state,
+            asset,
+            BalancePath.getCommonPath(msg.sender),
+            msg.sender,
+            amount
+        );
     }
 
     function transfer(
@@ -392,7 +379,13 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
         require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER"); // should we allow to transfer to other ??
 
-        Transfer.transferFrom(state, asset, fromBalancePath, toBalancePath, amount);
+        Transfer.transferFrom(
+            state,
+            asset,
+            fromBalancePath,
+            toBalancePath,
+            amount
+        );
     }
 
     function balanceOf(
@@ -436,7 +429,13 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         payable
     {
         // deposit ${msg.value} ether for ${msg.sender}
-        Transfer.depositFor(state, Consts.ETHEREUM_TOKEN_ADDRESS(), msg.sender, BalancePath.getCommonPath(msg.sender), msg.value);
+        Transfer.depositFor(
+            state,
+            Consts.ETHEREUM_TOKEN_ADDRESS(),
+            msg.sender,
+            BalancePath.getCommonPath(msg.sender),
+            msg.value
+        );
     }
 
     ////////////////////////
