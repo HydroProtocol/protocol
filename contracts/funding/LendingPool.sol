@@ -235,6 +235,60 @@ library LendingPool {
         Events.logLoss(user, marketID, asset, amount);
     }
 
+    function compensate(
+        Store.State storage state,
+        address borrower,
+        uint16 marketID,
+        address debtAsset,
+        address collateralAsset
+    )
+        internal
+        returns (uint256)
+    {
+        uint256 insuranceBalance = state.pool.insuranceBalances[debtAsset];
+
+        uint256 leftDebtAmount = getBorrowOf(
+            state,
+            debtAsset,
+            borrower,
+            marketID
+        );
+
+        uint256 compensationAmount = Math.min(leftDebtAmount, insuranceBalance);
+
+        // move compensationAmount from insurance balances to account balances
+        state.accounts[borrower][marketID].balances[debtAsset] = SafeMath.add(
+            state.accounts[borrower][marketID].balances[debtAsset],
+            compensationAmount
+        );
+
+        state.pool.insuranceBalances[debtAsset] = SafeMath.sub(
+            state.pool.insuranceBalances[debtAsset],
+            compensationAmount
+        );
+
+        // move all left collateral to insurance balances
+        uint256 leftCollateralAmount = state.accounts[borrower][marketID].balances[collateralAsset];
+
+        state.pool.insuranceBalances[collateralAsset] = SafeMath.add(
+            state.pool.insuranceBalances[collateralAsset],
+            leftCollateralAmount
+        );
+
+        state.accounts[borrower][marketID].balances[collateralAsset] = 0;
+
+        Events.logCompensation(
+            borrower,
+            marketID,
+            debtAsset,
+            compensationAmount,
+            collateralAsset,
+            leftCollateralAmount
+        );
+
+        return compensationAmount;
+    }
+
     function updateInterestRate(
         Store.State storage state,
         address asset
@@ -290,7 +344,7 @@ library LendingPool {
         uint256 borrowInterest = Decimal.mul(logicBorrow, currentBorrowIndex).sub(Decimal.mul(logicBorrow, state.pool.borrowIndex[asset]));
         uint256 supplyInterest = Decimal.mul(logicSupply, currentSupplyIndex).sub(Decimal.mul(logicSupply, state.pool.supplyIndex[asset]));
 
-        state.insuranceBalances[asset] = state.insuranceBalances[asset].add(borrowInterest.sub(supplyInterest));
+        state.pool.insuranceBalances[asset] = state.pool.insuranceBalances[asset].add(borrowInterest.sub(supplyInterest));
 
         state.pool.supplyIndex[asset] = currentSupplyIndex;
         state.pool.borrowIndex[asset] = currentBorrowIndex;

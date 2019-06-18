@@ -106,6 +106,9 @@ library Store {
     struct LendingPoolState {
         uint256 insuranceRatio;
 
+        // insurance balances
+        mapping(address => uint256) insuranceBalances;
+
         mapping (address => uint256) borrowIndex; // decimal
         mapping (address => uint256) supplyIndex; // decimal
         mapping (address => uint256) indexStartTime; // timestamp
@@ -152,9 +155,6 @@ library Store {
 
         // user balances
         mapping(address => mapping(address => uint256)) balances;
-
-        // insurance balances
-        mapping(address => uint256) insuranceBalances;
 
         LendingPoolState pool;
 

@@ -314,7 +314,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return state.insuranceBalances[asset];
+        return state.pool.insuranceBalances[asset];
     }
 
     function closeAbortiveAuction(

@@ -40,7 +40,13 @@ library Auctions {
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
 
-        uint256 leftDebtAmount = LendingPool.getBorrowOf(state, auction.debtAsset, auction.borrower, auction.marketID);
+        uint256 leftDebtAmount = LendingPool.getBorrowOf(
+            state,
+            auction.debtAsset,
+            auction.borrower,
+            auction.marketID
+        );
+
         uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
         // transfer valid repay amount from msg.sender to auction.borrower
@@ -110,48 +116,16 @@ library Auctions {
         internal
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
-        uint256 ratio = auction.ratio(state);
+
         require(auction.status == Types.AuctionStatus.InProgress, "AUCTION_NOT_IN_PROGRESS");
-        require(ratio == Decimal.one(), "AUCTION_NOT_END");
+        require(auction.ratio(state) == Decimal.one(), "AUCTION_NOT_END");
 
-        uint256 insuranceBalance = state.insuranceBalances[auction.debtAsset];
-
-        uint256 leftDebtAmount = LendingPool.getBorrowOf(
+        uint256 compensationAmount = LendingPool.compensate(
             state,
-            auction.debtAsset,
             auction.borrower,
-            auction.marketID
-        );
-
-        uint256 compensationAmount = Math.min(leftDebtAmount, insuranceBalance);
-
-        // move compensationAmount from insurance balances to account balances
-        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = SafeMath.add(
-            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
-            compensationAmount
-        );
-
-        state.insuranceBalances[auction.debtAsset] = SafeMath.sub(
-            state.insuranceBalances[auction.debtAsset],
-            compensationAmount
-        );
-
-        // move all left collateral to insurance balances
-        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
-
-        state.insuranceBalances[auction.collateralAsset] = SafeMath.add(
-            state.insuranceBalances[auction.collateralAsset],
-            leftCollateralAmount
-        );
-
-        state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset] = 0;
-
-        Events.logCompensation(
-            auctionID,
+            auction.marketID,
             auction.debtAsset,
-            compensationAmount,
-            auction.collateralAsset,
-            leftCollateralAmount
+            auction.collateralAsset
         );
 
         // repay
@@ -192,8 +166,8 @@ library Auctions {
         internal
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
-
         auction.status = Types.AuctionStatus.Finished;
+
         Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
         account.status = Types.CollateralAccountStatus.Normal;
 

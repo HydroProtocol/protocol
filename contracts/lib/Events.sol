@@ -212,6 +212,34 @@ library Events {
         );
     }
 
+        event Compensation(
+        address borrower,
+        uint32 marketID,
+        address debtAsset,
+        uint256 compensationAmount,
+        address collateralAsset,
+        uint256 collateralAmount
+    );
+
+    function logCompensation(
+        address borrower,
+        uint32 marketID,
+        address debtAsset,
+        uint256 compensationAmount,
+        address collateralAsset,
+        uint256 collateralAmount
+    )
+        internal
+    {
+        emit Compensation(
+            borrower,
+            marketID,
+            debtAsset,
+            compensationAmount,
+            collateralAsset,
+            collateralAmount
+        );
+    }
 
     ///////////////////
     // Admin Actions //
@@ -371,32 +399,6 @@ library Events {
         internal
     {
         emit AuctionFinished(auctionID);
-    }
-
-    event Compensation(
-        uint32 auctionID,
-        address debtAsset,
-        uint256 compensationAmount,
-        address collateralAsset,
-        uint256 collateralAmount
-    );
-
-    function logCompensation(
-        uint32 auctionID,
-        address debtAsset,
-        uint256 compensationAmount,
-        address collateralAsset,
-        uint256 collateralAmount
-    )
-        internal
-    {
-        emit Compensation(
-            auctionID,
-            debtAsset,
-            compensationAmount,
-            collateralAsset,
-            collateralAmount
-        );
     }
 
     /////////////
