@@ -267,7 +267,11 @@ contract ExternalFunctions is GlobalStore, Modifiers {
             asset,
             amount
         );
-        require(!CollateralAccounts.getDetails(state, msg.sender, marketID).liquidable, "CAN_NOT_BORROW_MORE_THAN_COLLATERAL");
+
+        require(
+            !CollateralAccounts.getDetails(state, msg.sender, marketID).liquidable,
+            "CAN_NOT_BORROW_MORE_THAN_COLLATERAL"
+        );
     }
 
     function repay(
