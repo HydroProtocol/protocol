@@ -166,7 +166,7 @@ library Auctions {
     }
 
     /**
-     * Create an auction for a loan and save it in global state
+     * Create an auction and save it in global state
      *
      */
     function create(
