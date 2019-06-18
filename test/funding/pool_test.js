@@ -6,7 +6,7 @@ const { mineAt, mine, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const PoolToken = artifacts.require('./funding/PoolToken.sol');
 
-// const getInterestRate = borrowRatio => {
+// const getInterestRates = borrowRatio => {
 //     const interestRate = 0.2 * borrowRatio + 0.5 * borrowRatio ** 2;
 //     return Math.floor(interestRate * 10000) / 10000;
 // };
@@ -94,7 +94,7 @@ contract('Pool', accounts => {
     });
 
     it('check interest rate', async () => {
-        interestRate = await hydro.getInterestRate(USDAddr, 0);
+        interestRate = await hydro.getInterestRates(USDAddr, 0);
         assert.equal(interestRate[0].toString(), toWei(0.025)); // borrow interestRate 2.5%
         assert.equal(interestRate[1].toString(), toWei(0.0025)); // supply interestRate 0.25%'
         // test interest accumulate in 90 days
@@ -128,7 +128,7 @@ contract('Pool', accounts => {
             '201232876712328767100'
         );
         // test wether use principle with interest to calculate new interest rate
-        interestRate = await hydro.getInterestRate(USDAddr, 0);
+        interestRate = await hydro.getInterestRates(USDAddr, 0);
         assert.equal(interestRate[0].toString(), '60394519949755790'); // borrow
         assert.equal(interestRate[1].toString(), '12138397839128643'); // supply
     });

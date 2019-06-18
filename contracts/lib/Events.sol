@@ -168,18 +168,18 @@ library Events {
         );
     }
 
-    event UpdateAssetOracle(
+    event UpdateAssetPriceOracle(
         address asset,
         address oracleAddress
     );
 
-    function logUpdateAssetOracle(
+    function logUpdateAssetPriceOracle(
         address asset,
         address oracleAddress
     )
         internal
     {
-        emit UpdateAssetOracle(
+        emit UpdateAssetPriceOracle(
             asset,
             oracleAddress
         );

@@ -65,7 +65,7 @@ contract Modifiers is GlobalStore {
         _;
     }
 
-    modifier requireOracleAddressValid(
+    modifier requirePriceOracleAddressValid(
         address oracleAddress
     ) {
         require(oracleAddress != address(0), "ORACLE_ADDRESS_NOT_VALID");
@@ -93,7 +93,7 @@ contract Modifiers is GlobalStore {
         view
         returns (bool)
     {
-        return state.oracles[asset] != IOracle(address(0));
+        return state.oracles[asset] != IPriceOracle(address(0));
     }
 
     function isMarketExist(

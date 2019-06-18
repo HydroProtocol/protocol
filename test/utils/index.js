@@ -1,4 +1,3 @@
-const Oracle = artifacts.require('./Oracle.sol');
 const HydroToken = artifacts.require('./HydroToken.sol');
 const BigNumber = require('bignumber.js');
 

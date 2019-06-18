@@ -1,5 +1,5 @@
 const Hydro = artifacts.require('Hydro');
-const Oracle = artifacts.require('Oracle');
+const PriceOracle = artifacts.require('PriceOracle');
 const HydroToken = artifacts.require('HydroToken');
 
 module.exports = async (deployer, network) => {
@@ -14,5 +14,5 @@ module.exports = async (deployer, network) => {
     }
 
     await deployer.deploy(Hydro, hotAddress);
-    await deployer.deploy(Oracle);
+    await deployer.deploy(PriceOracle);
 };

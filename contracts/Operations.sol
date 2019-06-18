@@ -26,7 +26,7 @@ import "./lib/Ownable.sol";
 import "./lib/Types.sol";
 import "./funding/Pool.sol";
 import "./exchange/Discount.sol";
-import "./interfaces/IOracle.sol";
+import "./interfaces/IPriceOracle.sol";
 
 /**
  * Only owner can use this contract functions
@@ -86,10 +86,10 @@ contract Operations is Ownable, GlobalStore, Modifiers {
     )
         external
         onlyOwner
-        requireOracleAddressValid(oracleAddress)
+        requirePriceOracleAddressValid(oracleAddress)
         requireAssetNotExist(asset)
     {
-        state.oracles[asset] = IOracle(oracleAddress);
+        state.oracles[asset] = IPriceOracle(oracleAddress);
         Pool.initializeAssetPool(state, asset);
 
         address poolTokenAddress = Pool.createPoolToken(
@@ -107,18 +107,18 @@ contract Operations is Ownable, GlobalStore, Modifiers {
         );
     }
 
-    function updateAssetOracle(
+    function updateAssetPriceOracle(
         address asset,
         address oracleAddress
     )
         external
         onlyOwner
-        requireOracleAddressValid(oracleAddress)
+        requirePriceOracleAddressValid(oracleAddress)
         requireAssetExist(asset)
     {
-        state.oracles[asset] = IOracle(oracleAddress);
+        state.oracles[asset] = IPriceOracle(oracleAddress);
 
-        Events.logUpdateAssetOracle(
+        Events.logUpdateAssetPriceOracle(
             asset,
             oracleAddress
         );

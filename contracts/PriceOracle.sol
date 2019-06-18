@@ -22,7 +22,7 @@ pragma experimental ABIEncoderV2;
 import "./lib/Ownable.sol";
 import "./lib/Consts.sol";
 
-contract Oracle is Ownable {
+contract PriceOracle is Ownable {
 
     // token price to ether price
     mapping(address => uint256) public tokenPrices;

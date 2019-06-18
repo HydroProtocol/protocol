@@ -20,7 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./Types.sol";
-import "../interfaces/IOracle.sol";
+import "../interfaces/IPriceOracle.sol";
 
 library Store {
 
@@ -142,7 +142,7 @@ library Store {
 
         uint16 marketsCount;
 
-        mapping(address => IOracle) oracles;
+        mapping(address => IPriceOracle) oracles;
 
         // user => marketID => account
         mapping(address => mapping(uint16 => Types.CollateralAccount)) accounts;

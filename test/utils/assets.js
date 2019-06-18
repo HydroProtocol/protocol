@@ -1,5 +1,5 @@
 const debug = require('debug')('hydro:Asset');
-const Oracle = artifacts.require('./Oracle.sol');
+const PriceOracle = artifacts.require('./PriceOracle.sol');
 const Hydro = artifacts.require('./Hydro.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
 const BigNumber = require('bignumber.js');
@@ -142,7 +142,7 @@ const createAsset = async assetConfig => {
         token.symbol = assetConfig.symbol;
     }
 
-    const oracle = await Oracle.deployed();
+    const oracle = await PriceOracle.deployed();
 
     await Promise.all([
         oracle.setPrice(token.address, oraclePrice || toWei(100), {

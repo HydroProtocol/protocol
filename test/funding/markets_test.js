@@ -8,24 +8,24 @@ const assert = require('assert');
 contract('Markets', accounts => {
     let hydro;
 
-    const fakeOracleAddress = '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF';
+    const fakePriceOracleAddress = '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF';
 
     before(async () => {
         hydro = await Hydro.deployed();
     });
 
     it('can register asset', async () => {
-        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
-        assert.equal(await hydro.getOracleOf(etherAsset), fakeOracleAddress);
+        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
+        assert.equal(await hydro.getPriceOracleOf(etherAsset), fakePriceOracleAddress);
     });
 
     it('can update asset oracle', async () => {
-        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
-        assert.equal(await hydro.getOracleOf(etherAsset), fakeOracleAddress);
+        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
+        assert.equal(await hydro.getPriceOracleOf(etherAsset), fakePriceOracleAddress);
 
-        const changedOracleAddress = '0x1111111111111111111111111111111111111111';
-        await hydro.updateAssetOracle(etherAsset, changedOracleAddress);
-        assert.equal(await hydro.getOracleOf(etherAsset), changedOracleAddress);
+        const changedPriceOracleAddress = '0x1111111111111111111111111111111111111111';
+        await hydro.updateAssetPriceOracle(etherAsset, changedPriceOracleAddress);
+        assert.equal(await hydro.getPriceOracleOf(etherAsset), changedPriceOracleAddress);
     });
 
     it('no markets at first', async () => {
@@ -66,7 +66,7 @@ contract('Markets', accounts => {
 
     it('can not add invalid market, unregistered base asset', async () => {
         // register fake ether asset oracle
-        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
+        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
 
         await assert.rejects(
             newMarket({
@@ -81,7 +81,7 @@ contract('Markets', accounts => {
 
     it('can not add invalid market, unregistered quote asset', async () => {
         // register fake ether asset oracle
-        await hydro.registerAsset(etherAsset, fakeOracleAddress, 'ETH', 'ETH', 18);
+        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
 
         await assert.rejects(
             newMarket({

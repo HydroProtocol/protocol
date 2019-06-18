@@ -40,7 +40,7 @@ library Auctions {
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
 
-        uint256 leftDebtAmount = Pool._getPoolBorrowOf(state, auction.debtAsset, auction.borrower, auction.marketID);
+        uint256 leftDebtAmount = Pool.getPoolBorrowOf(state, auction.debtAsset, auction.borrower, auction.marketID);
         uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
         // transfer valid repay amount from msg.sender to auction.borrower
@@ -85,7 +85,7 @@ library Auctions {
 
         // reset account state if all debts are paid
         if (leftDebtAmount <= repayAmount) {
-            auctionEnd(state, auctionID);
+            endAuction(state, auctionID);
         }
     }
 
@@ -127,10 +127,13 @@ library Auctions {
         state.insuranceBalances[debtAsset] = state.insuranceBalances[debtAsset].add(state.accounts[borrower][marketID].balances[debtAsset]);
         state.accounts[borrower][marketID].balances[debtAsset] = 0;
 
-        state.insuranceBalances[collateralAsset] = state.insuranceBalances[collateralAsset].add(state.accounts[borrower][marketID].balances[collateralAsset]);
+        state.insuranceBalances[collateralAsset] = state.insuranceBalances[collateralAsset].add(
+            state.accounts[borrower][marketID].balances[collateralAsset]
+        );
+
         state.accounts[borrower][marketID].balances[collateralAsset] = 0;
 
-        uint256 badDebtAmount = Pool._getPoolBorrowOf(state, debtAsset, borrower, marketID);
+        uint256 badDebtAmount = Pool.getPoolBorrowOf(state, debtAsset, borrower, marketID);
 
         if (badDebtAmount > 0){
             uint256 totalLogicSupply = Pool.getTotalLogicSupply(state, debtAsset);
@@ -139,10 +142,10 @@ library Auctions {
             state.pool.logicBorrow[borrower][marketID][debtAsset] = 0;
         }
 
-        auctionEnd(state, auctionID);
+        endAuction(state, auctionID);
     }
 
-    function auctionEnd(
+    function endAuction(
         Store.State storage state,
         uint32 auctionID
     )
@@ -210,7 +213,7 @@ library Auctions {
 
         details.debtAsset = auction.debtAsset;
         details.collateralAsset = auction.collateralAsset;
-        details.leftDebtAmount = Pool._getPoolBorrowOf(state, auction.debtAsset, auction.borrower, auction.marketID);
+        details.leftDebtAmount = Pool.getPoolBorrowOf(state, auction.debtAsset, auction.borrower, auction.marketID);
         details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
         details.ratio = auction.ratio(state);
     }

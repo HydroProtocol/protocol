@@ -1,7 +1,7 @@
 require('../utils/hooks');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
-const Oracle = artifacts.require('./Oracle.sol');
+const PriceOracle = artifacts.require('./PriceOracle.sol');
 // const TestToken = artifacts.require('./helper/TestToken.sol');
 
 const { newMarket, depositMarket } = require('../utils/assets');
@@ -19,7 +19,7 @@ contract('Liquidate', accounts => {
 
     before(async () => {
         hydro = await Hydro.deployed();
-        oracle = await Oracle.deployed();
+        oracle = await PriceOracle.deployed();
         time = Math.round(new Date().getTime() / 1000) + 1000;
     });
 

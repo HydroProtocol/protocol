@@ -4,7 +4,7 @@ const { createAssets, newMarket } = require('../utils/assets');
 const { toWei } = require('../utils');
 const { mineAt, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
-const Oracle = artifacts.require('./Oracle.sol');
+const PriceOracle = artifacts.require('./PriceOracle.sol');
 
 contract('Insurance', accounts => {
     let hydro;
@@ -81,7 +81,7 @@ contract('Insurance', accounts => {
     });
 
     it('check interest rate', async () => {
-        interestRate = await hydro.getInterestRate(USDAddr, 0);
+        interestRate = await hydro.getInterestRates(USDAddr, 0);
         assert.equal(interestRate[0].toString(), toWei(0.025)); // borrow interestRate 2.5%
         assert.equal(interestRate[1].toString(), toWei(0.00225)); // supply interestRate 0.225%
     });
@@ -98,7 +98,7 @@ contract('Insurance', accounts => {
         await mineAt(async () => hydro.updateInsuranceRatio(toWei('0.9')), initTime);
         await mineAt(async () => hydro.borrow(USDAddr, toWei('900'), 0, { from: u2 }), initTime);
         await addCollateral(u2, USDAddr, toWei('20'), initTime + 90 * 86400);
-        const oracle = await Oracle.at(await hydro.getOracleOf(ETHAddr));
+        const oracle = await PriceOracle.at(await hydro.getPriceOracleOf(ETHAddr));
         await mineAt(
             async () => oracle.setPrice(ETHAddr, toWei(0), { from: accounts[0] }),
             initTime + 90 * 86400
@@ -124,7 +124,7 @@ contract('Insurance', accounts => {
         await mineAt(async () => hydro.updateInsuranceRatio(toWei('0.9')), initTime);
         await mineAt(async () => hydro.borrow(USDAddr, toWei('900'), 0, { from: u2 }), initTime);
         await addCollateral(u2, USDAddr, toWei('10'), initTime + 90 * 86400);
-        const oracle = await Oracle.at(await hydro.getOracleOf(ETHAddr));
+        const oracle = await PriceOracle.at(await hydro.getPriceOracleOf(ETHAddr));
         await mineAt(
             async () => oracle.setPrice(ETHAddr, toWei(0), { from: accounts[0] }),
             initTime + 90 * 86400

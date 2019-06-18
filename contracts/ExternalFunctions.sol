@@ -86,7 +86,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return state.markets[marketID];
     }
 
-    function getOracleOf(
+    function getPriceOracleOf(
         address asset
     )
         external
@@ -207,7 +207,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireMarketIDAndAssetMatch(marketID, asset)
         returns (uint256)
     {
-        return Pool._getPoolBorrowOf(state, asset, user, marketID);
+        return Pool.getPoolBorrowOf(state, asset, user, marketID);
     }
 
     function getPoolSupplyOf(
@@ -219,10 +219,10 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256)
     {
-        return Pool._getPoolSupplyOf(state, asset, user);
+        return Pool.getPoolSupplyOf(state, asset, user);
     }
 
-    function getInterestRate(
+    function getInterestRates(
         address asset,
         uint256 extraBorrowAmount
     )
@@ -231,7 +231,7 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         requireAssetExist(asset)
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
-        return Pool.getInterestRate(state, asset, extraBorrowAmount);
+        return Pool.getInterestRates(state, asset, extraBorrowAmount);
     }
 
     function supplyPool(

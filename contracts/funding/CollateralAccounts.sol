@@ -46,8 +46,8 @@ library CollateralAccounts {
         uint256 baseUSDPrice = state.oracles[market.baseAsset].getPrice(market.baseAsset);
         uint256 quoteUSDPrice = state.oracles[market.quoteAsset].getPrice(market.quoteAsset);
 
-        details.debtsTotalUSDValue = baseUSDPrice.mul(Pool._getPoolBorrowOf(state, market.baseAsset, user, marketID)).add(
-            quoteUSDPrice.mul(Pool._getPoolBorrowOf(state, market.quoteAsset, user, marketID))
+        details.debtsTotalUSDValue = baseUSDPrice.mul(Pool.getPoolBorrowOf(state, market.baseAsset, user, marketID)).add(
+            quoteUSDPrice.mul(Pool.getPoolBorrowOf(state, market.quoteAsset, user, marketID))
         ).div(Consts.ORACLE_PRICE_BASE());
 
         details.balancesTotalUSDValue = baseUSDPrice.mul(account.balances[market.baseAsset]).add(
@@ -121,8 +121,8 @@ library CollateralAccounts {
         address collateralAsset;
         address debtAsset;
 
-        uint256 leftBaseAssetDebt = Pool._getPoolBorrowOf(state, market.baseAsset, user, marketID);
-        uint256 leftQuoteAssetDebt = Pool._getPoolBorrowOf(state, market.quoteAsset, user, marketID);
+        uint256 leftBaseAssetDebt = Pool.getPoolBorrowOf(state, market.baseAsset, user, marketID);
+        uint256 leftQuoteAssetDebt = Pool.getPoolBorrowOf(state, market.quoteAsset, user, marketID);
 
         if (leftBaseAssetDebt == 0 && leftQuoteAssetDebt == 0) {
             // no auction
