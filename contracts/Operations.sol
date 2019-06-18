@@ -88,9 +88,10 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        LendingPool.initializeAssetLendingPool(state, asset);
-
         Requires.requirePriceOracleAddressValid(oracleAddress);
+        Requires.requireAssetNotExist(state, asset);
+
+        LendingPool.initializeAssetLendingPool(state, asset);
         state.oracles[asset] = IPriceOracle(oracleAddress);
 
         address poolTokenAddress = LendingPool.createLendingPoolToken(

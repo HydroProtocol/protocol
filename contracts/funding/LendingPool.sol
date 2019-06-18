@@ -44,11 +44,6 @@ library LendingPool {
         internal
         returns (address)
     {
-        require(
-            state.pool.poolToken[originAssetAddress] == address(0),
-            "POOL_TOKEN_ALREADY_EXIST"
-        );
-
         address poolTokenAddress = address(new LendingPoolToken(name, symbol, decimals));
         state.pool.poolToken[originAssetAddress] = poolTokenAddress;
         return poolTokenAddress;
@@ -61,8 +56,6 @@ library LendingPool {
     )
         internal
     {
-        Requires.requireAssetNotExist(state, asset);
-
         state.pool.borrowIndex[asset] = Decimal.one();
         state.pool.supplyIndex[asset] = Decimal.one();
         state.pool.indexStartTime[asset] = block.timestamp;
