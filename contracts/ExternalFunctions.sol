@@ -132,18 +132,6 @@ contract ExternalFunctions is GlobalStore, Modifiers {
         return CollateralAccounts.getDetails(state, user, marketID);
     }
 
-    function getAccountBalance(
-        address asset,
-        address user,
-        uint16 marketID
-    )
-        external
-        view
-        returns (uint256)
-    {
-        return state.accounts[user][marketID].balances[asset];
-    }
-
     function getAuctionsCount()
         external
         view

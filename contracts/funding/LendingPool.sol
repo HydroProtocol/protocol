@@ -24,6 +24,7 @@ import "../lib/Types.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Decimal.sol";
+import "../lib/Events.sol";
 
 import "./InterestModel.sol";
 import "./LendingPoolToken.sol";
@@ -94,6 +95,8 @@ library LendingPool {
 
         // update interest rate
         updateInterestRate(state, asset);
+
+        Events.logSupply(user, asset, amount);
     }
 
     function withdraw(
@@ -114,6 +117,7 @@ library LendingPool {
         // round ceil
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
         uint256 withdrawAmount = amount;
+
         if (getLogicSupplyOf(state, asset, user) < logicAmount) {
             logicAmount = getLogicSupplyOf(state, asset, user);
             withdrawAmount = Decimal.mul(logicAmount, state.pool.supplyIndex[asset]);
@@ -127,6 +131,8 @@ library LendingPool {
 
         // update interest rate
         updateInterestRate(state, asset);
+
+        Events.logUnsupply(user, asset, withdrawAmount);
 
         return withdrawAmount;
     }
@@ -157,6 +163,8 @@ library LendingPool {
 
         // update interest rate
         updateInterestRate(state, asset);
+
+        Events.logBorrow(user, marketID, asset, amount);
     }
 
     function repay(
@@ -192,6 +200,8 @@ library LendingPool {
 
         // update interest rate
         updateInterestRate(state, asset);
+
+        Events.logRepay(user, marketID, asset, repayAmount);
 
         return repayAmount;
     }

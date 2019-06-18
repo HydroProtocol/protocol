@@ -99,6 +99,97 @@ library Events {
         );
     }
 
+    //////////////////
+    // Lending Pool //
+    //////////////////
+
+    event Borrow(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    );
+
+    function logBorrow(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Borrow(
+            user,
+            marketID,
+            asset,
+            amount
+        );
+    }
+
+    event Repay(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    );
+
+    function logRepay(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Repay(
+            user,
+            marketID,
+            asset,
+            amount
+        );
+    }
+
+    event Supply(
+        address user,
+        address asset,
+        uint256 amount
+    );
+
+    function logSupply(
+        address user,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Supply(
+            user,
+            asset,
+            amount
+        );
+    }
+
+    event Unsupply(
+        address user,
+        address asset,
+        uint256 amount
+    );
+
+    function logUnsupply(
+        address user,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit Unsupply(
+            user,
+            asset,
+            amount
+        );
+    }
+
+
     ///////////////////
     // Admin Actions //
     ///////////////////
@@ -325,7 +416,7 @@ library Events {
     // Exchange //
     //////////////
 
-    event ExchangeMatch(
+    event Match(
         Types.OrderAddressSet addressSet,
         address maker,
         address taker,
@@ -340,13 +431,13 @@ library Events {
 
     );
 
-    function logExchangeMatch(
+    function logMatch(
         Types.MatchResult memory result,
         Types.OrderAddressSet memory addressSet
     )
         internal
     {
-        emit ExchangeMatch(
+        emit Match(
             addressSet,
             result.maker,
             result.taker,
@@ -358,7 +449,6 @@ library Events {
             result.takerGasFee,
             result.baseAssetFilledAmount,
             result.quoteAssetFilledAmount
-
         );
     }
 

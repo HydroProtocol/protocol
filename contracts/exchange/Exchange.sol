@@ -498,7 +498,7 @@ library Exchange {
                 add(results[i].takerGasFee).
                 sub(results[i].makerRebate);
 
-            Events.logExchangeMatch(results[i], orderAddressSet);
+            Events.logMatch(results[i], orderAddressSet);
         }
 
         Transfer.transferFrom(
@@ -588,7 +588,7 @@ library Exchange {
                 add(results[i].takerGasFee).
                 sub(results[i].makerRebate);
 
-            Events.logExchangeMatch(results[i], orderAddressSet);
+            Events.logMatch(results[i], orderAddressSet);
         }
 
         Transfer.transferFrom(

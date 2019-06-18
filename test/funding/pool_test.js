@@ -113,7 +113,7 @@ contract('LendingPool', accounts => {
                 }),
             initTime + 86400 * 180
         );
-        assert.equal((await hydro.getAccountBalance(USDAddr, u2, 0)).toString(), toWei('200'));
+        assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('200'));
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '201232876712328767100');
         // test wether use principle with interest to calculate new interest rate
         interestRate = await hydro.getInterestRates(USDAddr, 0);
@@ -129,7 +129,7 @@ contract('LendingPool', accounts => {
                 }),
             initTime + 86400 * 180
         );
-        assert.equal((await hydro.getAccountBalance(USDAddr, u2, 0)).toString(), toWei('50'));
+        assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('50'));
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '51232876712328767100');
     });
 
@@ -170,7 +170,7 @@ contract('LendingPool', accounts => {
         );
         // charge 1232876712328767100 as interest
         assert.equal(
-            (await hydro.getAccountBalance(USDAddr, u2, 0)).toString(),
+            (await hydro.marketBalanceOf(0, USDAddr, u2)).toString(),
             '8767123287671232900'
         );
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
