@@ -75,7 +75,7 @@ const newMarket = async marketConfig => {
 
     const marketID = (await hydro.getAllMarketsCount()).toNumber() - 1;
 
-    logGas(res, 'new market');
+    // logGas(res, 'new market');
 
     if (initMarketBalances) {
         if (initMarketBalances[0]) {
@@ -147,7 +147,7 @@ const createAsset = async assetConfig => {
         from: accounts[0]
     });
 
-    logGas(res, 'oracle setPrice');
+    // logGas(res, 'oracle setPrice');
 
     res = await hydro.createAsset(
         token.address,
@@ -158,7 +158,7 @@ const createAsset = async assetConfig => {
         assetConfig.decimals
     );
 
-    logGas(res, 'createAsset');
+    // logGas(res, 'createAsset');
 
     if (initBalances) {
         for (let j = 0; j < Object.keys(initBalances).length; j++) {
