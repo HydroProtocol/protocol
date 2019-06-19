@@ -19,16 +19,13 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "../lib/SafeMath.sol";
-import "../lib/Types.sol";
-import "../lib/Consts.sol";
-import "../lib/Store.sol";
-import "../lib/Decimal.sol";
+import "./lib/SafeMath.sol";
+import "./lib/Decimal.sol";
 
-library InterestModel {
+contract DefaultInterestModel {
     using SafeMath for uint256;
 
-    function polynomialInterestModel(uint256 borrowRatio) internal pure returns(uint256){
+    function polynomialInterestModel(uint256 borrowRatio) external pure returns(uint256){
         // 0.2r + 0.5r^2
         uint256 rate1 = borrowRatio.mul(2).div(10);
         uint256 rate2 = Decimal.mul(borrowRatio, borrowRatio).mul(5).div(10);

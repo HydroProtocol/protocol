@@ -59,6 +59,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
+        Requires.requireMarketIDExist(state, marketID);
         Requires.requireDecimalLessOrEquanThanOne(newAuctionRatioStart);
         Requires.requireDecimalLessOrEquanThanOne(newAuctionRatioPerBlock);
         Requires.requireDecimalGreaterThanOne(newLiquidateRate);
@@ -78,9 +79,10 @@ contract Operations is Ownable, GlobalStore {
         );
     }
 
-    function registerAsset(
+    function createAsset(
         address asset,
         address oracleAddress,
+        address interestModalAddress,
         string calldata poolTokenName,
         string calldata poolTokenSymbol,
         uint8 poolTokenDecimals
@@ -92,26 +94,27 @@ contract Operations is Ownable, GlobalStore {
         Requires.requireAssetNotExist(state, asset);
 
         LendingPool.initializeAssetLendingPool(state, asset);
-        state.oracles[asset] = IPriceOracle(oracleAddress);
 
-        address poolTokenAddress = LendingPool.createLendingPoolToken(
-            state,
-            asset,
+        state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
+        state.assets[asset].interestModel = IInterestModel(interestModalAddress);
+        state.assets[asset].lendingPoolToken = new LendingPoolToken(
             poolTokenName,
             poolTokenSymbol,
             poolTokenDecimals
         );
 
-        Events.logRegisterAsset(
+        Events.logCreateAsset(
             asset,
             oracleAddress,
-            poolTokenAddress
+            address(state.assets[asset].lendingPoolToken),
+            interestModalAddress
         );
     }
 
-    function updateAssetPriceOracle(
+    function updateAsset(
         address asset,
-        address oracleAddress
+        address oracleAddress,
+        address interestModalAddress
     )
         external
         onlyOwner
@@ -119,11 +122,13 @@ contract Operations is Ownable, GlobalStore {
         Requires.requirePriceOracleAddressValid(oracleAddress);
         Requires.requireAssetExist(state, asset);
 
-        state.oracles[asset] = IPriceOracle(oracleAddress);
+        state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
+        state.assets[asset].interestModel = IInterestModel(interestModalAddress);
 
-        Events.logUpdateAssetPriceOracle(
+        Events.logUpdateAsset(
             asset,
-            oracleAddress
+            oracleAddress,
+            interestModalAddress
         );
     }
 

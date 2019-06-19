@@ -1,10 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "test": "truffle test",
+    "test": "DEBUG=GasUsed truffle test",
     "migrate": "truffle migrate",
-    "exchange_test": "truffle test test/exchange/*.js",
-    "funding_test": "truffle test test/funding/*.js",
     "compile": "truffle compile",
     "coverage": "solidity-coverage",
     "node": "ganache-cli -l 0x1fffffffffffff -g 1 --allowUnlimitedContractSize -m \" elephant potato mind luggage remind desk tourist valve license flame favorite tilt\""

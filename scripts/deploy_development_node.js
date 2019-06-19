@@ -2,7 +2,7 @@ const TestToken = artifacts.require('./helper/TestToken.sol');
 const BigNumber = require('bignumber.js');
 const Hydro = artifacts.require('./Hydro.sol');
 const PriceOracle = artifacts.require('./PriceOracle.sol');
-
+const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 BigNumber.config({
     EXPONENTIAL_AT: 1000
 });
@@ -32,13 +32,51 @@ module.exports = async () => {
         const oracle = await PriceOracle.new();
         console.log('Oracle', oracle.address);
 
-        const etherAddress = '0x0000000000000000000000000000000000000000';
-        await hydro.registerAsset(etherAddress, oracle.address, 'Ether', 'Ether', 18);
+        const defaultInterestModel = await DefaultInterestModel.new();
+        console.log('defaultInterestModel', defaultInterestModel.address);
 
-        await hydro.registerAsset(hotToken.address, oracle.address, 'hotToken', 'hotToken', 18);
-        await hydro.registerAsset(tokenDAI.address, oracle.address, 'tokenDAI', 'tokenDAI', 18);
-        await hydro.registerAsset(tokenUSDC.address, oracle.address, 'tokenUSDC', 'tokenUSDC', 18);
-        await hydro.registerAsset(tokenUSDT.address, oracle.address, 'tokenUSDT', 'tokenUSDT', 18);
+        const etherAddress = '0x0000000000000000000000000000000000000000';
+        await hydro.createAsset(
+            etherAddress,
+            oracle.address,
+            defaultInterestModel.address,
+            'Ether',
+            'Ether',
+            18
+        );
+
+        await hydro.createAsset(
+            hotToken.address,
+            oracle.address,
+            defaultInterestModel.address,
+            'hotToken',
+            'hotToken',
+            18
+        );
+        await hydro.createAsset(
+            tokenDAI.address,
+            oracle.address,
+            defaultInterestModel.address,
+            'tokenDAI',
+            'tokenDAI',
+            18
+        );
+        await hydro.createAsset(
+            tokenUSDC.address,
+            oracle.address,
+            defaultInterestModel.address,
+            'tokenUSDC',
+            'tokenUSDC',
+            18
+        );
+        await hydro.createAsset(
+            tokenUSDT.address,
+            oracle.address,
+            defaultInterestModel.address,
+            'tokenUSDT',
+            'tokenUSDT',
+            18
+        );
 
         await oracle.setPrice(etherAddress, toWei('100'));
         await oracle.setPrice(hotToken.address, toWei('0.1'));

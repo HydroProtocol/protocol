@@ -43,8 +43,8 @@ library CollateralAccounts {
         Types.Market storage market = state.markets[marketID];
         details.status = account.status;
 
-        uint256 baseUSDPrice = state.oracles[market.baseAsset].getPrice(market.baseAsset);
-        uint256 quoteUSDPrice = state.oracles[market.quoteAsset].getPrice(market.quoteAsset);
+        uint256 baseUSDPrice = state.assets[market.baseAsset].priceOracle.getPrice(market.baseAsset);
+        uint256 quoteUSDPrice = state.assets[market.quoteAsset].priceOracle.getPrice(market.quoteAsset);
 
         details.debtsTotalUSDValue = baseUSDPrice.mul(LendingPool.getBorrowOf(state, market.baseAsset, user, marketID)).add(
             quoteUSDPrice.mul(LendingPool.getBorrowOf(state, market.quoteAsset, user, marketID))
@@ -94,7 +94,7 @@ library CollateralAccounts {
             return 0;
         }
 
-        uint256 asserUSDPrice = state.oracles[asset].getPrice(asset);
+        uint256 asserUSDPrice = state.assets[asset].priceOracle.getPrice(asset);
 
         // round down
         return (details.balancesTotalUSDValue - transferableUSDValueBar).mul(Consts.ORACLE_PRICE_BASE()).div(asserUSDPrice);

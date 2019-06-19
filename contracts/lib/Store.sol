@@ -121,9 +121,6 @@ library Store {
 
         // user => marketID => balances
         mapping (address => mapping (uint16 => mapping(address => uint256))) logicBorrow;
-
-        // pool token
-        mapping (address => address) poolToken;
     }
 
     struct AuctionState {
@@ -145,7 +142,7 @@ library Store {
 
         uint16 marketsCount;
 
-        mapping(address => IPriceOracle) oracles;
+        mapping(address => Types.Asset) assets;
 
         // user => marketID => account
         mapping(address => mapping(uint16 => Types.CollateralAccount)) accounts;

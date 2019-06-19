@@ -291,39 +291,46 @@ library Events {
         emit UpdateDiscountConfig(newConfig);
     }
 
-    event RegisterAsset(
+    event CreateAsset(
         address asset,
         address oracleAddress,
-        address poolTokenAddress
+        address poolTokenAddress,
+        address interestMoealAddress
     );
 
-    function logRegisterAsset(
+    function logCreateAsset(
         address asset,
         address oracleAddress,
-        address poolTokenAddress
+        address poolTokenAddress,
+        address interestMoealAddress
     )
         internal
     {
-        emit RegisterAsset(asset,
+        emit CreateAsset(
+            asset,
             oracleAddress,
-            poolTokenAddress
+            poolTokenAddress,
+            interestMoealAddress
         );
     }
 
-    event UpdateAssetPriceOracle(
+    event UpdateAsset(
         address asset,
-        address oracleAddress
+        address oracleAddress,
+        address interestMoealAddress
     );
 
-    function logUpdateAssetPriceOracle(
+    function logUpdateAsset(
         address asset,
-        address oracleAddress
+        address oracleAddress,
+        address interestMoealAddress
     )
         internal
     {
-        emit UpdateAssetPriceOracle(
+        emit UpdateAsset(
             asset,
-            oracleAddress
+            oracleAddress,
+            interestMoealAddress
         );
     }
 

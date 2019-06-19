@@ -1,8 +1,9 @@
 require('../utils/hooks');
+
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const Ethers = require('ethers');
-const { toWei } = require('../utils');
+const { toWei, logGas } = require('../utils');
 const { newMarket } = require('../utils/assets');
 
 const encoder = new Ethers.utils.AbiCoder();
@@ -59,7 +60,10 @@ contract('Batch', accounts => {
             }
         ];
 
-        await hydro.batch(actions, { value: toWei('1') });
+        const res = await hydro.batch(actions, { value: toWei('1') });
+
+        logGas(res, 'deposit(batch)');
+
         const balanceAfter = await hydro.balanceOf(ethAddress, u1);
 
         assert.equal(balanceAfter.sub(balanceBefore).toString(), toWei('1'));
@@ -79,7 +83,8 @@ contract('Batch', accounts => {
             }
         ];
 
-        await hydro.batch(actions);
+        const res = await hydro.batch(actions);
+        logGas(res, 'withdraw(batch)');
         const balanceAfter = await hydro.balanceOf(ethAddress, u1);
 
         assert.equal(balanceAfter.toString(), toWei('0'));
@@ -112,8 +117,8 @@ contract('Batch', accounts => {
             }
         ];
 
-        await hydro.batch(actions);
-
+        const res = await hydro.batch(actions);
+        logGas(res, 'transfer(batch)');
         const balanceAfter = await hydro.balanceOf(ethAddress, u1);
         assert.equal(balanceAfter.toString(), toWei('0'));
 
@@ -137,13 +142,15 @@ contract('Batch', accounts => {
                 encodedParams: encoder.encode(['address', 'uint256'], [ethAddress, toWei('1')])
             }
         ];
-        await hydro.batch(actions, { value: toWei('1') });
+        const res = await hydro.batch(actions, { value: toWei('1') });
+        logGas(res, 'supply + unsupply(batch)');
     });
 
     it('borrow and repay', async () => {
         // u1 supply pool
         // u2 borrow and repay
-        res = await createMarket();
+        let res = await createMarket();
+
         usdAddress = res.quoteAsset.address;
         marketID = res.marketID;
         const u1Actions = [
@@ -156,7 +163,8 @@ contract('Batch', accounts => {
                 encodedParams: encoder.encode(['address', 'uint256'], [ethAddress, toWei('1')])
             }
         ];
-        await hydro.batch(u1Actions, { from: u1, value: toWei('1') });
+        res = await hydro.batch(u1Actions, { from: u1, value: toWei('1') });
+        logGas(res, 'deposit + supply (batch)');
         const u2Actions = [
             {
                 actionType: ActionType.Transfer,
@@ -185,6 +193,7 @@ contract('Batch', accounts => {
                 )
             }
         ];
-        await hydro.batch(u2Actions, { from: u2 });
+        res = await hydro.batch(u2Actions, { from: u2 });
+        logGas(res, 'transfer + borrow + repay (batch)');
     });
 });

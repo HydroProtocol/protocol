@@ -26,28 +26,10 @@ import "../lib/Store.sol";
 import "../lib/Decimal.sol";
 import "../lib/Events.sol";
 import "../lib/Requires.sol";
-
-import "./InterestModel.sol";
-import "./LendingPoolToken.sol";
 import "./CollateralAccounts.sol";
 
 library LendingPool {
     using SafeMath for uint256;
-
-    function createLendingPoolToken(
-        Store.State storage state,
-        address originAssetAddress,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
-    )
-        internal
-        returns (address)
-    {
-        address poolTokenAddress = address(new LendingPoolToken(name, symbol, decimals));
-        state.pool.poolToken[originAssetAddress] = poolTokenAddress;
-        return poolTokenAddress;
-    }
 
     // create new pool
     function initializeAssetLendingPool(
@@ -76,6 +58,7 @@ library LendingPool {
         internal
     {
         Requires.requireAssetExist(state, asset);
+
         mapping(address => uint256) storage balances = state.balances[user];
 
         // update index
@@ -89,7 +72,7 @@ library LendingPool {
         balances[asset] = balances[asset].sub(amount);
 
         // mint pool token
-        LendingPoolToken(state.pool.poolToken[asset]).mint(user, logicAmount);
+        state.assets[asset].lendingPoolToken.mint(user, logicAmount);
 
         // update interest rate
         updateInterestRate(state, asset);
@@ -126,7 +109,7 @@ library LendingPool {
         balances[asset] = balances[asset].add(withdrawAmount);
 
         // update logic amount
-        LendingPoolToken(state.pool.poolToken[asset]).burn(user, logicAmount);
+        state.assets[asset].lendingPoolToken.burn(user, logicAmount);
 
         // update interest rate
         updateInterestRate(state, asset);
@@ -332,7 +315,7 @@ library LendingPool {
         }
 
         uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
-        borrowInterestRate = InterestModel.polynomialInterestModel(borrowRatio);
+        borrowInterestRate = state.assets[asset].interestModel.polynomialInterestModel(borrowRatio);
         uint256 borrowInterest = Decimal.mul(_borrow, borrowInterestRate);
         uint256 supplyInterest = Decimal.mul(borrowInterest, Decimal.one().sub(state.pool.insuranceRatio));
         supplyInterestRate = Decimal.divFloor(supplyInterest, _supply);
@@ -453,7 +436,7 @@ library LendingPool {
         view
         returns (uint256)
     {
-        return LendingPoolToken(state.pool.poolToken[asset]).balanceOf(user);
+        return state.assets[asset].lendingPoolToken.balanceOf(user);
     }
 
     function getTotalLogicSupply(
@@ -464,6 +447,6 @@ library LendingPool {
         view
         returns (uint256)
     {
-        return LendingPoolToken(state.pool.poolToken[asset]).totalSupply();
+        return state.assets[asset].lendingPoolToken.totalSupply();
     }
 }

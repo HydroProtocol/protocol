@@ -3,29 +3,66 @@ require('../utils/hooks');
 const { newMarket } = require('../utils/assets');
 const { toWei, etherAsset } = require('../utils');
 const Hydro = artifacts.require('./Hydro.sol');
+const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 const assert = require('assert');
 
 contract('Markets', accounts => {
-    let hydro;
+    let hydro, defaultInterestModel;
 
     const fakePriceOracleAddress = '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF';
 
     before(async () => {
         hydro = await Hydro.deployed();
+        defaultInterestModel = await DefaultInterestModel.deployed();
     });
 
-    it('can register asset', async () => {
-        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
-        assert.equal(await hydro.getPriceOracleOf(etherAsset), fakePriceOracleAddress);
+    it('should return empty struct when try to get empty asset', async () => {
+        const asset = await hydro.getAsset('0x0000000000000000000000000000000000000000');
+        assert.equal(asset.lendingPoolToken, '0x0000000000000000000000000000000000000000');
+        assert.equal(asset.priceOracle, '0x0000000000000000000000000000000000000000');
+        assert.equal(asset.interestModel, '0x0000000000000000000000000000000000000000');
     });
 
-    it('can update asset oracle', async () => {
-        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
-        assert.equal(await hydro.getPriceOracleOf(etherAsset), fakePriceOracleAddress);
+    it('can create asset', async () => {
+        await hydro.createAsset(
+            etherAsset,
+            fakePriceOracleAddress,
+            defaultInterestModel.address,
+            'ETH',
+            'ETH',
+            18
+        );
+
+        const asset = await hydro.getAsset(etherAsset);
+        assert.equal(asset.priceOracle, fakePriceOracleAddress);
+    });
+
+    it('can update asset', async () => {
+        await hydro.createAsset(
+            etherAsset,
+            fakePriceOracleAddress,
+            defaultInterestModel.address,
+            'ETH',
+            'ETH',
+            18
+        );
+
+        const asset = await hydro.getAsset(etherAsset);
+        assert.equal(asset.priceOracle, fakePriceOracleAddress);
+        assert.equal(asset.interestModel, defaultInterestModel.address);
 
         const changedPriceOracleAddress = '0x1111111111111111111111111111111111111111';
-        await hydro.updateAssetPriceOracle(etherAsset, changedPriceOracleAddress);
-        assert.equal(await hydro.getPriceOracleOf(etherAsset), changedPriceOracleAddress);
+        const changedInterestModelOracleAddress = '0x2222222222222222222222222222222222222222';
+
+        await hydro.updateAsset(
+            etherAsset,
+            changedPriceOracleAddress,
+            changedInterestModelOracleAddress
+        );
+
+        const asset2 = await hydro.getAsset(etherAsset);
+        assert.equal(asset2.priceOracle, changedPriceOracleAddress);
+        assert.equal(asset2.interestModel, changedInterestModelOracleAddress);
     });
 
     it('no markets at first', async () => {
@@ -66,7 +103,14 @@ contract('Markets', accounts => {
 
     it('can not add invalid market, unregistered base asset', async () => {
         // register fake ether asset oracle
-        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
+        await hydro.createAsset(
+            etherAsset,
+            fakePriceOracleAddress,
+            defaultInterestModel.address,
+            'ETH',
+            'ETH',
+            18
+        );
 
         await assert.rejects(
             newMarket({
@@ -81,7 +125,14 @@ contract('Markets', accounts => {
 
     it('can not add invalid market, unregistered quote asset', async () => {
         // register fake ether asset oracle
-        await hydro.registerAsset(etherAsset, fakePriceOracleAddress, 'ETH', 'ETH', 18);
+        await hydro.createAsset(
+            etherAsset,
+            fakePriceOracleAddress,
+            defaultInterestModel.address,
+            'ETH',
+            'ETH',
+            18
+        );
 
         await assert.rejects(
             newMarket({

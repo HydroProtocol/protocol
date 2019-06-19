@@ -1,9 +1,9 @@
-const debug = require('debug')('hydro:Asset');
 const PriceOracle = artifacts.require('./PriceOracle.sol');
 const Hydro = artifacts.require('./Hydro.sol');
+const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
 const BigNumber = require('bignumber.js');
-const { toWei } = require('./index');
+const { toWei, logGas } = require('./index');
 
 BigNumber.config({
     EXPONENTIAL_AT: 1000
@@ -75,8 +75,7 @@ const newMarket = async marketConfig => {
 
     const marketID = (await hydro.getAllMarketsCount()).toNumber() - 1;
 
-    debug(`new Market ${baseAsset.symbol}-${quoteAsset.symbol}, marketID: ${marketID}`);
-    debug('add market gas cost:', res.receipt.gasUsed);
+    logGas(res, 'new market');
 
     if (initMarketBalances) {
         if (initMarketBalances[0]) {
@@ -122,6 +121,7 @@ const supply = async (token, user, amount) => {
 const createAsset = async assetConfig => {
     const accounts = await web3.eth.getAccounts();
     const hydro = await Hydro.deployed();
+    const defaultInterestModel = await DefaultInterestModel.deployed();
     const owner = accounts[0];
 
     const { initBalances, initCollaterals, initLendingPool, oraclePrice } = assetConfig;
@@ -143,24 +143,22 @@ const createAsset = async assetConfig => {
     }
 
     const oracle = await PriceOracle.deployed();
+    let res = await oracle.setPrice(token.address, oraclePrice || toWei(100), {
+        from: accounts[0]
+    });
 
-    await Promise.all([
-        oracle.setPrice(token.address, oraclePrice || toWei(100), {
-            from: accounts[0]
-        }),
+    logGas(res, 'oracle setPrice');
 
-        hydro.registerAsset(
-            token.address,
-            oracle.address,
-            'supply shares ' + assetConfig.name,
-            'S' + assetConfig.symbol,
-            assetConfig.decimals
-        )
-    ]);
-
-    debug(
-        `Token ${token.symbol} price is ${(token.address, await oracle.getPrice(token.address))}`
+    res = await hydro.createAsset(
+        token.address,
+        oracle.address,
+        defaultInterestModel.address,
+        'supply shares ' + assetConfig.name,
+        'S' + assetConfig.symbol,
+        assetConfig.decimals
     );
+
+    logGas(res, 'createAsset');
 
     if (initBalances) {
         for (let j = 0; j < Object.keys(initBalances).length; j++) {

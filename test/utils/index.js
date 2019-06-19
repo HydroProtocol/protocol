@@ -1,5 +1,6 @@
 const HydroToken = artifacts.require('./HydroToken.sol');
 const BigNumber = require('bignumber.js');
+const gasLogger = require('debug')('GasUsed');
 
 BigNumber.config({
     EXPONENTIAL_AT: 1000
@@ -67,6 +68,25 @@ const getUserKey = async u => {
     }
 };
 
+const yellowText = x => `\x1b[33m${x}\x1b[0m`;
+const greenText = x => `\x1b[32m${x}\x1b[0m`;
+const redText = x => `\x1b[31m${x}\x1b[0m`;
+
+const logGas = (res, desc) => {
+    const gasUsed = res.receipt.gasUsed;
+    let colorFn;
+
+    if (gasUsed < 80000) {
+        colorFn = greenText;
+    } else if (gasUsed < 200000) {
+        colorFn = yellowText;
+    } else {
+        colorFn = redText;
+    }
+
+    gasLogger((desc + ' ').padEnd(50, '.'), colorFn(gasUsed.toString().padStart(8)));
+};
+
 module.exports = {
     newContract,
     newContractAt,
@@ -77,5 +97,6 @@ module.exports = {
     wei,
     pp,
     maxUint256,
-    etherAsset
+    etherAsset,
+    logGas
 };

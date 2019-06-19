@@ -106,6 +106,16 @@ library Requires {
         require(decimal > Decimal.one(), "DECIMAL_LESS_OR_EQUAL_THAN_ONE");
     }
 
+    function requireMarketIDExist(
+        Store.State storage state,
+        uint16 marketID
+    )
+        internal
+        view
+    {
+        require(marketID < state.marketsCount, "MARKET_NOT_EXIST");
+    }
+
     function isAssetExist(
         Store.State storage state,
         address asset
@@ -114,7 +124,7 @@ library Requires {
         view
         returns (bool)
     {
-        return state.oracles[asset] != IPriceOracle(address(0));
+        return state.assets[asset].priceOracle != IPriceOracle(address(0));
     }
 
     function isMarketExist(

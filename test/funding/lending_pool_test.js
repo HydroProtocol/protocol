@@ -75,6 +75,11 @@ contract('LendingPool', accounts => {
         );
     };
 
+    const getLendingPoolToken = async assetAddress => {
+        const assetInfo = await hydro.getAsset(assetAddress);
+        return LendingPoolToken.at(assetInfo.lendingPoolToken);
+    };
+
     beforeEach(async () => {
         await mineAt(async () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }), initTime);
         await addCollateral(u2, ETHAddr, toWei('1'), initTime);
@@ -85,7 +90,7 @@ contract('LendingPool', accounts => {
     // Basic Test //
     ////////////////
     it('mint and burn pool token', async () => {
-        poolToken = await LendingPoolToken.at(await hydro.getLendingPoolTokenAddress(USDAddr));
+        poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), toWei('1000'));
         assert.equal((await poolToken.totalSupply()).toString(), toWei('1000'));
         await mineAt(async () => hydro.unsupply(USDAddr, toWei('500'), { from: u1 }), initTime);
@@ -142,7 +147,7 @@ contract('LendingPool', accounts => {
             initTime + 86400 * 180
         );
 
-        poolToken = await LendingPoolToken.at(await hydro.getLendingPoolTokenAddress(USDAddr));
+        poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), '1998768641401012450526');
     });
 
@@ -155,7 +160,7 @@ contract('LendingPool', accounts => {
             initTime + 86400 * 180
         );
         assert.equal((await hydro.balanceOf(USDAddr, u1)).toString(), toWei('9500'));
-        poolToken = await LendingPoolToken.at(await hydro.getLendingPoolTokenAddress(USDAddr));
+        poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), '500615679299493774737');
     });
 
@@ -183,7 +188,7 @@ contract('LendingPool', accounts => {
         );
 
         assert.equal((await hydro.balanceOf(USDAddr, u1)).toString(), '10001232876712328767000'); // 100 wei remains in the system because of precision
-        poolToken = await LendingPoolToken.at(await hydro.getLendingPoolTokenAddress(USDAddr));
+        poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), '0');
     });
 

@@ -27,6 +27,11 @@ import "./Store.sol";
 import "./Signature.sol";
 import "./Decimal.sol";
 
+import "../interfaces/IInterestModel.sol";
+import "../interfaces/IPriceOracle.sol";
+
+import "../funding/LendingPoolToken.sol";
+
 library Types {
     enum AuctionStatus {
         InProgress,
@@ -71,8 +76,14 @@ library Types {
 
     struct BalancePath {
         BalanceCategory category;
-        uint16 marketID;
-        address user;
+        uint16          marketID;
+        address         user;
+    }
+
+    struct Asset {
+        LendingPoolToken  lendingPoolToken;
+        IPriceOracle      priceOracle;
+        IInterestModel    interestModel;
     }
 
     struct Market {
