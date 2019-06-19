@@ -400,6 +400,43 @@ library Exchange {
      * Take a list of matches and settle them with the taker order, transferring tokens all tokens
      * and paying all fees necessary to complete the transaction.
      *
+     * Settles a order given a list of Types.MatchResult objects. A naive approach would be to take
+     * each result, have the taker and maker transfer the appropriate tokens, and then have them
+     * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
+     * transactions.
+     *
+     * Instead we do the following:
+     *
+     * For a match which has a taker as seller:
+     *  - Taker transfers the required base token to each maker
+     *  - Each maker sends an amount of quote token to the taker equal to:
+     *    [Amount owed to taker] + [Maker fee] + [Maker gas cost] - [Maker rebate amount]
+     *  - Since the taker has received all the maker fees and gas costs, it can then send them along
+     *    with taker fees in a single batch transaction to the relayer, equal to:
+     *    [All maker and taker fees] + [All maker and taker gas costs] - [All maker rebates]
+     *
+     * Thus in the end the taker will have the full amount of quote token, sans the fee and cost of
+     * their share of gas. Each maker will have their share of base token, sans the fee and cost of
+     * their share of gas, and will keep their rebate in quote token. The relayer will end up with
+     * the fees from the taker and each maker (sans rebate), and the gas costs will pay for the
+     * transactions.
+     *
+     * For a match which has a taker as buyer:
+     *  - Each maker transfers base tokens to the taker
+     *  - The taker sends an amount of quote tokens to each maker equal to:
+     *    [Amount owed to maker] + [Maker rebate amount] - [Maker fee] - [Maker gas cost]
+     *  - Since the taker saved all the maker fees and gas costs, it can then send them as a single
+     *    batch transaction to the relayer, equal to:
+     *    [All maker and taker fees] + [All maker and taker gas costs] - [All maker rebates]
+     *
+     * Thus in the end the taker will have the full amount of base token, sans the fee and cost of
+     * their share of gas. Each maker will have their share of quote token, including their rebate,
+     * but sans the fee and cost of their share of gas. The relayer will end up with the fees from
+     * the taker and each maker (sans rebates), and the gas costs will pay for the transactions.
+     *
+     * In this scenario, with n makers there will be 2n + 1 transactions, which will be a significant
+     * gas savings over the original method.
+     *
      * @param results List of Types.MatchResult objects representing each individual trade to settle.
      * @param takerOrderParam The Types.OrderParam object representing the taker order data.
      * @param orderAddressSet An object containing addresses common across each order.
@@ -412,45 +449,8 @@ library Exchange {
     )
         internal
     {
-        if (takerOrderParam.isSell()) {
-            settleTakerSell(state, results, orderAddressSet);
-        } else {
-            settleTakerBuy(state, results, orderAddressSet);
-        }
-    }
+        bool isTakerSell = takerOrderParam.isSell();
 
-    /**
-     * Settles a sell order given a list of Types.MatchResult objects. A naive approach would be to take
-     * each result, have the taker and maker transfer the appropriate tokens, and then have them
-     * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
-     * transactions. Additionally the taker would have to have an allowance set for the quote token
-     * in order to pay the fees to the relayer.
-     *
-     * Instead we do the following:
-     *  - Taker transfers the required base token to each maker
-     *  - Each maker sends an amount of quote token to the relayer equal to:
-     *    [Amount owed to taker] + [Maker fee] + [Maker gas cost] - [Maker rebate amount]
-     *  - The relayer will then take all of this quote token and in a single batch transaction
-     *    send the appropriate amount to the taker, equal to:
-     *    [Total amount owed to taker] - [All taker fees] - [All taker gas costs]
-     *
-     * Thus in the end the taker will have the full amount of quote token, sans the fee and cost of
-     * their share of gas. Each maker will have their share of base token, sans the fee and cost of
-     * their share of gas, and will keep their rebate in quote token. The relayer will end up with
-     * the fees from the taker and each maker (sans rebate), and the gas costs will pay for the
-     * transactions. In this scenario, with n makers there will be 2n + 1 transactions, which will
-     * be a significant gas savings over the original method.
-     *
-     * @param results A list of Types.MatchResult objects representing each individual trade to settle.
-     * @param orderAddressSet An object containing addresses common across each order.
-     */
-    function settleTakerSell(
-        Store.State storage state,
-        Types.MatchResult[] memory results,
-        Types.OrderAddressSet memory orderAddressSet
-    )
-        internal
-    {
         uint256 totalFee = 0;
 
         Types.BalancePath memory relayerBalancePath = Types.BalancePath({
@@ -463,110 +463,36 @@ library Exchange {
             Transfer.transferFrom(
                 state,
                 orderAddressSet.baseAsset,
-                results[i].takerBalancePath,
-                results[i].makerBalancePath,
+                isTakerSell ? results[i].takerBalancePath : results[i].makerBalancePath,
+                isTakerSell ? results[i].makerBalancePath : results[i].takerBalancePath,
                 results[i].baseAssetFilledAmount
             );
 
-            uint256 amount = results[i].quoteAssetFilledAmount.
+            uint256 transferredQuoteAmount;
+
+            if(isTakerSell) {
+                transferredQuoteAmount = results[i].quoteAssetFilledAmount.
                     add(results[i].makerFee).
                     add(results[i].makerGasFee).
                     sub(results[i].makerRebate);
-
-            Transfer.transferFrom(
-                state,
-                orderAddressSet.quoteAsset,
-                results[i].makerBalancePath,
-                results[i].takerBalancePath,
-                amount
-            );
-
-            totalFee = totalFee.
-                add(results[i].takerFee).
-                add(results[i].makerFee).
-                add(results[i].makerGasFee).
-                add(results[i].takerGasFee).
-                sub(results[i].makerRebate);
-
-            Events.logMatch(results[i], orderAddressSet);
-        }
-
-        Transfer.transferFrom(
-            state,
-            orderAddressSet.quoteAsset,
-            results[0].takerBalancePath,
-            relayerBalancePath,
-            totalFee
-        );
-    }
-
-    /**
-     * Settles a buy order given a list of Types.MatchResult objects. A naive approach would be to take
-     * each result, have the taker and maker transfer the appropriate tokens, and then have them
-     * each send the appropriate fees to the relayer, meaning that for n makers there would be 4n
-     * transactions. Additionally each maker would have to have an allowance set for the quote token
-     * in order to pay the fees to the relayer.
-     *
-     * Instead we do the following:
-     *  - Each maker transfers base tokens to the taker
-     *  - The taker sends an amount of quote tokens to each maker equal to:
-     *    [Amount owed to maker] + [Maker rebate amount] - [Maker fee] - [Maker gas cost]
-     *  - Since the taker saved all the maker fees and gas costs, it can then send them as a single
-     *    batch transaction to the relayer, equal to:
-     *    [All maker and taker fees] + [All maker and taker gas costs] - [All maker rebates]
-     *
-     * Thus in the end the taker will have the full amount of base token, sans the fee and cost of
-     * their share of gas. Each maker will have their share of quote token, including their rebate,
-     * but sans the fee and cost of their share of gas. The relayer will end up with the fees from
-     * the taker and each maker (sans rebates), and the gas costs will pay for the transactions. In
-     * this scenario, with n makers there will be 2n + 1 transactions, which will be a significant
-     * gas savings over the original method.
-     *
-     * @param results A list of Types.MatchResult objects representing each individual trade to settle.
-     * @param orderAddressSet An object containing addresses common across each order.
-     */
-    function settleTakerBuy(
-        Store.State storage state,
-        Types.MatchResult[] memory results,
-        Types.OrderAddressSet memory orderAddressSet
-    )
-        internal
-    {
-        uint256 totalFee = 0;
-        Types.BalancePath memory relayerBalancePath = Types.BalancePath({
-            user: orderAddressSet.relayer,
-            marketID: 0,
-            category: Types.BalanceCategory.Common
-        });
-
-        for (uint256 i = 0; i < results.length; i++) {
-            Transfer.transferFrom(
-                state,
-                orderAddressSet.baseAsset,
-                results[i].makerBalancePath,
-                results[i].takerBalancePath,
-                results[i].baseAssetFilledAmount
-            );
-
-            uint256 amount = results[i].quoteAssetFilledAmount.
+            } else {
+                transferredQuoteAmount = results[i].quoteAssetFilledAmount.
                     sub(results[i].makerFee).
                     sub(results[i].makerGasFee).
                     add(results[i].makerRebate);
+            }
 
             Transfer.transferFrom(
                 state,
                 orderAddressSet.quoteAsset,
-                results[i].takerBalancePath,
-                results[i].makerBalancePath,
-                amount
+                isTakerSell ? results[i].makerBalancePath : results[i].takerBalancePath,
+                isTakerSell ? results[i].takerBalancePath : results[i].makerBalancePath,
+                transferredQuoteAmount
             );
 
-            totalFee = totalFee.
-                add(results[i].takerFee).
-                add(results[i].makerFee).
-                add(results[i].makerGasFee).
-                add(results[i].takerGasFee).
-                sub(results[i].makerRebate);
+            totalFee = totalFee.add(results[i].takerFee).add(results[i].makerFee);
+            totalFee = totalFee.add(results[i].makerGasFee).add(results[i].takerGasFee);
+            totalFee = totalFee.sub(results[i].makerRebate);
 
             Events.logMatch(results[i], orderAddressSet);
         }

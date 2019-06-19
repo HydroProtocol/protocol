@@ -85,7 +85,7 @@ const logGas = (res, desc) => {
         colorFn = redText;
     }
 
-    gasLogger((desc + ' ').padEnd(60, '.'), colorFn(numberWithCommas(gasUsed).padStart(11)));
+    gasLogger((desc + ' ').padEnd(60, '.'), colorFn(numberWithCommas(gasUsed).padStart(9)));
 };
 
 module.exports = {

@@ -4,6 +4,7 @@ const Hydro = artifacts.require('./Hydro.sol');
 const BigNumber = require('bignumber.js');
 const { setHotAmount, pp, clone, toWei, wei, getUserKey, logGas } = require('../utils');
 const { buildOrder } = require('../utils/order');
+const { revert, snapshot } = require('../utils/evm');
 const { createAsset, newMarket } = require('../utils/assets');
 
 const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => {
@@ -262,7 +263,9 @@ contract('Match', async accounts => {
     };
 
     const limitAndMarketTestMatch = async config => {
+        const snapshotID = await snapshot();
         await matchTest(config);
+        await revert(snapshotID);
 
         const marketTestConfig = clone(config);
         marketTestConfig.takerOrderParam.type = 'market';

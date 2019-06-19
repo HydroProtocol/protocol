@@ -187,6 +187,8 @@ contract('Transfer', accounts => {
     });
 
     it('transfer ether unsuccessfully', async () => {
+        await createMarket();
+
         const balanceBefore = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceBefore.toString(), toWei('0'));
 
