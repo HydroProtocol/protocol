@@ -25,6 +25,7 @@ import "./SafeERC20.sol";
 import "./Consts.sol";
 import "./Store.sol";
 import "./Types.sol";
+import "./Requires.sol";
 import "../funding/CollateralAccounts.sol";
 
 library Transfer {
@@ -114,16 +115,20 @@ library Transfer {
 
     function validTransferIn(
         Store.State storage state,
-        Types.BalancePath memory path
+        Types.BalancePath memory path,
+        address asset
     )
         internal
         view
     {
         if (path.category == Types.BalanceCategory.CollateralAccount) {
             Types.CollateralAccount storage account = state.accounts[path.user][path.marketID];
+
             if (account.status == Types.CollateralAccountStatus.Liquid) {
                 revert("CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT");
             }
+
+            Requires.requireMarketIDAndAssetMatch(state, path.marketID, asset);
         }
     }
 
@@ -139,7 +144,7 @@ library Transfer {
         internal
     {
         validTransferOut(state, fromBalancePath, asset, amount);
-        validTransferIn(state, toBalancePath);
+        validTransferIn(state, toBalancePath, asset);
 
         mapping(address => uint256) storage fromBalances = fromBalancePath.getBalances(state);
         mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
