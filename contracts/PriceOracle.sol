@@ -31,14 +31,14 @@ contract PriceOracle is Ownable {
     function setPrice(
         address asset,
         uint256 price
-    ) public onlyOwner {
+    ) external onlyOwner {
         tokenPrices[asset] = price;
     }
 
     function getPrice(
         address asset
     )
-        public
+        external
         view
         returns (uint256)
     {

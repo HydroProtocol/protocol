@@ -12,8 +12,7 @@
     "debug": "^4.1.1",
     "ethereumjs-util": "^5.2.0",
     "@davidqhr/ganache-cli": "6.4.3",
-    "solc": "^0.5.8",
-    "truffle": "^5.0.17",
+    "truffle": "5.0.22",
     "truffle-privatekey-provider": "^1.1.0"
   },
   "devDependencies": {
