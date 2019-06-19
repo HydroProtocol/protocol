@@ -57,7 +57,6 @@ library Exchange {
         Types.MatchParams memory params
     )
         internal
-        returns (Types.MatchSettleResult memory)
     {
         require(Relayer.canMatchOrdersFrom(state, params.orderAddressSet.relayer), "INVALID_SENDER");
         require(!params.takerOrderParam.isMakerOnly(), "MAKER_ONLY_ORDER_CANNOT_BE_TAKER");
@@ -94,7 +93,7 @@ library Exchange {
         // Update amount filled for this taker order.
         state.exchange.filled[takerOrderInfo.orderHash] = takerOrderInfo.filledAmount;
 
-        return settleResults(state, results, params.takerOrderParam, params.orderAddressSet);
+        settleResults(state, results, params.takerOrderParam, params.orderAddressSet);
     }
 
     /**
@@ -412,12 +411,11 @@ library Exchange {
         Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.MatchSettleResult memory)
     {
         if (takerOrderParam.isSell()) {
-            return settleTakerSell(state, results, orderAddressSet);
+            settleTakerSell(state, results, orderAddressSet);
         } else {
-            return settleTakerBuy(state, results, orderAddressSet);
+            settleTakerBuy(state, results, orderAddressSet);
         }
     }
 
@@ -452,11 +450,7 @@ library Exchange {
         Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.MatchSettleResult memory settleResult)
     {
-        settleResult.incomeToken = orderAddressSet.quoteAsset;
-        settleResult.outputToken = orderAddressSet.baseAsset;
-
         uint256 totalFee = 0;
 
         Types.BalancePath memory relayerBalancePath = Types.BalancePath({
@@ -474,8 +468,6 @@ library Exchange {
                 results[i].baseAssetFilledAmount
             );
 
-            settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(results[i].baseAssetFilledAmount);
-
             uint256 amount = results[i].quoteAssetFilledAmount.
                     add(results[i].makerFee).
                     add(results[i].makerGasFee).
@@ -488,8 +480,6 @@ library Exchange {
                 results[i].takerBalancePath,
                 amount
             );
-
-            settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(amount);
 
             totalFee = totalFee.
                 add(results[i].takerFee).
@@ -508,8 +498,6 @@ library Exchange {
             relayerBalancePath,
             totalFee
         );
-
-        settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.sub(totalFee);
     }
 
     /**
@@ -543,11 +531,7 @@ library Exchange {
         Types.OrderAddressSet memory orderAddressSet
     )
         internal
-        returns (Types.MatchSettleResult memory settleResult)
     {
-        settleResult.incomeToken = orderAddressSet.baseAsset;
-        settleResult.outputToken = orderAddressSet.quoteAsset;
-
         uint256 totalFee = 0;
         Types.BalancePath memory relayerBalancePath = Types.BalancePath({
             user: orderAddressSet.relayer,
@@ -564,8 +548,6 @@ library Exchange {
                 results[i].baseAssetFilledAmount
             );
 
-            settleResult.incomeTokenAmount = settleResult.incomeTokenAmount.add(results[i].baseAssetFilledAmount);
-
             uint256 amount = results[i].quoteAssetFilledAmount.
                     sub(results[i].makerFee).
                     sub(results[i].makerGasFee).
@@ -578,8 +560,6 @@ library Exchange {
                 results[i].makerBalancePath,
                 amount
             );
-
-            settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(amount);
 
             totalFee = totalFee.
                 add(results[i].takerFee).
@@ -598,7 +578,5 @@ library Exchange {
             relayerBalancePath,
             totalFee
         );
-
-        settleResult.outputTokenAmount = settleResult.outputTokenAmount.add(totalFee);
     }
 }

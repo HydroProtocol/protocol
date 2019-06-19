@@ -221,13 +221,6 @@ library Types {
         uint256[]        baseAssetFilledAmounts;
         OrderAddressSet  orderAddressSet;
     }
-
-    struct MatchSettleResult {
-        address incomeToken;
-        address outputToken;
-        uint256 incomeTokenAmount;
-        uint256 outputTokenAmount;
-    }
 }
 
 library Auction {
