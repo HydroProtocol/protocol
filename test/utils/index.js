@@ -71,6 +71,7 @@ const getUserKey = async u => {
 const yellowText = x => `\x1b[33m${x}\x1b[0m`;
 const greenText = x => `\x1b[32m${x}\x1b[0m`;
 const redText = x => `\x1b[31m${x}\x1b[0m`;
+const numberWithCommas = x => x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 const logGas = (res, desc) => {
     const gasUsed = res.receipt.gasUsed;
@@ -84,7 +85,7 @@ const logGas = (res, desc) => {
         colorFn = redText;
     }
 
-    gasLogger((desc + ' ').padEnd(50, '.'), colorFn(gasUsed.toString().padStart(8)));
+    gasLogger((desc + ' ').padEnd(60, '.'), colorFn(numberWithCommas(gasUsed).padStart(11)));
 };
 
 module.exports = {

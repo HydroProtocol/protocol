@@ -22,7 +22,7 @@ const revert = snapshotID => jsonRpcCall('evm_revert', [snapshotID]);
 const minerStop = () => jsonRpcCall('miner_stop');
 const minerStart = () => jsonRpcCall('miner_start');
 const mine = timestamp => jsonRpcCall('evm_mine', timestamp ? [timestamp] : []);
-
+const isMining = () => jsonRpcCall('eth_mining');
 const mineAt = async (fn, timestamp) => {
     await minerStop();
 
@@ -46,5 +46,7 @@ module.exports = {
     snapshot,
     mine,
     mineAt,
-    getBlockTimestamp
+    getBlockTimestamp,
+    minerStart,
+    isMining
 };

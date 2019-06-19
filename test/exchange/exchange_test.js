@@ -1,4 +1,5 @@
 require('../utils/hooks');
+const { logGas } = require('../utils');
 const assert = require('assert');
 const { generateOrderData, getOrderHash } = require('../../sdk/sdk');
 const Hydro = artifacts.require('./Hydro.sol');
@@ -26,7 +27,9 @@ contract('CancelOrder', accounts => {
         let cancelled = await hydro.isOrderCancelled(hash);
         assert.equal(cancelled, false);
 
-        await hydro.cancelOrder(order, { from: order.trader });
+        const res = await hydro.cancelOrder(order, { from: order.trader });
+        logGas(res, 'hydro.cancelOrder');
+
         cancelled = await hydro.isOrderCancelled(hash);
         assert.equal(cancelled, true);
     });

@@ -1,5 +1,6 @@
 require('../utils/hooks');
 
+const { logGas } = require('../utils');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const HydroToken = artifacts.require('./HydroToken.sol');
@@ -17,14 +18,16 @@ contract('Discount', accounts => {
     });
 
     it('can change discount', async () => {
-        await hydro.updateDiscountConfig(
+        let res = await hydro.updateDiscountConfig(
             '0x040a000027106400004e205a000075305000009c404600000000000000000000',
             { from: accounts[0] }
         );
 
+        logGas(res, 'hydro.updateDiscountConfig');
+
         // hot contract is deployed by accounts 0, so this account has many tokens.
-        const res = await hydro.getDiscountedRate(accounts[0]);
-        assert.equal('10', res);
+        const rate = await hydro.getDiscountedRate(accounts[0]);
+        assert.equal('10', rate);
     });
 
     it('should have discount', async () => {

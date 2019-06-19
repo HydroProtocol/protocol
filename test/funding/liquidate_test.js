@@ -5,12 +5,12 @@ const PriceOracle = artifacts.require('./PriceOracle.sol');
 // const TestToken = artifacts.require('./helper/TestToken.sol');
 
 const { newMarket, depositMarket } = require('../utils/assets');
-const { toWei, pp, getUserKey } = require('../utils');
+const { toWei, pp, getUserKey, logGas } = require('../utils');
 const { mineAt, mine } = require('../utils/evm');
 // const { buildOrder } = require('../utils/order');
 
 contract('Liquidate', accounts => {
-    let marketID, hydro, oracle, time, ethAsset, usdAsset;
+    let marketID, hydro, oracle, time, ethAsset, usdAsset, res;
 
     const CollateralAccountStatus = {
         Normal: 0,
@@ -29,7 +29,7 @@ contract('Liquidate', accounts => {
     const u3 = accounts[6];
 
     beforeEach(async () => {
-        const res = await newMarket({
+        res = await newMarket({
             liquidateRate: toWei('1.2'),
             withdrawRate: toWei('2'),
             assetConfigs: [
@@ -76,7 +76,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.debtsTotalUSDValue, '0');
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('100'));
 
-        await assert.rejects(hydro.liquidateAccount(u1, marketID), /ACCOUNT_NOT_LIQUIDABLE/);
+        res = await assert.rejects(hydro.liquidateAccount(u1, marketID), /ACCOUNT_NOT_LIQUIDABLE/);
     });
 
     it("should be a health position if there aren't many debts", async () => {
@@ -116,7 +116,8 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('100'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('110'));
 
-        await hydro.liquidateAccount(u2, marketID);
+        res = await hydro.liquidateAccount(u2, marketID);
+        logGas(res, 'hydro.liquidateAccount');
         // account is liquidated
         accountDetails = await hydro.getAccountDetails(u2, marketID);
         assert.equal(accountDetails.liquidable, false);
@@ -146,7 +147,8 @@ contract('Liquidate', accounts => {
         // Since we hack the blocktime, there is no interest occured from borrowed usd asset yet.
         // And u2 hasn't use the usd asset. So his debt can be repaied directly.
         // Finially, there should be no auction, as there is no debt.
-        await mineAt(() => hydro.liquidateAccount(u2, marketID), time);
+        res = await mineAt(() => hydro.liquidateAccount(u2, marketID), time);
+        logGas(res, 'hydro.liquidateAccount (no auction)');
 
         // u2 debt is force repaied, and no auction created
         assert.equal(await hydro.getBorrowOf(usdAsset.address, u2, marketID), '0');
@@ -180,7 +182,8 @@ contract('Liquidate', accounts => {
         // After one day, there is interest occured from borrowed usd asset.
         // And u2 hasn't use the usd asset. But as there is some interest already.
         // Finially, he can't repay the debt.
-        await mineAt(() => hydro.liquidateAccount(u2, marketID), time + 86400);
+        res = await mineAt(() => hydro.liquidateAccount(u2, marketID), time + 86400);
+        logGas(res, 'hydro.liquidateAccount (auction)');
 
         // u2 should have some usd debt
         assert(

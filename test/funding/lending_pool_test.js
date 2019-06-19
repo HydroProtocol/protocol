@@ -1,7 +1,7 @@
 require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
-const { toWei } = require('../utils');
+const { toWei, logGas } = require('../utils');
 const { mineAt, mine, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const LendingPoolToken = artifacts.require('./funding/LendingPoolToken.sol');
@@ -16,6 +16,7 @@ contract('LendingPool', accounts => {
     let ETHAddr;
     let USDAddr;
     let initTime;
+    let res;
     const u1 = accounts[4];
     const u2 = accounts[5];
 
@@ -111,13 +112,12 @@ contract('LendingPool', accounts => {
     });
 
     it('borrow', async () => {
-        await mineAt(
-            () =>
-                hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }).then(tx => {
-                    console.log(`borrow gas cost ${tx.receipt.gasUsed}`);
-                }),
+        res = await mineAt(
+            () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }),
             initTime + 86400 * 180
         );
+
+        logGas(res, 'hydro.borrow');
         assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('200'));
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '201232876712328767100');
         // test wether use principle with interest to calculate new interest rate
@@ -127,38 +127,31 @@ contract('LendingPool', accounts => {
     });
 
     it('repay', async () => {
-        await mineAt(
-            async () =>
-                hydro.repay(USDAddr, toWei('50'), 0, { from: u2 }).then(tx => {
-                    console.log(`repay gas cost ${tx.receipt.gasUsed}`);
-                }),
+        res = await mineAt(
+            async () => hydro.repay(USDAddr, toWei('50'), 0, { from: u2 }),
             initTime + 86400 * 180
         );
+        logGas(res, 'hydro.repay');
         assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('50'));
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '51232876712328767100');
     });
 
     it('supply', async () => {
-        await mineAt(
-            () =>
-                hydro.supply(USDAddr, toWei('1000'), { from: u1 }).then(tx => {
-                    console.log(`supply gas cost ${tx.receipt.gasUsed}`);
-                }),
+        res = await mineAt(
+            () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }),
             initTime + 86400 * 180
         );
-
+        logGas(res, 'hydro.supply');
         poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), '1998768641401012450526');
     });
 
     it('withdraw', async () => {
-        await mineAt(
-            async () =>
-                hydro.unsupply(USDAddr, toWei('500'), { from: u1 }).then(tx => {
-                    console.log(`withdraw gas cost ${tx.receipt.gasUsed}`);
-                }),
+        res = await mineAt(
+            async () => hydro.unsupply(USDAddr, toWei('500'), { from: u1 }),
             initTime + 86400 * 180
         );
+        logGas(res, 'hydro.withdraw');
         assert.equal((await hydro.balanceOf(USDAddr, u1)).toString(), toWei('9500'));
         poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), '500615679299493774737');
@@ -166,26 +159,24 @@ contract('LendingPool', accounts => {
 
     it('repay all and withdraw all', async () => {
         await addCollateral(u2, USDAddr, toWei('10'), initTime);
-        await mineAt(
-            async () =>
-                hydro.repay(USDAddr, toWei('1000'), 0, { from: u2 }).then(tx => {
-                    console.log(`repay all gas cost ${tx.receipt.gasUsed}`);
-                }),
+        res = await mineAt(
+            async () => hydro.repay(USDAddr, toWei('1000'), 0, { from: u2 }),
             initTime + 86400 * 180
         );
+
+        logGas(res, 'hydro.repay all');
         // charge 1232876712328767100 as interest
         assert.equal(
             (await hydro.marketBalanceOf(0, USDAddr, u2)).toString(),
             '8767123287671232900'
         );
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
-        await mineAt(
-            async () =>
-                hydro.unsupply(USDAddr, toWei('2000'), { from: u1 }).then(tx => {
-                    console.log(`withdraw all gas cost ${tx.receipt.gasUsed}`);
-                }),
+        res = await mineAt(
+            async () => hydro.unsupply(USDAddr, toWei('2000'), { from: u1 }),
             initTime + 86400 * 180
         );
+
+        logGas(res, 'hydro.withdraw all');
 
         assert.equal((await hydro.balanceOf(USDAddr, u1)).toString(), '10001232876712328767000'); // 100 wei remains in the system because of precision
         poolToken = await getLendingPoolToken(USDAddr);

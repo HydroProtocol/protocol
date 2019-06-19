@@ -2,7 +2,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const BigNumber = require('bignumber.js');
-const { setHotAmount, pp, clone, toWei, wei, getUserKey } = require('../utils');
+const { setHotAmount, pp, clone, toWei, wei, getUserKey, logGas } = require('../utils');
 const { buildOrder } = require('../utils/order');
 const { createAsset, newMarket } = require('../utils/assets');
 
@@ -204,7 +204,7 @@ contract('Match', async accounts => {
             });
         }
 
-        console.log(`        ${makerOrders.length} Orders, Gas Used:`, res.receipt.gasUsed);
+        logGas(res, `hydro.matchOrders (${makerOrders.length} Orders)`);
 
         const balancesAfterMatch = await getUsersAssetsBalances(
             [baseAsset, quoteAsset],

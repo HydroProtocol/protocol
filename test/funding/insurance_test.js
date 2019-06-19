@@ -1,7 +1,7 @@
 require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
-const { toWei } = require('../utils');
+const { toWei, logGas } = require('../utils');
 const { mineAt, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const PriceOracle = artifacts.require('./PriceOracle.sol');
@@ -12,6 +12,7 @@ contract('Insurance', accounts => {
     let USDAddr;
     let MarketID;
     let initTime;
+    let res;
     const u1 = accounts[4];
     const u2 = accounts[5];
 
@@ -45,8 +46,10 @@ contract('Insurance', accounts => {
             assets: [{ address: ETHAddr }, { address: USDAddr }]
         });
         MarketID = 0;
+
         await hydro.updateInsuranceRatio(toWei('0.1'));
         await hydro.updateMarket(MarketID, toWei('1'), toWei('0.01'), toWei('1.2'), toWei('2'));
+
         initTime = await getBlockTimestamp();
     });
 
@@ -108,13 +111,17 @@ contract('Insurance', accounts => {
             async () => oracle.setPrice(ETHAddr, toWei(0), { from: accounts[0] }),
             initTime + 90 * 86400
         );
-        await mineAt(async () => hydro.liquidateAccount(u2, 0), initTime + 90 * 86400);
+        res = await mineAt(async () => hydro.liquidateAccount(u2, 0), initTime + 90 * 86400);
+        logGas(res, 'hydro.liquidateAccount');
         assert.equal(
             (await hydro.getInsuranceBalance(USDAddr)).toString(),
             '155342465753424658000'
         );
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '152602739726027397000');
-        await mineAt(async () => hydro.closeAbortiveAuction(0), initTime + 90 * 86400);
+
+        res = await mineAt(async () => hydro.closeAbortiveAuction(0), initTime + 90 * 86400);
+        logGas(res, 'hydro.closeAbortiveAuction (insurance payable)');
+
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '2739726027397261000');
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
@@ -131,14 +138,18 @@ contract('Insurance', accounts => {
             async () => oracle.setPrice(ETHAddr, toWei(0), { from: accounts[0] }),
             initTime + 90 * 86400
         );
-        await mineAt(async () => hydro.liquidateAccount(u2, 0), initTime + 90 * 86400);
+        res = await mineAt(async () => hydro.liquidateAccount(u2, 0), initTime + 90 * 86400);
+        logGas(res, 'hydro.liquidateAccount');
         assert.equal(
             (await hydro.getInsuranceBalance(USDAddr)).toString(),
             '155342465753424658000'
         );
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '162602739726027397000');
         assert.equal((await hydro.getTotalSupply(USDAddr)).toString(), '1017260273972602739000');
-        await mineAt(async () => hydro.closeAbortiveAuction(0), initTime + 90 * 86400);
+
+        res = await mineAt(async () => hydro.closeAbortiveAuction(0), initTime + 90 * 86400);
+        logGas(res, 'hydro.closeAbortiveAuction (insurance non-payable)');
+
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '0');
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');

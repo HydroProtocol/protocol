@@ -1,13 +1,13 @@
 require('../utils/hooks');
 
 const { newMarket } = require('../utils/assets');
-const { toWei, etherAsset } = require('../utils');
+const { toWei, etherAsset, logGas } = require('../utils');
 const Hydro = artifacts.require('./Hydro.sol');
 const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 const assert = require('assert');
 
 contract('Markets', accounts => {
-    let hydro, defaultInterestModel;
+    let hydro, defaultInterestModel, res;
 
     const fakePriceOracleAddress = '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF';
 
@@ -24,7 +24,7 @@ contract('Markets', accounts => {
     });
 
     it('can create asset', async () => {
-        await hydro.createAsset(
+        res = await hydro.createAsset(
             etherAsset,
             fakePriceOracleAddress,
             defaultInterestModel.address,
@@ -32,6 +32,8 @@ contract('Markets', accounts => {
             'ETH',
             18
         );
+
+        logGas(res, 'hydro.createAsset');
 
         const asset = await hydro.getAsset(etherAsset);
         assert.equal(asset.priceOracle, fakePriceOracleAddress);
@@ -54,11 +56,12 @@ contract('Markets', accounts => {
         const changedPriceOracleAddress = '0x1111111111111111111111111111111111111111';
         const changedInterestModelOracleAddress = '0x2222222222222222222222222222222222222222';
 
-        await hydro.updateAsset(
+        res = await hydro.updateAsset(
             etherAsset,
             changedPriceOracleAddress,
             changedInterestModelOracleAddress
         );
+        logGas(res, 'hydro.updateAsset');
 
         const asset2 = await hydro.getAsset(etherAsset);
         assert.equal(asset2.priceOracle, changedPriceOracleAddress);
