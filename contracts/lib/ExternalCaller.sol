@@ -29,24 +29,25 @@ library ExternalCaller {
         view
         returns (uint256 result)
     {
-        // return state.assets[asset].priceOracle.getPrice(asset);
+        // After test, the assembly way saves about 5000 gas.
+        // equal to :
+        //   return state.assets[asset].priceOracle.getPrice(asset);
 
         address oracleAddress = address(state.assets[asset].priceOracle);
 
         assembly {
-            let tmp1 := mload(0)
-            let tmp2 := mload(4)
+            let freePtr := mload(0x40)
 
             // keccak256('getPrice(address)') & 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            mstore(0, 0x41976e0900000000000000000000000000000000000000000000000000000000)
-            mstore(4, asset)
+            mstore(freePtr, 0x41976e0900000000000000000000000000000000000000000000000000000000)
+            mstore(add(freePtr, 4), asset)
 
             // call ERC20 Token contract transfer function
-            let callResult := staticcall(gas, oracleAddress, 0, 36, 0, 32)
+            let callResult := staticcall(gas, oracleAddress, freePtr, 36, freePtr, 32)
             result := mload(0)
 
-            mstore(0, tmp1)
-            mstore(4, tmp2)
+            mstore(freePtr, 0)
+            mstore(add(freePtr, 4), 0)
         }
     }
 }
