@@ -22,6 +22,7 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Events.sol";
+import "../lib/ExternalCaller.sol";
 import "../HydroToken.sol";
 
 /**
@@ -88,7 +89,10 @@ library Discount {
         view
         returns (uint256 result)
     {
-        uint256 hotBalance = HydroToken(state.exchange.hotTokenAddress).balanceOf(user);
+        uint256 hotBalance = ExternalCaller.getHotBalance(
+            state.exchange.hotTokenAddress,
+            user
+        );
 
         if (hotBalance == 0) {
             return Consts.DISCOUNT_RATE_BASE();

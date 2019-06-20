@@ -48,8 +48,14 @@ library CollateralAccounts {
         address baseAsset = market.baseAsset;
         address quoteAsset = market.quoteAsset;
 
-        uint256 baseUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(state, baseAsset);
-        uint256 quoteUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(state, quoteAsset);
+        uint256 baseUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(
+            address(state.assets[baseAsset].priceOracle),
+            baseAsset
+        );
+        uint256 quoteUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(
+            address(state.assets[quoteAsset].priceOracle),
+            quoteAsset
+        );
 
         uint256 baseBorrowOf = LendingPool.getBorrowOf(state, baseAsset, user, marketID);
         uint256 quoteBorrowOf = LendingPool.getBorrowOf(state, quoteAsset, user, marketID);

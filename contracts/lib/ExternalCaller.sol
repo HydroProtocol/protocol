@@ -22,18 +22,16 @@ import "./Store.sol";
 
 library ExternalCaller {
     function getAssetPriceFromPriceOracle(
-        Store.State storage state,
+        address oracleAddress,
         address asset
     )
         internal
         view
         returns (uint256 result)
     {
-        // After test, the assembly way saves about 5000 gas.
-        // equal to :
+        // saves about 2500 gas.
+        // equal to:
         //   return state.assets[asset].priceOracle.getPrice(asset);
-
-        address oracleAddress = address(state.assets[asset].priceOracle);
 
         assembly {
             let freePtr := mload(0x40)
@@ -44,8 +42,61 @@ library ExternalCaller {
 
             // call ERC20 Token contract transfer function
             let callResult := staticcall(gas, oracleAddress, freePtr, 36, freePtr, 32)
-            result := mload(0)
+            result := mload(freePtr)
 
+            mstore(freePtr, 0)
+            mstore(add(freePtr, 4), 0)
+        }
+    }
+
+        /**
+     * Get the HOT token balance of an address.
+     *
+     * @param owner The address to check.
+     * @return The HOT balance for the owner address.
+     */
+    function getHotBalance(
+        address hotToken,
+        address owner
+    )
+        internal
+        view
+        returns (uint256 result)
+    {
+        // saves about 1200 gas.
+        // equal to:
+        //   return HydroToken(hotToken).balanceOf(owner);
+
+        /**
+         * We construct calldata for the `balanceOf` ABI.
+         * The layout of this calldata is in the table below.
+         *
+         * ╔════════╤════════╤════════╤═══════════════════╗
+         * ║ Area   │ Offset │ Length │ Contents          ║
+         * ╟────────┼────────┼────────┼───────────────────╢
+         * ║ Header │ 0      │ 4      │ function selector ║
+         * ║ Params │ 4      │ 32     │ owner address     ║
+         * ╚════════╧════════╧════════╧═══════════════════╝
+         */
+        assembly {
+            let freePtr := mload(0x40)
+
+            // keccak256('balanceOf(address)') bitmasked to 4 bytes
+            mstore(freePtr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            mstore(add(freePtr, 4), owner)
+
+            // No need to check the return value because hotToken is a trustworthy contract
+            result := staticcall(
+                gas,      // Forward all gas
+                hotToken, // HOT token deployment address
+                freePtr,        // Pointer to start of calldata
+                36,       // Length of calldata
+                freePtr,        // Overwrite calldata with output
+                32        // Expecting uint256 output, the token balance
+            )
+            result := mload(freePtr)
+
+            // Restore stack memory
             mstore(freePtr, 0)
             mstore(add(freePtr, 4), 0)
         }
