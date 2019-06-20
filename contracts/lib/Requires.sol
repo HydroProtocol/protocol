@@ -50,7 +50,6 @@ library Requires {
         internal
         view
     {
-        require(marketID < state.marketsCount, "MARKET_ID_NOT_EXIST");
         require(
             asset == state.markets[marketID].baseAsset || asset == state.markets[marketID].quoteAsset,
             "ASSET_NOT_BELONGS_TO_MARKET"

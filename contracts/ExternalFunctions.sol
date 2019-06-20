@@ -367,10 +367,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
     {
-        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
-        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER"); // should we allow to transfer to other ??
-
-        Transfer.transferFrom(
+        Transfer.userTransfer(
             state,
             asset,
             fromBalancePath,

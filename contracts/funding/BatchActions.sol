@@ -155,10 +155,7 @@ library BatchActions {
             )
         );
 
-        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
-        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
-
-        Transfer.transferFrom(
+        Transfer.userTransfer(
             state,
             asset,
             fromBalancePath,

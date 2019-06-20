@@ -69,7 +69,7 @@ library Transfer {
 
         require(fromBalances[asset] >= amount, "BALANCE_NOT_ENOUGH");
 
-        fromBalances[asset] = fromBalances[asset].sub(amount);
+        fromBalances[asset] = fromBalances[asset] - amount;
 
         if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
             to.transfer(amount);
@@ -95,46 +95,9 @@ library Transfer {
         return balances[asset];
     }
 
-    function validTransferOut(
-        Store.State storage state,
-        Types.BalancePath memory path,
-        address asset,
-        uint256 amount
-    )
-        internal
-        view
-    {
-        if (path.category == Types.BalanceCategory.CollateralAccount) {
-            uint256 transferableAmount = CollateralAccounts.getTransferableAmount(state, path.marketID, path.user, asset);
-
-            if (transferableAmount < amount) {
-                revert("NO_ENOUGH_TRANSFERABLE_AMOUNT");
-            }
-        }
-    }
-
-    function validTransferIn(
-        Store.State storage state,
-        Types.BalancePath memory path,
-        address asset
-    )
-        internal
-        view
-    {
-        if (path.category == Types.BalanceCategory.CollateralAccount) {
-            Types.CollateralAccount storage account = state.accounts[path.user][path.marketID];
-
-            if (account.status == Types.CollateralAccountStatus.Liquid) {
-                revert("CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT");
-            }
-
-            Requires.requireMarketIDAndAssetMatch(state, path.marketID, asset);
-        }
-    }
-
-    /** @dev Invoking internal funds transfer.
+    /** Move asset from a balances map to another
       */
-    function transferFrom(
+    function transfer(
         Store.State storage state,
         address asset,
         Types.BalancePath memory fromBalancePath,
@@ -143,18 +106,110 @@ library Transfer {
     )
         internal
     {
-        validTransferOut(state, fromBalancePath, asset, amount);
-        validTransferIn(state, toBalancePath, asset);
-
         mapping(address => uint256) storage fromBalances = fromBalancePath.getBalances(state);
         mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
 
+        // TODO, save from balance before to save gas
         require(fromBalances[asset] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
-        fromBalances[asset] = fromBalances[asset].sub(amount);
+        fromBalances[asset] = fromBalances[asset] - amount;
         toBalances[asset] = toBalances[asset].add(amount);
 
         Events.logTransfer(asset, fromBalancePath, toBalancePath, amount);
     }
 
+    function requireNormalMarketAccount(
+        Store.State storage state,
+        Types.BalancePath memory path
+    )
+        internal
+        view
+    {
+        if (path.category == Types.BalanceCategory.CollateralAccount) {
+            require(
+                state.accounts[path.user][path.marketID].status == Types.CollateralAccountStatus.Normal,
+                "CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT"
+            );
+        }
+    }
+
+    function requireMarketIDAndAssetMatch(
+        Store.State storage state,
+        Types.BalancePath memory path,
+        address asset
+    )
+        internal
+        view
+    {
+        if (path.category == Types.BalanceCategory.CollateralAccount) {
+            Requires.requireMarketIDAndAssetMatch(state, path.marketID, asset);
+        }
+    }
+
+    function userTransfer(
+        Store.State storage state,
+        address asset,
+        Types.BalancePath memory fromBalancePath,
+        Types.BalancePath memory toBalancePath,
+        uint256 amount
+    )
+        internal
+    {
+        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
+        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
+
+        requireNormalMarketAccount(state, fromBalancePath);
+        requireNormalMarketAccount(state, toBalancePath);
+        requireMarketIDAndAssetMatch(state, toBalancePath, asset);
+
+        if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
+            require(
+                CollateralAccounts.getTransferableAmount(state, fromBalancePath.marketID, fromBalancePath.user, asset) >= amount,
+                "COLLATERAL_ACCOUNT_TRANSFERABLE_AMOUNT_NOT_ENOUGH"
+            );
+        }
+
+        transfer(
+            state,
+            asset,
+            fromBalancePath,
+            toBalancePath,
+            amount
+        );
+    }
+
+    /**
+      * This function will check, if it's the balances of a market account:
+      *   1) The status has to be Normal.
+      *   2) When transfer asset to a market account, the asset and marketID shoule be matched.
+      *   3) After transfer, the source market account can't be liquidatable.
+      */
+    function exchangeTransfer(
+        Store.State storage state,
+        address asset,
+        Types.BalancePath memory fromBalancePath,
+        Types.BalancePath memory toBalancePath,
+        uint256 amount
+    )
+        internal
+    {
+        requireNormalMarketAccount(state, fromBalancePath);
+        requireNormalMarketAccount(state, toBalancePath);
+        requireMarketIDAndAssetMatch(state, toBalancePath, asset);
+
+        transfer(
+            state,
+            asset,
+            fromBalancePath,
+            toBalancePath,
+            amount
+        );
+
+        if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
+             require(
+                !CollateralAccounts.getDetails(state, fromBalancePath.user, fromBalancePath.marketID).liquidable,
+                "COLLATERAL_ACCOUNT_LIQUIDATABLE_AFTER_TRANSFER"
+            );
+        }
+    }
 }

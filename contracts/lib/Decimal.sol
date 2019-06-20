@@ -52,7 +52,7 @@ library Decimal {
         pure
         returns (uint256)
     {
-        return target.mul(d).div(BASE);
+        return target.mul(d) / BASE;
     }
 
     function divFloor(
@@ -74,6 +74,7 @@ library Decimal {
         pure
         returns (uint256)
     {
-        return target.mul(BASE).mul(10).div(d).add(5).div(10);
+        // return target.mul(BASE).add(d).sub(1).div(d).mul(d);
+        return target.mul(BASE * 10).div(d).add(5) / 10;
     }
 }

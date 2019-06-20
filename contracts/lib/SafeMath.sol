@@ -50,8 +50,7 @@ library SafeMath {
         returns (uint256)
     {
         require(b > 0, "DIVIDING_ERROR");
-        uint256 c = a / b;
-        return c;
+        return a / b;
     }
 
     /// @dev Subtracts two numbers, reverts on overflow (i.e. if subtrahend is greater than minuend).
@@ -64,8 +63,7 @@ library SafeMath {
         returns (uint256)
     {
         require(b <= a, "SUB_ERROR");
-        uint256 c = a - b;
-        return c;
+        return a - b;
     }
 
     /// @dev Adds two numbers, reverts on overflow.

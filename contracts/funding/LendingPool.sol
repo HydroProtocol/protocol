@@ -128,7 +128,6 @@ library LendingPool {
     )
         internal
     {
-        Requires.requireAssetExist(state, asset);
         Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
 
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
@@ -167,7 +166,6 @@ library LendingPool {
         internal
         returns (uint256)
     {
-        Requires.requireAssetExist(state, asset);
         Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
 
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
@@ -370,11 +368,11 @@ library LendingPool {
         view
         returns (uint256)
     {
-        Requires.requireAssetExist(state, asset);
         Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
 
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
         return Decimal.mul(state.pool.logicBorrow[user][marketID][asset], currentBorrowIndex);
+
     }
 
     function getTotalSupply(
@@ -413,13 +411,14 @@ library LendingPool {
         view
         returns (uint256 currentSupplyIndex, uint256 currentBorrowIndex)
     {
-         uint256 borrowInterestRate = state.pool.borrowAnnualInterestRate[asset]
-            .mul(block.timestamp.sub(state.pool.indexStartTime[asset]))
-            .div(Consts.SECONDS_OF_YEAR());
+        uint256 timeDelta = block.timestamp.sub(state.pool.indexStartTime[asset]);
+        uint256 secondsOfYear = Consts.SECONDS_OF_YEAR();
 
-         uint256 supplyInterestRate = state.pool.supplyAnnualInterestRate[asset]
-            .mul(block.timestamp.sub(state.pool.indexStartTime[asset]))
-            .div(Consts.SECONDS_OF_YEAR());
+        uint256 borrowInterestRate = state.pool.borrowAnnualInterestRate[asset]
+            .mul(timeDelta) / secondsOfYear;
+
+        uint256 supplyInterestRate = state.pool.supplyAnnualInterestRate[asset]
+            .mul(timeDelta) / secondsOfYear;
 
         currentBorrowIndex = Decimal.mul(state.pool.borrowIndex[asset], Decimal.onePlus(borrowInterestRate));
         currentSupplyIndex = Decimal.mul(state.pool.supplyIndex[asset], Decimal.onePlus(supplyInterestRate));

@@ -460,7 +460,7 @@ library Exchange {
         });
 
         for (uint256 i = 0; i < results.length; i++) {
-            Transfer.transferFrom(
+            Transfer.exchangeTransfer(
                 state,
                 orderAddressSet.baseAsset,
                 isTakerSell ? results[i].takerBalancePath : results[i].makerBalancePath,
@@ -482,7 +482,7 @@ library Exchange {
                     add(results[i].makerRebate);
             }
 
-            Transfer.transferFrom(
+            Transfer.exchangeTransfer(
                 state,
                 orderAddressSet.quoteAsset,
                 isTakerSell ? results[i].makerBalancePath : results[i].takerBalancePath,
@@ -497,7 +497,7 @@ library Exchange {
             Events.logMatch(results[i], orderAddressSet);
         }
 
-        Transfer.transferFrom(
+        Transfer.exchangeTransfer(
             state,
             orderAddressSet.quoteAsset,
             results[0].takerBalancePath,

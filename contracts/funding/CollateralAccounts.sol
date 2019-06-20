@@ -26,6 +26,7 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../funding/Auctions.sol";
 import "../lib/Types.sol";
+import "../lib/ExternalCaller.sol";
 import "./LendingPool.sol";
 
 library CollateralAccounts {
@@ -41,22 +42,30 @@ library CollateralAccounts {
     {
         Types.CollateralAccount storage account = state.accounts[user][marketID];
         Types.Market storage market = state.markets[marketID];
+
         details.status = account.status;
 
-        uint256 baseUSDPrice = state.assets[market.baseAsset].priceOracle.getPrice(market.baseAsset);
-        uint256 quoteUSDPrice = state.assets[market.quoteAsset].priceOracle.getPrice(market.quoteAsset);
+        address baseAsset = market.baseAsset;
+        address quoteAsset = market.quoteAsset;
 
-        details.debtsTotalUSDValue = baseUSDPrice.mul(LendingPool.getBorrowOf(state, market.baseAsset, user, marketID)).add(
-            quoteUSDPrice.mul(LendingPool.getBorrowOf(state, market.quoteAsset, user, marketID))
-        ).div(Consts.ORACLE_PRICE_BASE());
+        uint256 baseUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(state, baseAsset);
+        uint256 quoteUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(state, quoteAsset);
 
-        details.balancesTotalUSDValue = baseUSDPrice.mul(account.balances[market.baseAsset]).add(
-            quoteUSDPrice.mul(account.balances[market.quoteAsset])
-        ).div(Consts.ORACLE_PRICE_BASE());
+        uint256 baseBorrowOf = LendingPool.getBorrowOf(state, baseAsset, user, marketID);
+        uint256 quoteBorrowOf = LendingPool.getBorrowOf(state, quoteAsset, user, marketID);
 
-        if (account.status == Types.CollateralAccountStatus.Normal) {
-            details.liquidable = details.balancesTotalUSDValue <
-                Decimal.mul(details.debtsTotalUSDValue, state.markets[marketID].liquidateRate);
+        details.debtsTotalUSDValue = SafeMath.add(
+            baseBorrowOf.mul(baseUSDPrice),
+            quoteBorrowOf.mul(quoteUSDPrice)
+        ) / Consts.ORACLE_PRICE_BASE();
+
+        details.balancesTotalUSDValue = SafeMath.add(
+            account.balances[baseAsset].mul(baseUSDPrice),
+            account.balances[quoteAsset].mul(quoteUSDPrice)
+        ) / Consts.ORACLE_PRICE_BASE();
+
+        if (details.status == Types.CollateralAccountStatus.Normal) {
+            details.liquidable = details.balancesTotalUSDValue < Decimal.mul(details.debtsTotalUSDValue, market.liquidateRate);
         } else {
             details.liquidable = false;
         }

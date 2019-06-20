@@ -307,7 +307,7 @@ contract('Liquidate', accounts => {
                     from: u2
                 }
             ),
-            /NO_ENOUGH_TRANSFERABLE_AMOUNT/
+            /CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT/
         );
     });
 
@@ -390,7 +390,9 @@ contract('Liquidate', accounts => {
         //   50 USD = 50USD
         // Debt:
         //   50 USD
-        // transferable amount = ((100 + 50) - (50 * 2)) / 100
+        // transferable value = ((100 + 50) - (50 * 2)) / 100
+        //   = 0.5 eth
+        //   = 50 USD
         assert.equal(
             await hydro.getMarketTransferableAmount(marketID, usdAsset.address, u2),
             toWei('50')
@@ -415,11 +417,11 @@ contract('Liquidate', accounts => {
             );
         }, time);
 
-        // cant't withdraw more
+        // cant't withdraw even a little ether
         await assert.rejects(
             mineAt(() => {
                 return hydro.transfer(
-                    usdAsset.address,
+                    ethAsset.address,
                     {
                         category: 1,
                         marketID,
@@ -430,11 +432,11 @@ contract('Liquidate', accounts => {
                         marketID: 0,
                         user: u2
                     },
-                    toWei('1'), // even 1 USD
+                    toWei('0.0001'), // even a very small amount of ether
                     { from: u2 }
                 );
             }, time),
-            /NO_ENOUGH_TRANSFERABLE_AMOUNT/
+            /COLLATERAL_ACCOUNT_TRANSFERABLE_AMOUNT_NOT_ENOUGH/
         );
     });
 

@@ -242,7 +242,14 @@ library Auction {
 }
 
 library BalancePath {
-    function getBalances(Types.BalancePath memory path, Store.State storage state) internal view returns (mapping(address => uint256) storage) {
+    function getBalances(
+        Types.BalancePath memory path,
+        Store.State storage state
+    )
+        internal
+        view
+        returns (mapping(address => uint256) storage)
+    {
         if (path.category == Types.BalanceCategory.Common) {
             return state.balances[path.user];
         } else {
