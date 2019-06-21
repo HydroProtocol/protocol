@@ -393,9 +393,9 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 balance)
     {
-        return Transfer.balanceOf(state,  BalancePath.getCommonPath(user), asset);
+        balance = Transfer.balanceOf(state,  BalancePath.getCommonPath(user), asset);
     }
 
     function marketBalanceOf(
@@ -405,9 +405,9 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 balance)
     {
-        return Transfer.balanceOf(state,  BalancePath.getMarketPath(user, marketID), asset);
+        balance = Transfer.balanceOf(state,  BalancePath.getMarketPath(user, marketID), asset);
     }
 
     function getMarketTransferableAmount(
