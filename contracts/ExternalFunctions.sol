@@ -79,18 +79,29 @@ contract ExternalFunctions is GlobalStore {
         return state.marketsCount;
     }
 
-    function getAsset(address asset)
+    function getAsset(address assetAddress)
         external
-        view returns (Types.Asset memory)
+        view returns (Types.Asset memory asset)
     {
-        return state.assets[asset];
+        asset = state.assets[assetAddress];
+    }
+
+    function getAssetOraclePrice(address assetAddress)
+        external
+        view
+        returns (uint256 price)
+    {
+        return ExternalCaller.getAssetPriceFromPriceOracle(
+            address(state.assets[assetAddress].priceOracle),
+            assetAddress
+        );
     }
 
     function getMarket(uint16 marketID)
         external
-        view returns (Types.Market memory)
+        view returns (Types.Market memory market)
     {
-        return state.markets[marketID];
+        market = state.markets[marketID];
     }
 
     //////////////////////////////////
