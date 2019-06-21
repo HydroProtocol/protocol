@@ -19,18 +19,50 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./lib/SafeMath.sol";
-import "./lib/Decimal.sol";
-
 contract DefaultInterestModel {
-    using SafeMath for uint256;
+    uint256 constant BASE = 10**18;
 
-    function polynomialInterestModel(uint256 borrowRatio) external pure returns(uint256){
-        // 0.2r + 0.5r^2
-        uint256 rate1 = borrowRatio.mul(2).div(10);
-        uint256 rate2 = Decimal.mul(borrowRatio, borrowRatio).mul(5).div(10);
-        uint256 borrowInterestRate = rate1.add(rate2);
-        return borrowInterestRate;
+    /// @dev Multiplies two numbers, reverts on overflow.
+    function mul(
+        uint256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        if (a == 0) {
+            return 0;
+        }
+
+        uint256 c = a * b;
+        require(c / a == b, "MUL_ERROR");
+
+        return c;
     }
 
+    /// @dev Adds two numbers, reverts on overflow.
+    function add(
+        uint256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 c = a + b;
+        require(c >= a, "ADD_ERROR");
+        return c;
+    }
+
+    /**
+     * @param borrowRatio a decimal with 18 decimals
+     */
+    function polynomialInterestModel(uint256 borrowRatio) external pure returns(uint256) {
+        // 0.2r + 0.5r^2
+        uint256 rate1 = borrowRatio / 5;
+        uint256 rate2 = mul(borrowRatio, borrowRatio) / (2 * BASE);
+
+        return add(rate1, rate2);
+    }
 }

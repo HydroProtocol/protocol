@@ -109,7 +109,10 @@ library CollateralAccounts {
             return 0;
         }
 
-        uint256 asserUSDPrice = state.assets[asset].priceOracle.getPrice(asset);
+        uint256 asserUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(
+            address(state.assets[asset].priceOracle),
+            asset
+        );
 
         // round down
         return (details.balancesTotalUSDValue - transferableUSDValueBar).mul(Consts.ORACLE_PRICE_BASE()).div(asserUSDPrice);

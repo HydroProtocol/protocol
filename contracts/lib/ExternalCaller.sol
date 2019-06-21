@@ -29,9 +29,10 @@ library ExternalCaller {
         view
         returns (uint256 result)
     {
-        // saves about 2500 gas.
+        // saves about 1200 gas.
         // equal to:
         //   return state.assets[asset].priceOracle.getPrice(asset);
+        bool callResult;
 
         assembly {
             let freePtr := mload(0x40)
@@ -41,11 +42,15 @@ library ExternalCaller {
             mstore(add(freePtr, 4), asset)
 
             // call ERC20 Token contract transfer function
-            let callResult := staticcall(gas, oracleAddress, freePtr, 36, freePtr, 32)
+            callResult := staticcall(gas, oracleAddress, freePtr, 36, freePtr, 32)
             result := mload(freePtr)
 
             mstore(freePtr, 0)
             mstore(add(freePtr, 4), 0)
+        }
+
+        if (!callResult) {
+            revert("ASSEMBLY_CALL_GET_ASSET_PRICE_FAILED");
         }
     }
 
@@ -78,6 +83,8 @@ library ExternalCaller {
          * ║ Params │ 4      │ 32     │ owner address     ║
          * ╚════════╧════════╧════════╧═══════════════════╝
          */
+        bool callResult;
+
         assembly {
             let freePtr := mload(0x40)
 
@@ -86,7 +93,7 @@ library ExternalCaller {
             mstore(add(freePtr, 4), owner)
 
             // No need to check the return value because hotToken is a trustworthy contract
-            result := staticcall(
+            callResult := staticcall(
                 gas,      // Forward all gas
                 hotToken, // HOT token deployment address
                 freePtr,        // Pointer to start of calldata
@@ -99,6 +106,41 @@ library ExternalCaller {
             // Restore stack memory
             mstore(freePtr, 0)
             mstore(add(freePtr, 4), 0)
+        }
+
+        if (!callResult) {
+            revert("ASSEMBLY_CALL_GET_HOT_BALANCE_FAILED");
+        }
+    }
+
+    function getBorrowInterestRate(
+        address interestModel,
+        uint256 borrowRatio
+    )
+        internal
+        view
+        returns (uint256 result)
+    {
+        // saves about 1200 gas.
+        bool callResult;
+
+        assembly {
+            let freePtr := mload(0x40)
+
+            // keccak256('polynomialInterestModel(uint256)') & 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
+            mstore(freePtr, 0x69e8a15f00000000000000000000000000000000000000000000000000000000)
+            mstore(add(freePtr, 4), borrowRatio)
+
+            // call ERC20 Token contract transfer function
+            callResult := staticcall(gas, interestModel, freePtr, 36, freePtr, 32)
+            result := mload(freePtr)
+
+            mstore(freePtr, 0)
+            mstore(add(freePtr, 4), 0)
+        }
+
+        if (!callResult) {
+            revert("ASSEMBLY_CALL_GET_BORROW_INTEREST_RATE_FAILED");
         }
     }
 }
