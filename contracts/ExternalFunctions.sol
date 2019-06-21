@@ -62,9 +62,9 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         pure
-        returns (bool)
+        returns (bool isValid)
     {
-        return Signature.isValidSignature(hash, signerAddress, signature);
+        isValid = Signature.isValidSignature(hash, signerAddress, signature);
     }
 
     ///////////////////////
@@ -74,9 +74,9 @@ contract ExternalFunctions is GlobalStore {
     function getAllMarketsCount()
         external
         view
-        returns (uint256)
+        returns (uint256 count)
     {
-        return state.marketsCount;
+        count = state.marketsCount;
     }
 
     function getAsset(address assetAddress)
@@ -91,7 +91,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 price)
     {
-        return ExternalCaller.getAssetPriceFromPriceOracle(
+        price = ExternalCaller.getAssetPriceFromPriceOracle(
             address(state.assets[assetAddress].priceOracle),
             assetAddress
         );
@@ -113,20 +113,20 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
-        returns (bool, uint32)
+        returns (bool isLiquidatable, uint32 auctionID)
     {
-        return CollateralAccounts.liquidate(state, user, marketID);
+        (isLiquidatable, auctionID) = CollateralAccounts.liquidate(state, user, marketID);
     }
 
-    function isAccountLiquidable(
+    function isAccountLiquidatable(
         address user,
         uint16 marketID
     )
         external
         view
-        returns (bool)
+        returns (bool isLiquidatable)
     {
-        return CollateralAccounts.getDetails(state, user, marketID).liquidable;
+        isLiquidatable = CollateralAccounts.getDetails(state, user, marketID).liquidatable;
     }
 
     function getAccountDetails(
@@ -137,15 +137,15 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (Types.CollateralAccountDetails memory details)
     {
-        return CollateralAccounts.getDetails(state, user, marketID);
+        details = CollateralAccounts.getDetails(state, user, marketID);
     }
 
     function getAuctionsCount()
         external
         view
-        returns (uint32)
+        returns (uint32 count)
     {
-        return state.auction.auctionsCount;
+        count = state.auction.auctionsCount;
     }
 
     function getAuctionDetails(uint32 auctionID)
@@ -153,7 +153,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (Types.AuctionDetails memory details)
     {
-        return Auctions.getAuctionDetails(state, auctionID);
+        details = Auctions.getAuctionDetails(state, auctionID);
     }
 
     function fillAuctionWithAmount(
@@ -162,7 +162,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
     {
-        return Auctions.fillAuctionWithAmount(state, auctionID, amount);
+        Auctions.fillAuctionWithAmount(state, auctionID, amount);
     }
 
     ///////////////////////////
@@ -172,17 +172,17 @@ contract ExternalFunctions is GlobalStore {
     function getTotalBorrow(address asset)
         external
         view
-        returns (uint256)
+        returns (uint256 amount)
     {
-        return LendingPool.getTotalBorrow(state, asset);
+        amount = LendingPool.getTotalBorrow(state, asset);
     }
 
     function getTotalSupply(address asset)
         external
         view
-        returns (uint256)
+        returns (uint256 amount)
     {
-        return LendingPool.getTotalSupply(state, asset);
+        amount = LendingPool.getTotalSupply(state, asset);
     }
 
     function getBorrowOf(
@@ -192,9 +192,9 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 amount)
     {
-        return LendingPool.getBorrowOf(state, asset, user, marketID);
+        amount = LendingPool.getBorrowOf(state, asset, user, marketID);
     }
 
     function getSupplyOf(
@@ -203,9 +203,9 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 amount)
     {
-        return LendingPool.getSupplyOf(state, asset, user);
+        amount = LendingPool.getSupplyOf(state, asset, user);
     }
 
     function getInterestRates(
@@ -216,7 +216,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
-        return LendingPool.getInterestRates(state, asset, extraBorrowAmount);
+        (borrowInterestRate, supplyInterestRate) = LendingPool.getInterestRates(state, asset, extraBorrowAmount);
     }
 
     function supply(
@@ -286,9 +286,9 @@ contract ExternalFunctions is GlobalStore {
     function getInsuranceBalance(address asset)
         external
         view
-        returns (uint256)
+        returns (uint256 amount)
     {
-        return state.pool.insuranceBalances[asset];
+        amount = state.pool.insuranceBalances[asset];
     }
 
     function closeAbortiveAuction(uint32 auctionID)
@@ -328,17 +328,17 @@ contract ExternalFunctions is GlobalStore {
     function canMatchOrdersFrom(address relayer)
         external
         view
-        returns (bool)
+        returns (bool canMatch)
     {
-        return Relayer.canMatchOrdersFrom(state, relayer);
+        canMatch = Relayer.canMatchOrdersFrom(state, relayer);
     }
 
     function isParticipant(address relayer)
         external
         view
-        returns (bool)
+        returns (bool result)
     {
-        return Relayer.isParticipant(state, relayer);
+        result = Relayer.isParticipant(state, relayer);
     }
 
     ////////////////////////
@@ -417,9 +417,9 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 amount)
     {
-        return CollateralAccounts.getTransferableAmount(state, marketID, user, asset);
+        amount = CollateralAccounts.getTransferableAmount(state, marketID, user, asset);
     }
 
     /** fallback function to allow deposit ether into this contract */
@@ -454,9 +454,9 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns(bool)
+        returns(bool isCancelled)
     {
-        return state.exchange.cancelled[orderHash];
+        isCancelled = state.exchange.cancelled[orderHash];
     }
 
     function matchOrders(
@@ -472,17 +472,17 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 rate)
     {
-        return Discount.getDiscountedRate(state, user);
+        rate = Discount.getDiscountedRate(state, user);
     }
 
     function getHydroTokenAddress()
         external
         view
-        returns (address)
+        returns (address hydroTokenAddress)
     {
-        return state.exchange.hotTokenAddress;
+        hydroTokenAddress = state.exchange.hotTokenAddress;
     }
 
     function getOrderFilledAmount(
@@ -490,8 +490,8 @@ contract ExternalFunctions is GlobalStore {
     )
         external
         view
-        returns (uint256)
+        returns (uint256 amount)
     {
-        return state.exchange.filled[orderHash];
+        amount = state.exchange.filled[orderHash];
     }
 }

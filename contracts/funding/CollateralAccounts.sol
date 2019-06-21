@@ -71,9 +71,9 @@ library CollateralAccounts {
         ) / Consts.ORACLE_PRICE_BASE();
 
         if (details.status == Types.CollateralAccountStatus.Normal) {
-            details.liquidable = details.balancesTotalUSDValue < Decimal.mul(details.debtsTotalUSDValue, market.liquidateRate);
+            details.liquidatable = details.balancesTotalUSDValue < Decimal.mul(details.debtsTotalUSDValue, market.liquidateRate);
         } else {
-            details.liquidable = false;
+            details.liquidatable = false;
         }
     }
 
@@ -89,8 +89,8 @@ library CollateralAccounts {
     {
         Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
-        // liquidating or liquidable account can't move asset
-        if (details.status == Types.CollateralAccountStatus.Liquid || details.liquidable) {
+        // liquidating or liquidatable account can't move asset
+        if (details.status == Types.CollateralAccountStatus.Liquid || details.liquidatable) {
             return 0;
         }
 
@@ -147,7 +147,7 @@ library CollateralAccounts {
             marketID
         );
 
-        require(details.liquidable, "ACCOUNT_NOT_LIQUIDABLE");
+        require(details.liquidatable, "ACCOUNT_NOT_LIQUIDABLE");
 
         Types.Market storage market = state.markets[marketID];
         Types.CollateralAccount storage account = state.accounts[user][marketID];

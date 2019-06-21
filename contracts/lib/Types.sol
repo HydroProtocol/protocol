@@ -111,7 +111,7 @@ library Types {
 
     // memory only
     struct CollateralAccountDetails {
-        bool       liquidable;
+        bool       liquidatable;
         CollateralAccountStatus status;
         uint256    debtsTotalUSDValue;
         uint256    balancesTotalUSDValue;

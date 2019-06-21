@@ -71,7 +71,7 @@ contract('Liquidate', accounts => {
 
     it('should be a health position if there is no debt', async () => {
         let accountDetails = await hydro.getAccountDetails(u2, marketID);
-        assert.equal(accountDetails.liquidable, false);
+        assert.equal(accountDetails.liquidatable, false);
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
         assert.equal(accountDetails.debtsTotalUSDValue, '0');
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('100'));
@@ -86,7 +86,7 @@ contract('Liquidate', accounts => {
         );
         let accountDetails = await hydro.getAccountDetails(u2, marketID);
 
-        assert.equal(accountDetails.liquidable, false);
+        assert.equal(accountDetails.liquidatable, false);
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('100'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('200'));
@@ -111,7 +111,7 @@ contract('Liquidate', accounts => {
 
         let accountDetails = await hydro.getAccountDetails(u2, marketID);
 
-        assert.equal(accountDetails.liquidable, true);
+        assert.equal(accountDetails.liquidatable, true);
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('100'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('110'));
@@ -120,7 +120,7 @@ contract('Liquidate', accounts => {
         logGas(res, 'hydro.liquidateAccount');
         // account is liquidated
         accountDetails = await hydro.getAccountDetails(u2, marketID);
-        assert.equal(accountDetails.liquidable, false);
+        assert.equal(accountDetails.liquidatable, false);
         assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
     });
 
@@ -484,8 +484,8 @@ contract('Liquidate', accounts => {
         // u2 has a 1 eth collateral, usd value is 100
 
         let accountDetails = await hydro.getAccountDetails(u2, marketID);
-        assert.equal(await hydro.isAccountLiquidable(u2, marketID), true);
-        assert.equal(accountDetails.liquidable, true);
+        assert.equal(await hydro.isAccountLiquidatable(u2, marketID), true);
+        assert.equal(accountDetails.liquidatable, true);
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('100'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('100'));

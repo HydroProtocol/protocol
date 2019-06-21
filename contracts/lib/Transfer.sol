@@ -207,7 +207,7 @@ library Transfer {
 
         if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
              require(
-                !CollateralAccounts.getDetails(state, fromBalancePath.user, fromBalancePath.marketID).liquidable,
+                !CollateralAccounts.getDetails(state, fromBalancePath.user, fromBalancePath.marketID).liquidatable,
                 "COLLATERAL_ACCOUNT_LIQUIDATABLE_AFTER_TRANSFER"
             );
         }
