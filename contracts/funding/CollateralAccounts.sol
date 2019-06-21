@@ -94,9 +94,15 @@ library CollateralAccounts {
             return 0;
         }
 
+        uint256 assetBalance = state.accounts[user][marketID].balances[asset];
+
         // no debt, can move all assets out
         if (details.debtsTotalUSDValue == 0) {
-            return state.accounts[user][marketID].balances[asset];
+            return assetBalance;
+        }
+
+        if (assetBalance == 0) {
+            return 0;
         }
 
         // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
@@ -109,13 +115,19 @@ library CollateralAccounts {
             return 0;
         }
 
-        uint256 asserUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(
-            address(state.assets[asset].priceOracle),
-            asset
-        );
+        uint256 assetUSDPrice = state.assets[asset].priceOracle.getPrice(asset);
 
         // round down
-        return (details.balancesTotalUSDValue - transferableUSDValueBar).mul(Consts.ORACLE_PRICE_BASE()).div(asserUSDPrice);
+        uint256 transferableAmount = SafeMath.mul(
+            details.balancesTotalUSDValue - transferableUSDValueBar,
+            Consts.ORACLE_PRICE_BASE()
+        ).div(assetUSDPrice);
+
+        if (transferableAmount > assetBalance) {
+            return assetBalance;
+        }
+
+        return transferableAmount;
     }
 
     /**
