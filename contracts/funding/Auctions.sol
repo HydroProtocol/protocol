@@ -46,17 +46,19 @@ library Auctions {
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
 
-        uint256 leftDebtAmount = LendingPool.getBorrowOf(
+        // get remaining debt
+        uint256 remainingDebt = LendingPool.getBorrowOf(
             state,
             auction.debtAsset,
             auction.borrower,
             auction.marketID
         );
 
-        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
+        // get remaining collateral
+        uint256 remainingCollateral = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
         // transfer valid repay amount from msg.sender to auction.borrower
-        uint256 validRepayAmount = repayAmount < leftDebtAmount ? repayAmount : leftDebtAmount;
+        uint256 validRepayAmount = repayAmount < remainingDebt ? repayAmount : remainingDebt;
 
         state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
             state.balances[msg.sender][auction.debtAsset],
@@ -78,7 +80,7 @@ library Auctions {
 
         uint256 ratio = auction.ratio(state);
 
-        uint256 amountToProcess = leftCollateralAmount.mul(validRepayAmount).div(leftDebtAmount);
+        uint256 amountToProcess = remainingCollateral.mul(validRepayAmount).div(remainingDebt);
         uint256 amountForBidder = Decimal.mul(amountToProcess, ratio);
         uint256 amountForInitiator = Decimal.mul(amountToProcess.sub(amountForBidder), state.auction.initiatorRewardRatio);
         uint256 amountForBorrower = amountToProcess.sub(amountForBidder).sub(amountForInitiator);
@@ -110,7 +112,7 @@ library Auctions {
         Events.logFillAuction(auctionID, validRepayAmount);
 
         // reset account state if all debts are paid
-        if (leftDebtAmount <= repayAmount) {
+        if (remainingDebt <= repayAmount) {
             endAuction(state, auctionID);
         }
     }
