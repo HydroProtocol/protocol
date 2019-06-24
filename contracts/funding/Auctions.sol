@@ -122,7 +122,7 @@ library Auctions {
         }
     }
 
-    function closeAbortiveAuction(
+    function closeExpiredAuction(
         Store.State storage state,
         uint32 auctionID
     )

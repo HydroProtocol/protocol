@@ -291,10 +291,10 @@ contract ExternalFunctions is GlobalStore {
         amount = state.pool.insuranceBalances[asset];
     }
 
-    function closeAbortiveAuction(uint32 auctionID)
+    function closeExpiredAuction(uint32 auctionID)
         external
     {
-        Auctions.closeAbortiveAuction(state, auctionID);
+        Auctions.closeExpiredAuction(state, auctionID);
     }
 
     ///////////////////////
