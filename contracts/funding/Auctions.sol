@@ -133,6 +133,7 @@ library Auctions {
         require(auction.status == Types.AuctionStatus.InProgress, "AUCTION_NOT_IN_PROGRESS");
         require(auction.ratio(state) == Decimal.one(), "AUCTION_NOT_END");
 
+        // extract amount from insurance pool
         uint256 compensationAmount = LendingPool.compensate(
             state,
             auction.borrower,
@@ -141,7 +142,7 @@ library Auctions {
             auction.collateralAsset
         );
 
-        // repay
+        // repay with insurance compensation
         LendingPool.repay(
             state,
             auction.borrower,
@@ -150,22 +151,22 @@ library Auctions {
             compensationAmount
         );
 
-        // Check the debt again.
-        uint256 badDebtAmount = LendingPool.getBorrowOf(
+        uint256 remainingDebt = LendingPool.getBorrowOf(
             state,
             auction.debtAsset,
             auction.borrower,
             auction.marketID
         );
 
-        // All lost are shared by all lenders, if still some debt there.
-        if (badDebtAmount > 0){
+        // If there are still debt remaining after using the insurance fund
+        // then losses are shared by all lenders
+        if (remainingDebt > 0){
             LendingPool.lose(
                 state,
                 auction.borrower,
                 auction.marketID,
                 auction.debtAsset,
-                badDebtAmount
+                remainingDebt
             );
         }
 
