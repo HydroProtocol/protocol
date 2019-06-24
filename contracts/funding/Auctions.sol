@@ -31,7 +31,13 @@ library Auctions {
     using SafeMath for uint256;
     using Auction for Types.Auction;
 
-    function fillAuctionWithAmount(
+    /**
+     * Anyone can call this method to help repay part or all of an owed amount,
+     * in exchange for an proportionate amount of collateral.
+     * Generally called by an arbitrageur for profit, which incidentally keeps the liquidation mechanism efficient.
+     *
+     */
+    function fillAuction(
         Store.State storage state,
         uint32 auctionID,
         uint256 repayAmount
