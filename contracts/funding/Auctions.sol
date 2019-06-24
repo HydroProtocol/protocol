@@ -57,19 +57,22 @@ library Auctions {
         // get remaining collateral
         uint256 remainingCollateral = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
-        // transfer valid repay amount from msg.sender to auction.borrower
-        uint256 validRepayAmount = repayAmount < remainingDebt ? repayAmount : remainingDebt;
+        // make sure msg.sender cannot repay an amount greater than the actual remaining debt
+        validRepayAmount = repayAmount < remainingDebt ? repayAmount : remainingDebt;
 
+        // update the debt after repayment
         state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
             state.balances[msg.sender][auction.debtAsset],
             validRepayAmount
         );
 
+        // borrower temporarily gets the repayment amount
         state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = SafeMath.add(
             state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
             validRepayAmount
         );
 
+        // borrower pays back to the lending pool
         LendingPool.repay(
             state,
             auction.borrower,
@@ -78,40 +81,42 @@ library Auctions {
             repayAmount
         );
 
+        // compute how much collateral is divided up amongst the bidder, auction initiator, and borrower
         uint256 ratio = auction.ratio(state);
+        uint256 liquidatedCollateral = remainingCollateral.mul(validRepayAmount).div(remainingDebt);
 
-        uint256 amountToProcess = remainingCollateral.mul(validRepayAmount).div(remainingDebt);
-        uint256 amountForBidder = Decimal.mul(amountToProcess, ratio);
-        uint256 amountForInitiator = Decimal.mul(amountToProcess.sub(amountForBidder), state.auction.initiatorRewardRatio);
-        uint256 amountForBorrower = amountToProcess.sub(amountForBidder).sub(amountForInitiator);
+        uint256 amountForBidder = Decimal.mul(liquidatedCollateral, ratio);
+        uint256 amountForInitiator = Decimal.mul(liquidatedCollateral.sub(amountForBidder), state.auction.initiatorRewardRatio);
+        uint256 amountForBorrower = liquidatedCollateral.sub(amountForBidder).sub(amountForInitiator);
 
-        // update collateralAmount
+        // update remaining collateral ammount
         state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset] = SafeMath.sub(
             state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset],
-            amountToProcess
+            liquidatedCollateral
         );
 
-        // bidder receive collateral
+        // send a portion of collateral to the bidder
         state.balances[msg.sender][auction.collateralAsset] = SafeMath.add(
             state.balances[msg.sender][auction.collateralAsset],
             amountForBidder
         );
 
-        // initiator receive collateral
+        // send a portion of collateral to the initiator
         state.balances[auction.initiator][auction.collateralAsset] = SafeMath.add(
             state.balances[auction.initiator][auction.collateralAsset],
             amountForInitiator
         );
 
-        // auction.borrower receive collateral
+        // send a portion of collateral to the borrower
         state.balances[auction.borrower][auction.collateralAsset] = SafeMath.add(
             state.balances[auction.borrower][auction.collateralAsset],
             amountForBorrower
         );
 
+        // emit fillAuction event
         Events.logFillAuction(auctionID, validRepayAmount);
 
-        // reset account state if all debts are paid
+        // lastly if all debts are settled, end the auction
         if (remainingDebt <= repayAmount) {
             endAuction(state, auctionID);
         }
