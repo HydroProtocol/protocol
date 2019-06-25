@@ -131,7 +131,7 @@ library CollateralAccounts {
     }
 
     /**
-     * Liquidate a collateral account
+     * Liquidate a collateral account. This typically starts a new auction.
      */
     function liquidate(
         Store.State storage state,
@@ -141,6 +141,8 @@ library CollateralAccounts {
         internal
         returns (bool, uint32)
     {
+
+        // check the position is eligble for liquidation (does not meet collateral requirements)
         Types.CollateralAccountDetails memory details = getDetails(
             state,
             user,
@@ -149,6 +151,7 @@ library CollateralAccounts {
 
         require(details.liquidatable, "ACCOUNT_NOT_LIQUIDABLE");
 
+        // first repay the debts out of the collateral directly
         Types.Market storage market = state.markets[marketID];
         Types.CollateralAccount storage account = state.accounts[user][marketID];
 
@@ -171,25 +174,27 @@ library CollateralAccounts {
         address collateralAsset;
         address debtAsset;
 
-        uint256 leftBaseAssetDebt = LendingPool.getBorrowOf(
+        uint256 remainingBaseAssetDebt = LendingPool.getBorrowOf(
             state,
             market.baseAsset,
             user,
             marketID
         );
 
-        uint256 leftQuoteAssetDebt = LendingPool.getBorrowOf(
+        uint256 remainingQuoteAssetDebt = LendingPool.getBorrowOf(
             state,
             market.quoteAsset,
             user,
             marketID
         );
 
-        if (leftBaseAssetDebt == 0 && leftQuoteAssetDebt == 0) {
+        if (remainingBaseAssetDebt == 0 && remainingQuoteAssetDebt == 0) {
             // no auction
+            // QUESTION: if Type.liquidatable==true, how is it possible we even get here?
             return (false, 0);
         }
 
+        // start a auction to pay back remaining debt
         account.status = Types.CollateralAccountStatus.Liquid;
 
         if(account.balances[market.baseAsset] > 0) {
