@@ -171,7 +171,7 @@ library Auctions {
         // If there are still debt remaining (because insurance couldn't cover)
         // then losses are shared by all lenders
         if (remainingDebt > 0){
-            LendingPool.lose(
+            LendingPool.socializeLoss(
                 state,
                 auction.borrower,
                 auction.marketID,

@@ -198,7 +198,7 @@ library LendingPool {
         return repayAmount;
     }
 
-    function lose(
+    function recognizeLoss(
         Store.State storage state,
         address user,
         uint16 marketID,
