@@ -184,6 +184,10 @@ library Auctions {
         endAuction(state, auctionID);
     }
 
+    /**
+     * Mark an auction as finished.
+     * An auction typically ends either when it becomes fully filled, or when it expires and is closed
+     */
     function endAuction(
         Store.State storage state,
         uint32 auctionID
@@ -207,8 +211,7 @@ library Auctions {
     }
 
     /**
-     * Create an auction and save it in global state
-     *
+     * Create a new auction and save it in global state
      */
     function create(
         Store.State storage state,
