@@ -198,6 +198,10 @@ library LendingPool {
         return repayAmount;
     }
 
+    /**
+     * This method is called if a loan could not be paid back by the borrower, auction, or insurance,
+     * in which case the generalized loss is recognized across all lenders.
+     */
     function recognizeLoss(
         Store.State storage state,
         address user,
@@ -227,7 +231,11 @@ library LendingPool {
         Events.logLoss(user, marketID, asset, amount);
     }
 
-    function compensate(
+    /**
+     * Claim an amount from the insurance pool, in return for all the collateral.
+     * Only called if an auction expired without being filled.
+     */
+    function claimInsurance(
         Store.State storage state,
         address borrower,
         uint16 marketID,
@@ -239,27 +247,28 @@ library LendingPool {
     {
         uint256 insuranceBalance = state.pool.insuranceBalances[debtAsset];
 
-        uint256 leftDebtAmount = getBorrowOf(
+        uint256 remainingDebt = getBorrowOf(
             state,
             debtAsset,
             borrower,
             marketID
         );
 
-        uint256 compensationAmount = Math.min(leftDebtAmount, insuranceBalance);
+        // pay back however the insurance balance can cover, up to the full amount of the debt
+        uint256 payout = Math.min(remainingDebt, insuranceBalance);
 
-        // move compensationAmount from insurance balances to account balances
+        // move payout from insurance balances to borrwer
         state.accounts[borrower][marketID].balances[debtAsset] = SafeMath.add(
             state.accounts[borrower][marketID].balances[debtAsset],
-            compensationAmount
+            payout
         );
 
         state.pool.insuranceBalances[debtAsset] = SafeMath.sub(
             state.pool.insuranceBalances[debtAsset],
-            compensationAmount
+            payout
         );
 
-        // move all left collateral to insurance balances
+        // give all remaining collateral to the insurance pool
         uint256 leftCollateralAmount = state.accounts[borrower][marketID].balances[collateralAsset];
 
         state.pool.insuranceBalances[collateralAsset] = SafeMath.add(
@@ -269,16 +278,17 @@ library LendingPool {
 
         state.accounts[borrower][marketID].balances[collateralAsset] = 0;
 
+        // log event
         Events.logCompensation(
             borrower,
             marketID,
             debtAsset,
-            compensationAmount,
+            payout,
             collateralAsset,
             leftCollateralAmount
         );
 
-        return compensationAmount;
+        return payout;
     }
 
     function updateInterestRate(

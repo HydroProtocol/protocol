@@ -143,7 +143,7 @@ library Auctions {
 
         // ask the insurance pool to compensate the loss
         // note: this will hand over all collateral to the insurance pool
-        uint256 compensationAmount = LendingPool.compensate(
+        uint256 payout = LendingPool.claimInsurance(
             state,
             auction.borrower,
             auction.marketID,
@@ -157,7 +157,7 @@ library Auctions {
             auction.borrower,
             auction.marketID,
             auction.debtAsset,
-            compensationAmount
+            payout
         );
 
         // get remaining debt
@@ -171,7 +171,7 @@ library Auctions {
         // If there are still debt remaining (because insurance couldn't cover)
         // then losses are shared by all lenders
         if (remainingDebt > 0){
-            LendingPool.socializeLoss(
+            LendingPool.recognizeLoss(
                 state,
                 auction.borrower,
                 auction.marketID,
