@@ -122,6 +122,13 @@ library Auctions {
         }
     }
 
+    /**
+     * An auction is 'expired' if it remains unfilled at the end of the allocated time.
+     * In this case, the auction should be closed.
+     * The insurance mechanism will try to cover the loss, and in return take the collateral.
+     * If losses remain after insurance is exhausted, the amount is socialized by all lenders in the lending pool.
+     *
+     */
     function closeExpiredAuction(
         Store.State storage state,
         uint32 auctionID
@@ -130,10 +137,12 @@ library Auctions {
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
 
+        //check the auction is expired(not in progress, but not filled)
         require(auction.status == Types.AuctionStatus.InProgress, "AUCTION_NOT_IN_PROGRESS");
         require(auction.ratio(state) == Decimal.one(), "AUCTION_NOT_END");
 
-        // extract amount from insurance pool
+        // ask the insurance pool to compensate the loss
+        // note: this will hand over all collateral to the insurance pool
         uint256 compensationAmount = LendingPool.compensate(
             state,
             auction.borrower,
@@ -151,6 +160,7 @@ library Auctions {
             compensationAmount
         );
 
+        // get remaining debt
         uint256 remainingDebt = LendingPool.getBorrowOf(
             state,
             auction.debtAsset,
@@ -158,7 +168,7 @@ library Auctions {
             auction.marketID
         );
 
-        // If there are still debt remaining after using the insurance fund
+        // If there are still debt remaining (because insurance couldn't cover)
         // then losses are shared by all lenders
         if (remainingDebt > 0){
             LendingPool.lose(
@@ -170,6 +180,7 @@ library Auctions {
             );
         }
 
+        //lastly, end the auction
         endAuction(state, auctionID);
     }
 
