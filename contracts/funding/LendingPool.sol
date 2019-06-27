@@ -402,7 +402,7 @@ library LendingPool {
         state.pool.indexStartTime[asset] = block.timestamp;
     }
 
-    function getSupplyOf(
+    function getAmountSupplied(
         Store.State storage state,
         address asset,
         address user
@@ -417,6 +417,9 @@ library LendingPool {
         return Decimal.mul(getLogicSupplyOf(state, asset, user), currentSupplyIndex);
     }
 
+    /**
+     * 
+     */
     function getAmountBorrowed(
         Store.State storage state,
         address asset,

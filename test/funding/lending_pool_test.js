@@ -106,7 +106,7 @@ contract('LendingPool', accounts => {
         // test interest accumulate in 90 days
         await mine(initTime + 86400 * 90);
         assert.equal((await hydro.getTotalSupply(USDAddr)).toString(), '1000616438356164383000');
-        assert.equal((await hydro.getSupplyOf(USDAddr, u1)).toString(), '1000616438356164383000');
+        assert.equal((await hydro.getAmountSupplied(USDAddr, u1)).toString(), '1000616438356164383000');
         assert.equal((await hydro.getTotalBorrow(USDAddr)).toString(), '100616438356164383500');
         assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '100616438356164383500');
     });
