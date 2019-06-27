@@ -108,7 +108,7 @@ contract('LendingPool', accounts => {
         assert.equal((await hydro.getTotalSupply(USDAddr)).toString(), '1000616438356164383000');
         assert.equal((await hydro.getSupplyOf(USDAddr, u1)).toString(), '1000616438356164383000');
         assert.equal((await hydro.getTotalBorrow(USDAddr)).toString(), '100616438356164383500');
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '100616438356164383500');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '100616438356164383500');
     });
 
     it('borrow', async () => {
@@ -119,7 +119,7 @@ contract('LendingPool', accounts => {
 
         logGas(res, 'hydro.borrow');
         assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('200'));
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '201232876712328767100');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '201232876712328767100');
         // test wether use principle with interest to calculate new interest rate
         interestRate = await hydro.getInterestRates(USDAddr, 0);
         assert.equal(interestRate[0].toString(), '60394519949755790'); // borrow
@@ -133,7 +133,7 @@ contract('LendingPool', accounts => {
         );
         logGas(res, 'hydro.repay');
         assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('50'));
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '51232876712328767100');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '51232876712328767100');
     });
 
     it('supply', async () => {
@@ -170,7 +170,7 @@ contract('LendingPool', accounts => {
             (await hydro.marketBalanceOf(0, USDAddr, u2)).toString(),
             '8767123287671232900'
         );
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '0');
         res = await mineAt(
             async () => hydro.unsupply(USDAddr, toWei('2000'), { from: u1 }),
             initTime + 86400 * 180

@@ -117,13 +117,13 @@ contract('Insurance', accounts => {
             (await hydro.getInsuranceBalance(USDAddr)).toString(),
             '155342465753424658000'
         );
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '152602739726027397000');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '152602739726027397000');
 
         res = await mineAt(async () => hydro.closeExpiredAuction(0), initTime + 90 * 86400);
         logGas(res, 'hydro.closeExpiredAuction (insurance payable)');
 
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '2739726027397261000');
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).debtsTotalUSDValue, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).balancesTotalUSDValue, '0');
@@ -144,14 +144,14 @@ contract('Insurance', accounts => {
             (await hydro.getInsuranceBalance(USDAddr)).toString(),
             '155342465753424658000'
         );
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '162602739726027397000');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '162602739726027397000');
         assert.equal((await hydro.getTotalSupply(USDAddr)).toString(), '1017260273972602739000');
 
         res = await mineAt(async () => hydro.closeExpiredAuction(0), initTime + 90 * 86400);
         logGas(res, 'hydro.closeExpiredAuction (insurance non-payable)');
 
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '0');
-        assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
+        assert.equal((await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(), '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).status, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).debtsTotalUSDValue, '0');
         assert.equal((await hydro.getAccountDetails(u2, 0)).balancesTotalUSDValue, '0');

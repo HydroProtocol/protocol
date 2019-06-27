@@ -47,7 +47,7 @@ library Auctions {
         Types.Auction storage auction = state.auction.auctions[auctionID];
 
         // get remaining debt
-        uint256 remainingDebt = LendingPool.getBorrowOf(
+        uint256 remainingDebt = LendingPool.getAmountBorrowed(
             state,
             auction.debtAsset,
             auction.borrower,
@@ -161,7 +161,7 @@ library Auctions {
         );
 
         // get remaining debt
-        uint256 remainingDebt = LendingPool.getBorrowOf(
+        uint256 remainingDebt = LendingPool.getAmountBorrowed(
             state,
             auction.debtAsset,
             auction.borrower,
@@ -258,7 +258,7 @@ library Auctions {
         details.debtAsset = auction.debtAsset;
         details.collateralAsset = auction.collateralAsset;
 
-        details.leftDebtAmount = LendingPool.getBorrowOf(
+        details.leftDebtAmount = LendingPool.getAmountBorrowed(
             state,
             auction.debtAsset,
             auction.borrower,

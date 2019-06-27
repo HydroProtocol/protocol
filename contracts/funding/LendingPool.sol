@@ -283,7 +283,7 @@ library LendingPool {
     {
         uint256 insuranceBalance = state.pool.insuranceBalances[debtAsset];
 
-        uint256 remainingDebt = getBorrowOf(
+        uint256 remainingDebt = getAmountBorrowed(
             state,
             debtAsset,
             borrower,
@@ -417,7 +417,7 @@ library LendingPool {
         return Decimal.mul(getLogicSupplyOf(state, asset, user), currentSupplyIndex);
     }
 
-    function getBorrowOf(
+    function getAmountBorrowed(
         Store.State storage state,
         address asset,
         address user,
@@ -429,6 +429,7 @@ library LendingPool {
     {
         Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
 
+        // the actual amount borrowed = normalizedAmount * poolIndex
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
         return Decimal.mul(state.pool.logicBorrow[user][marketID][asset], currentBorrowIndex);
 

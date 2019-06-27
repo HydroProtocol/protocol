@@ -57,8 +57,8 @@ library CollateralAccounts {
             quoteAsset
         );
 
-        uint256 baseBorrowOf = LendingPool.getBorrowOf(state, baseAsset, user, marketID);
-        uint256 quoteBorrowOf = LendingPool.getBorrowOf(state, quoteAsset, user, marketID);
+        uint256 baseBorrowOf = LendingPool.getAmountBorrowed(state, baseAsset, user, marketID);
+        uint256 quoteBorrowOf = LendingPool.getAmountBorrowed(state, quoteAsset, user, marketID);
 
         details.debtsTotalUSDValue = SafeMath.add(
             baseBorrowOf.mul(baseUSDPrice),
@@ -174,14 +174,14 @@ library CollateralAccounts {
         address collateralAsset;
         address debtAsset;
 
-        uint256 remainingBaseAssetDebt = LendingPool.getBorrowOf(
+        uint256 remainingBaseAssetDebt = LendingPool.getAmountBorrowed(
             state,
             market.baseAsset,
             user,
             marketID
         );
 
-        uint256 remainingQuoteAssetDebt = LendingPool.getBorrowOf(
+        uint256 remainingQuoteAssetDebt = LendingPool.getAmountBorrowed(
             state,
             market.quoteAsset,
             user,
