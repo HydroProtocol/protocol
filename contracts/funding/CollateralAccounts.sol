@@ -131,7 +131,7 @@ library CollateralAccounts {
     }
 
     /**
-     * Liquidate a collateral account. This typically starts a new auction.
+     * Liquidate a collateral account, potentially resulting in the start of a new auction
      */
     function liquidate(
         Store.State storage state,
@@ -189,8 +189,9 @@ library CollateralAccounts {
         );
 
         if (remainingBaseAssetDebt == 0 && remainingQuoteAssetDebt == 0) {
-            // no auction
-            // QUESTION: if Type.liquidatable==true, how is it possible we even get here?
+            // Because liquidation rate for Type.liquidatable==true is typically greater than 1,
+            // there are edge cases where calling liquidate does not result in an auction.
+            // So it just ends here and return auctionId = 0
             return (false, 0);
         }
 
