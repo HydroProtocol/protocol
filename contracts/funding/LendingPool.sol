@@ -29,6 +29,24 @@ import "../lib/Requires.sol";
 import "../lib/ExternalCaller.sol";
 import "./CollateralAccounts.sol";
 
+/**
+ *
+ * Inside this library, the concept of normalizedAmount and poolIndex are used to simplify computations.
+ * Index is a number that starts at 1 and increases as interest accumilates.
+ * An index of 2 means 100% interest rate has bee accumiliated.
+ * 
+ * For an amount x, normalizedAmount = x/index. This means if you put in x/index in the beginning, it would be worth exactly x now.
+ * The benefit of lining it this way is that its easier to aggregate and less book-keeping is needed.
+ *
+ * There are four primary operations for the lending pool:
+ * supply, unsupply, borrow, repay. The order of operation is consistent for all of them:
+ * 1. update index first, then compute the normalizedAmount
+ * 2. transfer asset
+ * 3. change normalizedAmount for supply and borrow
+ * 4. update interest rate based on new state
+ */
+
+
 library LendingPool {
     using SafeMath for uint256;
 
@@ -39,17 +57,17 @@ library LendingPool {
     )
         internal
     {
+        // indexes starts at 1 for easy computation
         state.pool.borrowIndex[asset] = Decimal.one();
         state.pool.supplyIndex[asset] = Decimal.one();
+
+        // record starting time for the pool
         state.pool.indexStartTime[asset] = block.timestamp;
     }
 
-    // four asset operation: supply, withdraw, borrow, repay
-    // 1. update index first to get the right logic amount
-    // 2. transfer asset
-    // 3. change logic supply and logic borrow
-    // 4. update interest rate
-
+    /**
+     * Supply asset into the pool. Supplied asset in the pool gains interest.
+     */
     function supply(
         Store.State storage state,
         address asset,
@@ -62,25 +80,28 @@ library LendingPool {
 
         mapping(address => uint256) storage balances = state.balances[user];
 
-        // update index
+        // update value of index at this moment in time
         updateIndex(state, asset);
 
-        // get logic amount
+        // compute the normalized value of 'amount'
         // round floor
         uint256 logicAmount = Decimal.divFloor(amount, state.pool.supplyIndex[asset]);
 
-        // transfer asset
+        // transfer asset from user's balance account
         balances[asset] = balances[asset].sub(amount);
 
-        // mint pool token
+        // mint normalizedAmount of pool token for user
         state.assets[asset].lendingPoolToken.mint(user, logicAmount);
 
-        // update interest rate
+        // update interest rate based on latest state
         updateInterestRate(state, asset);
 
         Events.logSupply(user, asset, amount);
     }
 
+    /**
+     * Withdraw asset from the pool, up to initial asset supplied plus interest
+     */
     function withdraw(
         Store.State storage state,
         address asset,
@@ -93,26 +114,28 @@ library LendingPool {
         Requires.requireAssetExist(state, asset);
         mapping(address => uint256) storage balances = state.balances[user];
 
-        // update index
+        // update value of index at this moment in time
         updateIndex(state, asset);
 
-        // get logic amount
-        // round ceil
+        // compute the normalized value of 'amount'
+        // round ceiling
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
+
         uint256 withdrawAmount = amount;
 
+        // check and cap the amount so user can't overdraw
         if (getLogicSupplyOf(state, asset, user) < logicAmount) {
             logicAmount = getLogicSupplyOf(state, asset, user);
             withdrawAmount = Decimal.mul(logicAmount, state.pool.supplyIndex[asset]);
         }
 
-        // transfer asset
+        // transfer asset to user's balance account
         balances[asset] = balances[asset].add(withdrawAmount);
 
-        // update logic amount
+        // subtract normalizedAmount from the pool
         state.assets[asset].lendingPoolToken.burn(user, logicAmount);
 
-        // update interest rate
+        // update interest rate based on latest state
         updateInterestRate(state, asset);
 
         Events.logUnsupply(user, asset, withdrawAmount);
@@ -120,6 +143,9 @@ library LendingPool {
         return withdrawAmount;
     }
 
+    /**
+     * Borrow money from the lending pool.
+     */
     function borrow(
         Store.State storage state,
         address user,
@@ -133,20 +159,22 @@ library LendingPool {
 
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
-         // update index
+        // update value of index at this moment in time
         updateIndex(state, asset);
 
-        // get logic amount
+        // compute the normalized value of 'amount'
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.borrowIndex[asset]);
 
-        // transfer assets
+        // transfer assets to user's balance account
         balances[asset] = balances[asset].add(amount);
 
-        // update logic amount
+        // update normalized amount borrowed by user
         state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].add(logicAmount);
+
+        // update normalized amount borrowed from the pool
         state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].add(logicAmount);
 
-        // update interest rate
+        // update interest rate based on latest state
         updateInterestRate(state, asset);
 
         require(
@@ -157,6 +185,9 @@ library LendingPool {
         Events.logBorrow(user, marketID, asset, amount);
     }
 
+    /**
+     * repay money borrowed money from the pool.
+     */
     function repay(
         Store.State storage state,
         address user,
@@ -171,23 +202,28 @@ library LendingPool {
 
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
-        // update index
+        // update value of index at this moment in time
         updateIndex(state, asset);
 
-        // get logic amount
+        // get normalized value of amount to be repaid, which in effect take into account interest
+        // (ex: if you borrowed 10, with index at 1.1, amount repaid needs to be 11 to make 11/1.1 = 10)
         uint256 logicAmount = Decimal.divFloor(amount, state.pool.borrowIndex[asset]);
+
         uint256 repayAmount = amount;
-        // repay all logic amount greater than debt
+
+        // make sure user cannot repay more than amount owed
         if (state.pool.logicBorrow[user][marketID][asset] < logicAmount){
             logicAmount = state.pool.logicBorrow[user][marketID][asset];
             repayAmount = Decimal.mul(logicAmount, state.pool.borrowIndex[asset]);
         }
 
-        // transfer assets
+        // transfer assets from user's balance account
         balances[asset] = balances[asset].sub(repayAmount);
 
-        // update logic amount
+        // update amount(normalized) borrowed by user
         state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].sub(logicAmount);
+
+        // update total amount(normalized) borrowed from pool
         state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].sub(logicAmount);
 
         // update interest rate
@@ -338,6 +374,9 @@ library LendingPool {
         );
     }
 
+    /**
+     * update the index value
+     */
     function updateIndex(
         Store.State storage state,
         address asset
@@ -346,13 +385,18 @@ library LendingPool {
     {
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
 
+        // get the total equity value
         uint256 logicBorrow = state.pool.logicTotalBorrow[asset];
         uint256 logicSupply = getTotalLogicSupply(state, asset);
+
+        // interest = equity value * (current index value - starting index value)
         uint256 borrowInterest = Decimal.mul(logicBorrow, currentBorrowIndex).sub(Decimal.mul(logicBorrow, state.pool.borrowIndex[asset]));
         uint256 supplyInterest = Decimal.mul(logicSupply, currentSupplyIndex).sub(Decimal.mul(logicSupply, state.pool.supplyIndex[asset]));
 
+        // the interest rate spread goes into the insurance pool
         state.pool.insuranceBalances[asset] = state.pool.insuranceBalances[asset].add(borrowInterest.sub(supplyInterest));
 
+        // update the indexes
         state.pool.supplyIndex[asset] = currentSupplyIndex;
         state.pool.borrowIndex[asset] = currentBorrowIndex;
         state.pool.indexStartTime[asset] = block.timestamp;
@@ -418,6 +462,9 @@ library LendingPool {
         return Decimal.mul(state.pool.logicTotalBorrow[asset], currentBorrowIndex);
     }
 
+    /**
+     * Compute the current value of poolIndex based on the time elapsed and the interest rate
+     */
     function getCurrentIndex(
         Store.State storage state,
         address asset
