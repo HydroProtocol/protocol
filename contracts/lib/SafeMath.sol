@@ -53,6 +53,23 @@ library SafeMath {
         return a / b;
     }
 
+    function divCeil(
+        uint256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 quotient = div(a, b);
+        uint256 remainder = a - quotient * b;
+        if (remainder > 0) {
+            return quotient + 1;
+        } else {
+            return quotient;
+        }
+    }
+
     /// @dev Subtracts two numbers, reverts on overflow (i.e. if subtrahend is greater than minuend).
     function sub(
         uint256 a,

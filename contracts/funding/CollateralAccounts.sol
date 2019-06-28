@@ -71,7 +71,7 @@ library CollateralAccounts {
         ) / Consts.ORACLE_PRICE_BASE();
 
         if (details.status == Types.CollateralAccountStatus.Normal) {
-            details.liquidatable = details.balancesTotalUSDValue < Decimal.mul(details.debtsTotalUSDValue, market.liquidateRate);
+            details.liquidatable = details.balancesTotalUSDValue < Decimal.mulCeil(details.debtsTotalUSDValue, market.liquidateRate);
         } else {
             details.liquidatable = false;
         }
@@ -106,7 +106,7 @@ library CollateralAccounts {
         }
 
         // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
-        uint256 transferableUSDValueBar = Decimal.mul(
+        uint256 transferableUSDValueBar = Decimal.mulFloor(
             details.debtsTotalUSDValue,
             state.markets[marketID].withdrawRate
         );

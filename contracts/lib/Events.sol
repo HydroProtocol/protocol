@@ -190,54 +190,36 @@ library Events {
     }
 
     event Loss(
-        address user,
-        uint16 marketID,
         address asset,
         uint256 amount
     );
 
     function logLoss(
-        address user,
-        uint16 marketID,
         address asset,
         uint256 amount
     )
         internal
     {
         emit Loss(
-            user,
-            marketID,
             asset,
             amount
         );
     }
 
-        event Compensation(
-        address borrower,
-        uint32 marketID,
+    event InsuranceCompensation(
         address debtAsset,
-        uint256 compensationAmount,
-        address collateralAsset,
-        uint256 collateralAmount
+        uint256 compensationAmount
     );
 
-    function logCompensation(
-        address borrower,
-        uint32 marketID,
+    function logInsuranceCompensation(
         address debtAsset,
-        uint256 compensationAmount,
-        address collateralAsset,
-        uint256 collateralAmount
+        uint256 compensationAmount
     )
         internal
     {
-        emit Compensation(
-            borrower,
-            marketID,
+        emit InsuranceCompensation(
             debtAsset,
-            compensationAmount,
-            collateralAsset,
-            collateralAmount
+            compensationAmount
         );
     }
 

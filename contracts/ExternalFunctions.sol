@@ -32,6 +32,7 @@ import "./funding/Auctions.sol";
 import "./lib/Transfer.sol";
 import "./lib/Types.sol";
 import "./lib/Requires.sol";
+import "./lib/SafeMath.sol";
 
 /**
  * External Functions
@@ -169,6 +170,25 @@ contract ExternalFunctions is GlobalStore {
     // LendingPool Functions //
     ///////////////////////////
 
+    function getCurrentIndex(address asset)
+        external
+        view
+        returns (uint256, uint256){
+            return LendingPool.getCurrentIndex(state, asset);
+        }
+
+    function getLogicBorrowOf(
+        address asset,
+        address user,
+        uint16 marketID
+    )
+        external
+        view
+        returns (uint256 amount)
+    {
+        amount = state.pool.logicBorrow[user][marketID][asset];
+    }
+
     function getTotalBorrow(address asset)
         external
         view
@@ -289,12 +309,6 @@ contract ExternalFunctions is GlobalStore {
         returns (uint256 amount)
     {
         amount = state.pool.insuranceBalances[asset];
-    }
-
-    function closeAbortiveAuction(uint32 auctionID)
-        external
-    {
-        Auctions.closeAbortiveAuction(state, auctionID);
     }
 
     ///////////////////////

@@ -31,15 +31,15 @@ library Auctions {
     using SafeMath for uint256;
     using Auction for Types.Auction;
 
-    function fillAuctionWithAmount(
+    function fillAuctionWithRatioLessOrEqualThanOne(
         Store.State storage state,
-        uint32 auctionID,
+        Types.Auction storage auction,
+        uint256 ratio,
         uint256 repayAmount
     )
         internal
+        returns (uint256, uint256) // bidderRepay collateral
     {
-        Types.Auction storage auction = state.auction.auctions[auctionID];
-
         uint256 leftDebtAmount = LendingPool.getBorrowOf(
             state,
             auction.debtAsset,
@@ -49,20 +49,12 @@ library Auctions {
 
         uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
-        // transfer valid repay amount from msg.sender to auction.borrower
-        uint256 validRepayAmount = repayAmount < leftDebtAmount ? repayAmount : leftDebtAmount;
-
-        state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
-            state.balances[msg.sender][auction.debtAsset],
-            validRepayAmount
-        );
-
         state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = SafeMath.add(
             state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
-            validRepayAmount
+            repayAmount
         );
 
-        LendingPool.repay(
+        uint256 actualRepay = LendingPool.repay(
             state,
             auction.borrower,
             auction.marketID,
@@ -70,115 +62,162 @@ library Auctions {
             repayAmount
         );
 
-        uint256 ratio = auction.ratio(state);
+        state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
+            state.balances[msg.sender][auction.debtAsset],
+            actualRepay
+        );
 
-        uint256 amountToProcess = leftCollateralAmount.mul(validRepayAmount).div(leftDebtAmount);
-        uint256 amountForBidder = Decimal.mul(amountToProcess, ratio);
-        uint256 amountForInitiator = Decimal.mul(amountToProcess.sub(amountForBidder), state.auction.initiatorRewardRatio);
-        uint256 amountForBorrower = amountToProcess.sub(amountForBidder).sub(amountForInitiator);
+        if (actualRepay < repayAmount) {
+            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0;
+        }
+
+        uint256 collateralToProcess = leftCollateralAmount.mul(actualRepay).div(leftDebtAmount);
+        uint256 collateralForBidder = Decimal.mulFloor(collateralToProcess, ratio);
+
+        uint256 collateralForInitiator = Decimal.mulFloor(collateralToProcess.sub(collateralForBidder), state.auction.initiatorRewardRatio);
+        uint256 collateralForBorrower = collateralToProcess.sub(collateralForBidder).sub(collateralForInitiator);
 
         // update collateralAmount
         state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset] = SafeMath.sub(
             state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset],
-            amountToProcess
+            collateralToProcess
         );
 
         // bidder receive collateral
         state.balances[msg.sender][auction.collateralAsset] = SafeMath.add(
             state.balances[msg.sender][auction.collateralAsset],
-            amountForBidder
+            collateralForBidder
         );
 
         // initiator receive collateral
         state.balances[auction.initiator][auction.collateralAsset] = SafeMath.add(
             state.balances[auction.initiator][auction.collateralAsset],
-            amountForInitiator
+            collateralForInitiator
         );
 
         // auction.borrower receive collateral
         state.balances[auction.borrower][auction.collateralAsset] = SafeMath.add(
             state.balances[auction.borrower][auction.collateralAsset],
-            amountForBorrower
+            collateralForBorrower
         );
 
-        Events.logFillAuction(auctionID, validRepayAmount);
-
-        // reset account state if all debts are paid
-        if (leftDebtAmount <= repayAmount) {
-            endAuction(state, auctionID);
-        }
+        Events.logFillAuction(auction.id, repayAmount);
+        return (actualRepay, collateralForBidder);
     }
 
-    function closeAbortiveAuction(
+    // Msg.sender only need to afford bidderRepayAmount and get collateralAmount
+    // insurance and suppliers will cover the badDebtAmount
+    function fillAuctionWithRatioGreaterThanOne(
         Store.State storage state,
-        uint32 auctionID
+        Types.Auction storage auction,
+        uint256 ratio,
+        uint256 bidderRepayAmount
     )
         internal
+        returns (uint256, uint256) // bidderRepay collateral
     {
-        Types.Auction storage auction = state.auction.auctions[auctionID];
-
-        require(auction.status == Types.AuctionStatus.InProgress, "AUCTION_NOT_IN_PROGRESS");
-        require(auction.ratio(state) == Decimal.one(), "AUCTION_NOT_END");
-
-        uint256 compensationAmount = LendingPool.compensate(
-            state,
-            auction.borrower,
-            auction.marketID,
-            auction.debtAsset,
-            auction.collateralAsset
-        );
-
-        // repay
-        LendingPool.repay(
-            state,
-            auction.borrower,
-            auction.marketID,
-            auction.debtAsset,
-            compensationAmount
-        );
-
-        // Check the debt again.
-        uint256 badDebtAmount = LendingPool.getBorrowOf(
+        uint256 leftDebtAmount = LendingPool.getBorrowOf(
             state,
             auction.debtAsset,
             auction.borrower,
             auction.marketID
         );
 
-        // All lost are shared by all lenders, if still some debt there.
-        if (badDebtAmount > 0){
-            LendingPool.lose(
-                state,
-                auction.borrower,
-                auction.marketID,
-                auction.debtAsset,
-                badDebtAmount
-            );
+        uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
+
+        uint256 repayAmount = Decimal.mulFloor(bidderRepayAmount, ratio);
+
+        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = SafeMath.add(
+            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
+            repayAmount
+        );
+
+        uint256 actualRepay = LendingPool.repay(
+            state,
+            auction.borrower,
+            auction.marketID,
+            auction.debtAsset,
+            repayAmount
+        );
+
+        uint256 actualBidderRepay = bidderRepayAmount;
+        if (actualRepay < repayAmount) {
+            actualBidderRepay = Decimal.divCeil(actualRepay, ratio);
         }
 
-        endAuction(state, auctionID);
+        // gather repay capital
+        LendingPool.compensate(state, auction.debtAsset, actualRepay.sub(actualBidderRepay));
+
+        state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
+            state.balances[msg.sender][auction.debtAsset],
+            actualBidderRepay
+        );
+
+        // update collateralAmount
+        uint256 collateralForBidder = leftCollateralAmount.mul(actualRepay).div(leftDebtAmount);
+
+        state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset] = SafeMath.sub(
+            state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset],
+            collateralForBidder
+        );
+
+        // bidder receive collateral
+        state.balances[msg.sender][auction.collateralAsset] = SafeMath.add(
+            state.balances[msg.sender][auction.collateralAsset],
+            collateralForBidder
+        );
+
+        return (repayAmount, collateralForBidder);
     }
 
-    function endAuction(
+    // ensure repay no more than repayAmount
+    function fillAuctionWithAmount(
         Store.State storage state,
-        uint32 auctionID
+        uint32 auctionID,
+        uint256 repayAmount
     )
         internal
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
+        uint256 ratio = auction.ratio(state);
+
+        if (ratio<=Decimal.one()){
+            fillAuctionWithRatioLessOrEqualThanOne(state, auction, ratio, repayAmount);
+        } else {
+            fillAuctionWithRatioGreaterThanOne(state, auction, ratio, repayAmount);
+        }
+
+        // reset account state if all debts are paid
+        uint256 leftDebtAmount = LendingPool.getBorrowOf(
+            state,
+            auction.debtAsset,
+            auction.borrower,
+            auction.marketID
+        );
+        if (leftDebtAmount == 0) {
+            endAuction(state, auction);
+        }
+    }
+
+    function endAuction(
+        Store.State storage state,
+        Types.Auction storage auction
+    )
+        internal
+    {
         auction.status = Types.AuctionStatus.Finished;
 
         Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
         account.status = Types.CollateralAccountStatus.Normal;
 
         for (uint i = 0; i < state.auction.currentAuctions.length; i++){
-            if (state.auction.currentAuctions[i] == auctionID){
+            if (state.auction.currentAuctions[i] == auction.id){
                 state.auction.currentAuctions[i] = state.auction.currentAuctions[state.auction.currentAuctions.length-1];
                 state.auction.currentAuctions.length--;
             }
         }
 
-        Events.logAuctionFinished(auctionID);
+        Events.logAuctionFinished(auction.id);
     }
 
     /**
