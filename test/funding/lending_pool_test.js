@@ -131,7 +131,6 @@ contract('LendingPool', accounts => {
             async () => hydro.repay(USDAddr, toWei('50'), 0, { from: u2 }),
             initTime + 86400 * 180
         );
-        console.log(await hydro.getCurrentIndex(USDAddr));
         logGas(res, 'hydro.repay');
         assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('50'));
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '51232876712328767201');

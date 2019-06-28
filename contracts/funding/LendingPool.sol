@@ -230,6 +230,8 @@ library LendingPool {
             totalLogicSupply
         );
 
+        state.cash[asset] = state.cash[asset].add(amount);
+
         Events.logLoss(asset, amount);
     }
 

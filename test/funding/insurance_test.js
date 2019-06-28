@@ -90,10 +90,7 @@ contract('Insurance', accounts => {
     });
 
     it('check insurance balance', async () => {
-        await mineAt(
-            async () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }),
-            initTime + 86400 * 90
-        );
+        await mineAt(async () => hydro.supply(USDAddr, '0', { from: u1 }), initTime + 86400 * 90);
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '61643835616438600');
     });
 });
