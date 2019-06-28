@@ -71,6 +71,7 @@ library LendingPool {
 
         // transfer asset
         balances[asset] = balances[asset].sub(amount);
+        state.cash[asset] = state.cash[asset].sub(amount);
 
         // mint pool token
         state.assets[asset].lendingPoolToken.mint(user, logicAmount);
@@ -108,6 +109,8 @@ library LendingPool {
 
         // transfer asset
         balances[asset] = balances[asset].add(withdrawAmount);
+        state.cash[asset] = state.cash[asset].add(withdrawAmount);
+        Requires.requireCashLessThanOrEqualContractBalance(state, asset);
 
         // update logic amount
         state.assets[asset].lendingPoolToken.burn(user, logicAmount);
@@ -141,6 +144,8 @@ library LendingPool {
 
         // transfer assets
         balances[asset] = balances[asset].add(amount);
+        state.cash[asset] = state.cash[asset].add(amount);
+        Requires.requireCashLessThanOrEqualContractBalance(state, asset);
 
         // update logic amount
         state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].add(logicAmount);
@@ -189,6 +194,7 @@ library LendingPool {
 
         // transfer assets
         balances[asset] = balances[asset].sub(repayAmount);
+        state.cash[asset] = state.cash[asset].sub(repayAmount);
 
         // update logic amount
         state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].sub(logicAmount);

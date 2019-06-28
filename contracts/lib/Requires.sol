@@ -20,6 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./Store.sol";
+import "../helper/StandardToken.sol";
 
 library Requires {
     function requireAssetExist(
@@ -76,6 +77,16 @@ library Requires {
         require(market.baseAsset != market.quoteAsset, "BASE_QUOTE_DUPLICATED");
         require(isAssetExist(state, market.baseAsset), "MARKET_BASE_ASSET_NOT_EXIST");
         require(isAssetExist(state, market.quoteAsset), "MARKET_QUOTE_ASSET_NOT_EXIST");
+    }
+
+    function requireCashLessThanOrEqualContractBalance(
+        Store.State storage state,
+        address asset
+    )
+        internal
+        view
+    {
+        require(state.cash[asset] <= StandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
     }
 
     function requirePriceOracleAddressValid(

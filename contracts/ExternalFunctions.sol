@@ -170,13 +170,6 @@ contract ExternalFunctions is GlobalStore {
     // LendingPool Functions //
     ///////////////////////////
 
-    function getCurrentIndex(address asset)
-        external
-        view
-        returns (uint256, uint256){
-            return LendingPool.getCurrentIndex(state, asset);
-        }
-
     function getLogicBorrowOf(
         address asset,
         address user,
