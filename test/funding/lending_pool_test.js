@@ -194,4 +194,20 @@ contract('LendingPool', accounts => {
             /MARKET_ACCOUNT_IS_LIQUIDABLE_AFTER_BORROW/
         );
     });
+
+    it('can not borrow more than supply', async () => {
+        await addCollateral(u2, ETHAddr, toWei('5'), initTime);
+        await assert.rejects(
+            mineAt(() => hydro.borrow(USDAddr, toWei('1000'), 0, { from: u2 }), initTime),
+            /CONTRACT_BALANCE_NOT_ENOUGH/
+        );
+    });
+
+    it('can not withdraw from pool if free inventory not enough', async () => {
+        await mineAt(async () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }), initTime);
+        await assert.rejects(
+            mineAt(async () => hydro.unsupply(USDAddr, toWei('1000'), { from: u1 }), initTime),
+            /CONTRACT_BALANCE_NOT_ENOUGH/
+        );
+    });
 });
