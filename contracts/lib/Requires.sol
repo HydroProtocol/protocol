@@ -21,6 +21,7 @@ pragma experimental ABIEncoderV2;
 
 import "./Store.sol";
 import "../helper/StandardToken.sol";
+import "./Consts.sol";
 
 library Requires {
     function requireAssetExist(
@@ -86,7 +87,11 @@ library Requires {
         internal
         view
     {
-        require(state.cash[asset] <= StandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
+        if (asset==Consts.ETHEREUM_TOKEN_ADDRESS()){
+            require(state.cash[asset] <= address(this).balance, "CONTRACT_BALANCE_NOT_ENOUGH");
+        } else {
+            require(state.cash[asset] <= StandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
+        }
     }
 
     function requirePriceOracleAddressValid(

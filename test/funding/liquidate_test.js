@@ -201,7 +201,7 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.debtAsset, usdAsset.address);
         assert.equal(auctionDetails.collateralAsset, ethAsset.address);
         assert.equal(auctionDetails.leftCollateralAmount, toWei('1'));
-        assert.equal(auctionDetails.leftDebtAmount, '561643835616400');
+        assert.equal(auctionDetails.leftDebtAmount, '561643835616501');
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     });
 
@@ -258,11 +258,11 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.debtAsset, ethAsset.address);
         assert.equal(auctionDetails.collateralAsset, usdAsset.address);
         assert.equal(auctionDetails.leftCollateralAmount, toWei('100'));
-        assert.equal(auctionDetails.leftDebtAmount, '68493150684931');
+        assert.equal(auctionDetails.leftDebtAmount, '68493150684933');
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     });
 
-    it('should not be able to operator to liquidating account', async () => {
+    it('should not be able to operate liquidating account', async () => {
         await mineAt(
             () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
             time
@@ -504,7 +504,7 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     };
 
-    it('auction', async () => {
+    it('fill auction when ratio less than 1', async () => {
         const initiaior = accounts[0];
         await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
         await createLiquidatingAccount();
@@ -600,4 +600,99 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('0'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
     });
+
+    // it.only('fill auction when ratio more than 1', async () => {
+    //     const initiaior = accounts[0];
+    //     await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
+    //     await createLiquidatingAccount();
+
+    //     for (let i = 0; i < 148; i++) await mine(time);
+
+    //     let auctionDetails = await hydro.getAuctionDetails('0');
+
+    //     // the next block number ratio will be 150%
+    //     assert.equal(auctionDetails.ratio, toWei('1.49'));
+
+    //     const u1USDBalance1 = await hydro.balanceOf(usdAsset.address, u1);
+    //     const u1EthBalance1 = await hydro.balanceOf(ethAsset.address, u1);
+
+    //     const u2USDBalance1 = await hydro.balanceOf(usdAsset.address, u2);
+    //     const u2EthBalance1 = await hydro.balanceOf(ethAsset.address, u2);
+
+    //     const initiaiorUSDBalance1 = await hydro.balanceOf(usdAsset.address, initiaior);
+    //     const initiaiorEthBalance1 = await hydro.balanceOf(ethAsset.address, initiaior);
+
+    //     /////////////////////////////////////////////////////
+    //     // u1 has enough usd, pay 50 USD debt at ratio 150% //
+    //     /////////////////////////////////////////////////////
+    //     await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+
+    //     const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
+    //     const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
+
+    //     const u2USDBalance2 = await hydro.balanceOf(usdAsset.address, u2);
+    //     const u2EthBalance2 = await hydro.balanceOf(ethAsset.address, u2);
+
+    //     const initiaiorUSDBalance2 = await hydro.balanceOf(usdAsset.address, initiaior);
+    //     const initiaiorEthBalance2 = await hydro.balanceOf(ethAsset.address, initiaior);
+
+    //     assert.equal(u1USDBalance2.sub(u1USDBalance1).toString(), toWei('-50'));
+    //     assert.equal(u1EthBalance2.sub(u1EthBalance1).toString(), toWei('0.75')); // 0.5 * (50 / 100)
+
+    //     assert.equal(u2USDBalance2.sub(u2USDBalance1).toString(), toWei('0'));
+    //     assert.equal(u2EthBalance2.sub(u2EthBalance1).toString(), toWei('0'));
+
+    //     assert.equal(initiaiorUSDBalance2.sub(initiaiorUSDBalance1).toString(), toWei('0'));
+    //     assert.equal(initiaiorEthBalance2.sub(initiaiorEthBalance1).toString(), toWei('0'));
+
+    //     auctionDetails = await hydro.getAuctionDetails('0');
+    //     assert.equal(auctionDetails.leftCollateralAmount, toWei('0.25'));
+    //     assert.equal(auctionDetails.leftDebtAmount, toWei('50'));
+    //     assert.equal(auctionDetails.ratio, toWei('1.5'));
+
+    //     let accountDetails = await hydro.getAccountDetails(u2, marketID);
+    //     assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
+    //     assert.equal(accountDetails.debtsTotalUSDValue, toWei('50'));
+    //     assert.equal(accountDetails.balancesTotalUSDValue, toWei('25'));
+
+    //     // 49 blocks later
+    //     for (let i = 0; i < 49; i++) await mine(time);
+    //     auctionDetails = await hydro.getAuctionDetails('0');
+
+    //     // the next block number ratio will be 200%
+    //     assert.equal(auctionDetails.ratio, toWei('1.99'));
+
+    //     /////////////////////////////////////
+    //     // u1 pay 50 USD debt at ratio 200% //
+    //     /////////////////////////////////////
+    //     await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('80'), { from: u1 }), time);
+
+    //     const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
+    //     const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
+
+    //     const u2USDBalance3 = await hydro.balanceOf(usdAsset.address, u2);
+    //     const u2EthBalance3 = await hydro.balanceOf(ethAsset.address, u2);
+
+    //     const initiaiorUSDBalance3 = await hydro.balanceOf(usdAsset.address, initiaior);
+    //     const initiaiorEthBalance3 = await hydro.balanceOf(ethAsset.address, initiaior);
+
+    //     assert.equal(u1USDBalance3.sub(u1USDBalance2).toString(), toWei('-25'));
+    //     assert.equal(u1EthBalance3.sub(u1EthBalance2).toString(), toWei('0.25'));
+
+    //     assert.equal(u2USDBalance3.sub(u2USDBalance2).toString(), toWei('0'));
+    //     assert.equal(u2EthBalance3.sub(u2EthBalance2).toString(), toWei('0'));
+
+    //     assert.equal(initiaiorUSDBalance3.sub(initiaiorUSDBalance2).toString(), toWei('0'));
+    //     assert.equal(initiaiorEthBalance3.sub(initiaiorEthBalance2).toString(), toWei('0'));
+
+    //     // auctionDetails = await hydro.getAuctionDetails('0');
+    //     // assert.equal(auctionDetails.leftCollateralAmount, toWei('0'));
+    //     // assert.equal(auctionDetails.leftDebtAmount, toWei('50'));
+    //     // assert.equal(auctionDetails.ratio, toWei('1.5'));
+
+    //     // let accountDetails = await hydro.getAccountDetails(u2, marketID);
+    //     // assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
+    //     // assert.equal(accountDetails.debtsTotalUSDValue, toWei('50'));
+    //     // assert.equal(accountDetails.balancesTotalUSDValue, toWei('25'));
+    // });
 });
