@@ -2,6 +2,7 @@ const Hydro = artifacts.require('Hydro');
 const PriceOracle = artifacts.require('PriceOracle');
 const HydroToken = artifacts.require('HydroToken');
 const DefaultInterestModel = artifacts.require('DefaultInterestModel');
+const LendingPoolTokenFactory = artifacts.require('LendingPoolTokenFactory');
 
 module.exports = async (deployer, network) => {
     let hotAddress;
@@ -13,6 +14,8 @@ module.exports = async (deployer, network) => {
         hot = await HydroToken.deployed();
         hotAddress = hot.address;
     }
+    await deployer.deploy(LendingPoolTokenFactory);
+    await deployer.link(LendingPoolTokenFactory, Hydro);
     await deployer.deploy(DefaultInterestModel);
     await deployer.deploy(Hydro, hotAddress);
     await deployer.deploy(PriceOracle);

@@ -24,8 +24,9 @@ import "./lib/Requires.sol";
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
 import "./funding/LendingPool.sol";
-import "./exchange/Discount.sol";
+import "./exchange/Exchange.sol";
 import "./interfaces/IPriceOracle.sol";
+import "./funding/LendingPoolTokenFactory.sol";
 
 /**
  * Only owner can use this contract functions
@@ -97,7 +98,7 @@ contract Operations is Ownable, GlobalStore {
 
         state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
         state.assets[asset].interestModel = IInterestModel(interestModalAddress);
-        state.assets[asset].lendingPoolToken = new LendingPoolToken(
+        state.assets[asset].lendingPoolToken = LendingPoolTokenFactory.create(
             poolTokenName,
             poolTokenSymbol,
             poolTokenDecimals
