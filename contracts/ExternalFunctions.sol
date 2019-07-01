@@ -34,7 +34,7 @@ import "./lib/Types.sol";
 import "./lib/Requires.sol";
 
 /**
- * A collection of wrappers for all external methods in the system
+ * A collection of wrappers for all external methods in the protocol
  */
 contract ExternalFunctions is GlobalStore {
 
