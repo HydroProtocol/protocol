@@ -6,6 +6,7 @@ const PriceOracle = artifacts.require('./PriceOracle.sol');
 
 const { newMarket, depositMarket } = require('../utils/assets');
 const { toWei, pp, getUserKey, logGas } = require('../utils');
+const { supply, borrow, transfer } = require('../../sdk/sdk');
 const { mineAt, mine } = require('../utils/evm');
 // const { buildOrder } = require('../utils/order');
 
@@ -65,8 +66,8 @@ contract('Liquidate', accounts => {
         ethAsset = res.baseAsset;
         usdAsset = res.quoteAsset;
 
-        await mineAt(() => hydro.supply(usdAsset.address, toWei('10000'), { from: u1 }), time);
-        await mineAt(() => hydro.supply(ethAsset.address, toWei('10'), { from: u1 }), time);
+        await mineAt(() => supply(usdAsset.address, toWei('10000'), { from: u1 }), time);
+        await mineAt(() => supply(ethAsset.address, toWei('10'), { from: u1 }), time);
     });
 
     it('should be a health position if there is no debt', async () => {
@@ -80,10 +81,7 @@ contract('Liquidate', accounts => {
     });
 
     it("should be a health position if there aren't many debts", async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
         let accountDetails = await hydro.getAccountDetails(u2, marketID);
 
         assert.equal(accountDetails.liquidatable, false);
@@ -95,10 +93,7 @@ contract('Liquidate', accounts => {
     });
 
     it('should be a unhealthy position if there are too many debts', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         // ether price drop to 10
         await mineAt(
@@ -125,10 +120,7 @@ contract('Liquidate', accounts => {
     });
 
     it('liquidation without debt should not result in an auction', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         // u2 has 100 usd debt
         assert.equal(await hydro.getAmountBorrowed(usdAsset.address, u2, marketID), toWei('100'));
@@ -160,10 +152,7 @@ contract('Liquidate', accounts => {
     });
 
     it('liquidation with debt left should result in an auction #1', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         // u2 has 100 usd debt
         assert.equal(await hydro.getAmountBorrowed(usdAsset.address, u2, marketID), toWei('100'));
@@ -201,14 +190,14 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.debtAsset, usdAsset.address);
         assert.equal(auctionDetails.collateralAsset, ethAsset.address);
         assert.equal(auctionDetails.leftCollateralAmount, toWei('1'));
-        assert.equal(auctionDetails.leftDebtAmount, '561643835616400');
+        assert.equal(auctionDetails.leftDebtAmount, '561643835616501');
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     });
 
     it('liquidation with debt left should result in an auction #2', async () => {
         // this test will borrow eth, and use usd as collateral
         await depositMarket(marketID, usdAsset, u2, toWei('100'));
-        await hydro.transfer(
+        await transfer(
             ethAsset.address,
             {
                 category: 1,
@@ -224,10 +213,7 @@ contract('Liquidate', accounts => {
             { from: u2 }
         );
 
-        await mineAt(
-            () => hydro.borrow(ethAsset.address, toWei('1'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, ethAsset.address, toWei('1'), { from: u2 }), time);
         // u2 has 1 eth debt
         assert.equal(await hydro.getAmountBorrowed(ethAsset.address, u2, marketID), toWei('1'));
         // u2 has 100 usd and 1 eth in account
@@ -258,15 +244,12 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.debtAsset, ethAsset.address);
         assert.equal(auctionDetails.collateralAsset, usdAsset.address);
         assert.equal(auctionDetails.leftCollateralAmount, toWei('100'));
-        assert.equal(auctionDetails.leftDebtAmount, '68493150684931');
+        assert.equal(auctionDetails.leftDebtAmount, '68493150684933');
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     });
 
-    it('should not be able to operator to liquidating account', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
-            time
-        );
+    it('should not be able to operate liquidating account', async () => {
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         // ether price drop to 10
         await mineAt(
@@ -290,7 +273,7 @@ contract('Liquidate', accounts => {
 
         // can't transfer funds out
         await assert.rejects(
-            hydro.transfer(
+            transfer(
                 ethAsset.address,
                 {
                     category: 1,
@@ -312,10 +295,7 @@ contract('Liquidate', accounts => {
     });
 
     it('should return correct transferable amount #1', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('50'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('50'), { from: u2 }), time);
 
         // Collateral:
         //   1 eth  = 100USD
@@ -335,10 +315,7 @@ contract('Liquidate', accounts => {
     });
 
     it('should return correct transferable amount #2', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         // Collateral:
         //   1 eth  = 100USD
@@ -358,10 +335,7 @@ contract('Liquidate', accounts => {
     });
 
     it('should return correct transferable amount #3', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('200'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('200'), { from: u2 }), time);
 
         // Collateral:
         //   1 eth  = 100USD
@@ -380,10 +354,7 @@ contract('Liquidate', accounts => {
     });
 
     it('should be able to transfer out some asset when the account has more than enough collateral', async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('50'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('50'), { from: u2 }), time);
 
         // Collateral:
         //   1 eth  = 100USD
@@ -400,7 +371,7 @@ contract('Liquidate', accounts => {
 
         // can withdraw 50 usd
         await mineAt(() => {
-            return hydro.transfer(
+            return transfer(
                 usdAsset.address,
                 {
                     category: 1,
@@ -420,7 +391,7 @@ contract('Liquidate', accounts => {
         // cant't withdraw even a little ether
         await assert.rejects(
             mineAt(() => {
-                return hydro.transfer(
+                return transfer(
                     ethAsset.address,
                     {
                         category: 1,
@@ -441,10 +412,7 @@ contract('Liquidate', accounts => {
     });
 
     const createLiquidatingAccount = async () => {
-        await mineAt(
-            () => hydro.borrow(usdAsset.address, toWei('100'), marketID, { from: u2 }),
-            time
-        );
+        await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         await mineAt(
             () =>
@@ -455,7 +423,7 @@ contract('Liquidate', accounts => {
         );
 
         await mineAt(() => {
-            return hydro.transfer(
+            return transfer(
                 usdAsset.address,
                 {
                     category: 1,
@@ -504,7 +472,7 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     };
 
-    it('auction', async () => {
+    it('fill auction when ratio less than 1', async () => {
         const initiaior = accounts[0];
         await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
         await createLiquidatingAccount();
@@ -599,5 +567,107 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal); // <- return to normal
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('0'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
+    });
+
+    it('fill auction when ratio more than 1', async () => {
+        const initiaior = accounts[0];
+        await hydro.updateInsuranceRatio(toWei('0.5'));
+        await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
+        await createLiquidatingAccount();
+
+        time = time + 86400 * 90;
+        for (let i = 0; i < 147; i++) await mine(time);
+        await mineAt(async () => supply(usdAsset.address, '0', { from: u1 }), time);
+        assert.equal(
+            (await hydro.getInsuranceBalance(usdAsset.address)).toString(),
+            '25273972602749500'
+        );
+
+        let auctionDetails = await hydro.getAuctionDetails('0');
+
+        // the next block number ratio will be 150%
+        assert.equal(auctionDetails.ratio, toWei('1.49'));
+
+        const u1USDBalance1 = await hydro.balanceOf(usdAsset.address, u1);
+        const u1EthBalance1 = await hydro.balanceOf(ethAsset.address, u1);
+
+        const u2USDBalance1 = await hydro.balanceOf(usdAsset.address, u2);
+        const u2EthBalance1 = await hydro.balanceOf(ethAsset.address, u2);
+
+        const initiaiorUSDBalance1 = await hydro.balanceOf(usdAsset.address, initiaior);
+        const initiaiorEthBalance1 = await hydro.balanceOf(ethAsset.address, initiaior);
+
+        /////////////////////////////////////////////////////
+        // u1 has enough usd, pay 50 USD debt at ratio 150% //
+        /////////////////////////////////////////////////////
+        // await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+
+        // const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
+        // const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
+
+        // const u2USDBalance2 = await hydro.balanceOf(usdAsset.address, u2);
+        // const u2EthBalance2 = await hydro.balanceOf(ethAsset.address, u2);
+
+        // const initiaiorUSDBalance2 = await hydro.balanceOf(usdAsset.address, initiaior);
+        // const initiaiorEthBalance2 = await hydro.balanceOf(ethAsset.address, initiaior);
+
+        // assert.equal(u1USDBalance2.sub(u1USDBalance1).toString(), toWei('-50'));
+        // assert.equal(u1EthBalance2.sub(u1EthBalance1).toString(), '749621081946249087');
+
+        // assert.equal(u2USDBalance2.sub(u2USDBalance1).toString(), toWei('0'));
+        // assert.equal(u2EthBalance2.sub(u2EthBalance1).toString(), toWei('0'));
+
+        // assert.equal(initiaiorUSDBalance2.sub(initiaiorUSDBalance1).toString(), toWei('0'));
+        // assert.equal(initiaiorEthBalance2.sub(initiaiorEthBalance1).toString(), toWei('0'));
+
+        // auctionDetails = await hydro.getAuctionDetails('0');
+        // assert.equal(auctionDetails.leftCollateralAmount, '250378918053750913');
+        // assert.equal(auctionDetails.leftDebtAmount, toWei('50'));
+        // assert.equal(auctionDetails.ratio, toWei('1.5'));
+
+        // let accountDetails = await hydro.getAccountDetails(u2, marketID);
+        // assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
+        // assert.equal(accountDetails.debtsTotalUSDValue, toWei('50'));
+        // assert.equal(accountDetails.balancesTotalUSDValue, toWei('25'));
+
+        // // 49 blocks later
+        // for (let i = 0; i < 49; i++) await mine(time);
+        // auctionDetails = await hydro.getAuctionDetails('0');
+
+        // // the next block number ratio will be 200%
+        // assert.equal(auctionDetails.ratio, toWei('1.99'));
+
+        // /////////////////////////////////////
+        // // u1 pay 50 USD debt at ratio 200% //
+        // /////////////////////////////////////
+        // await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('80'), { from: u1 }), time);
+
+        // const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
+        // const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
+
+        // const u2USDBalance3 = await hydro.balanceOf(usdAsset.address, u2);
+        // const u2EthBalance3 = await hydro.balanceOf(ethAsset.address, u2);
+
+        // const initiaiorUSDBalance3 = await hydro.balanceOf(usdAsset.address, initiaior);
+        // const initiaiorEthBalance3 = await hydro.balanceOf(ethAsset.address, initiaior);
+
+        // assert.equal(u1USDBalance3.sub(u1USDBalance2).toString(), toWei('-25'));
+        // assert.equal(u1EthBalance3.sub(u1EthBalance2).toString(), toWei('0.25'));
+
+        // assert.equal(u2USDBalance3.sub(u2USDBalance2).toString(), toWei('0'));
+        // assert.equal(u2EthBalance3.sub(u2EthBalance2).toString(), toWei('0'));
+
+        // assert.equal(initiaiorUSDBalance3.sub(initiaiorUSDBalance2).toString(), toWei('0'));
+        // assert.equal(initiaiorEthBalance3.sub(initiaiorEthBalance2).toString(), toWei('0'));
+
+        // auctionDetails = await hydro.getAuctionDetails('0');
+        // assert.equal(auctionDetails.leftCollateralAmount, toWei('0'));
+        // assert.equal(auctionDetails.leftDebtAmount, toWei('50'));
+        // assert.equal(auctionDetails.ratio, toWei('1.5'));
+
+        // let accountDetails = await hydro.getAccountDetails(u2, marketID);
+        // assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
+        // assert.equal(accountDetails.debtsTotalUSDValue, toWei('50'));
+        // assert.equal(accountDetails.balancesTotalUSDValue, toWei('25'));
     });
 });

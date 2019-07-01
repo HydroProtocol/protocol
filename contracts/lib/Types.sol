@@ -29,8 +29,7 @@ import "./Decimal.sol";
 
 import "../interfaces/IInterestModel.sol";
 import "../interfaces/IPriceOracle.sol";
-
-import "../funding/LendingPoolToken.sol";
+import "../interfaces/ILendingPoolToken.sol";
 
 library Types {
     enum AuctionStatus {
@@ -81,7 +80,7 @@ library Types {
     }
 
     struct Asset {
-        LendingPoolToken  lendingPoolToken;
+        ILendingPoolToken  lendingPoolToken;
         IPriceOracle      priceOracle;
         IInterestModel    interestModel;
     }
@@ -237,7 +236,7 @@ library Auction {
         uint256 increasedRatio = (block.number - auction.startBlockNumber).mul(state.markets[auction.marketID].auctionRatioPerBlock);
         uint256 initRatio = state.markets[auction.marketID].auctionRatioStart;
         uint256 totalRatio = initRatio.add(increasedRatio);
-        return totalRatio < Decimal.one() ? totalRatio : Decimal.one();
+        return totalRatio;
     }
 }
 

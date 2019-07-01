@@ -51,6 +51,8 @@ library Transfer {
 
         mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
         toBalances[asset] = toBalances[asset].add(amount);
+
+        state.cash[asset] = state.cash[asset].add(amount);
         Events.logDeposit(asset, from, toBalancePath, amount);
     }
 
@@ -76,6 +78,8 @@ library Transfer {
         } else {
             SafeERC20.safeTransfer(asset, to, amount);
         }
+
+        state.cash[asset] = state.cash[asset].sub(amount);
 
         Events.logWithdraw(asset, fromBalancePath, to, amount);
     }

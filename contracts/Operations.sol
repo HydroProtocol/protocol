@@ -20,12 +20,9 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./GlobalStore.sol";
-import "./lib/Requires.sol";
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
-import "./funding/LendingPool.sol";
-import "./exchange/Discount.sol";
-import "./interfaces/IPriceOracle.sol";
+import "./OperationsLib.sol";
 
 /**
  * Only owner can use this contract functions
@@ -38,15 +35,7 @@ contract Operations is Ownable, GlobalStore {
         public
         onlyOwner
     {
-        Requires.requireMarketAssetsValid(state, market);
-        Requires.requireMarketNotExist(state, market);
-        Requires.requireDecimalLessOrEquanThanOne(market.auctionRatioStart);
-        Requires.requireDecimalLessOrEquanThanOne(market.auctionRatioPerBlock);
-        Requires.requireDecimalGreaterThanOne(market.liquidateRate);
-        Requires.requireDecimalGreaterThanOne(market.withdrawRate);
-
-        state.markets[state.marketsCount++] = market;
-        Events.logCreateMarket(market);
+        OperationsLib.createMarket(state, market);
     }
 
     function updateMarket(
@@ -59,18 +48,8 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        Requires.requireMarketIDExist(state, marketID);
-        Requires.requireDecimalLessOrEquanThanOne(newAuctionRatioStart);
-        Requires.requireDecimalLessOrEquanThanOne(newAuctionRatioPerBlock);
-        Requires.requireDecimalGreaterThanOne(newLiquidateRate);
-        Requires.requireDecimalGreaterThanOne(newWithdrawRate);
-
-        state.markets[marketID].auctionRatioStart = newAuctionRatioStart;
-        state.markets[marketID].auctionRatioPerBlock = newAuctionRatioPerBlock;
-        state.markets[marketID].liquidateRate = newLiquidateRate;
-        state.markets[marketID].withdrawRate = newWithdrawRate;
-
-        Events.logUpdateMarket(
+        OperationsLib.updateMarket(
+            state,
             marketID,
             newAuctionRatioStart,
             newAuctionRatioPerBlock,
@@ -90,24 +69,14 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        Requires.requirePriceOracleAddressValid(oracleAddress);
-        Requires.requireAssetNotExist(state, asset);
-
-        LendingPool.initializeAssetLendingPool(state, asset);
-
-        state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
-        state.assets[asset].interestModel = IInterestModel(interestModalAddress);
-        state.assets[asset].lendingPoolToken = new LendingPoolToken(
+        OperationsLib.createAsset(
+            state,
+            asset,
+            oracleAddress,
+            interestModalAddress,
             poolTokenName,
             poolTokenSymbol,
             poolTokenDecimals
-        );
-
-        Events.logCreateAsset(
-            asset,
-            oracleAddress,
-            address(state.assets[asset].lendingPoolToken),
-            interestModalAddress
         );
     }
 
@@ -119,13 +88,8 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        Requires.requirePriceOracleAddressValid(oracleAddress);
-        Requires.requireAssetExist(state, asset);
-
-        state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
-        state.assets[asset].interestModel = IInterestModel(interestModalAddress);
-
-        Events.logUpdateAsset(
+        OperationsLib.updateAsset(
+            state,
             asset,
             oracleAddress,
             interestModalAddress
@@ -141,8 +105,10 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        state.exchange.discountConfig = newConfig;
-        Events.logUpdateDiscountConfig(newConfig);
+        OperationsLib.updateDiscountConfig(
+            state,
+            newConfig
+        );
     }
 
     function updateAuctionInitiatorRewardRatio(
@@ -151,10 +117,10 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        Requires.requireDecimalLessOrEquanThanOne(newInitiatorRewardRatio);
-
-        state.auction.initiatorRewardRatio = newInitiatorRewardRatio;
-        Events.logUpdateAuctionInitiatorRewardRatio(newInitiatorRewardRatio);
+        OperationsLib.updateAuctionInitiatorRewardRatio(
+            state,
+            newInitiatorRewardRatio
+        );
     }
 
     function updateInsuranceRatio(
@@ -163,9 +129,9 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        Requires.requireDecimalLessOrEquanThanOne(newInsuranceRatio);
-
-        state.pool.insuranceRatio = newInsuranceRatio;
-        Events.logUpdateInsuranceRatio(newInsuranceRatio);
+        OperationsLib.updateInsuranceRatio(
+            state,
+            newInsuranceRatio
+        );
     }
 }

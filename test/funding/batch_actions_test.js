@@ -5,6 +5,7 @@ const Hydro = artifacts.require('./Hydro.sol');
 const Ethers = require('ethers');
 const { toWei, logGas } = require('../utils');
 const { newMarket } = require('../utils/assets');
+const { deposit } = require('../../sdk/sdk');
 
 const encoder = new Ethers.utils.AbiCoder();
 
@@ -71,7 +72,7 @@ contract('Batch', accounts => {
 
     it('withdraw', async () => {
         // prepare
-        await hydro.deposit(ethAddress, toWei('1'), { value: toWei('1') });
+        await deposit(ethAddress, toWei('1'), { value: toWei('1') });
         const balanceBefore = await hydro.balanceOf(ethAddress, u1);
         assert.equal(balanceBefore.toString(), toWei('1'));
 
@@ -94,7 +95,7 @@ contract('Batch', accounts => {
         // prepare
         await createMarket();
 
-        await hydro.deposit(ethAddress, toWei('1'), { value: toWei('1') });
+        await deposit(ethAddress, toWei('1'), { value: toWei('1') });
         const balanceBefore = await hydro.balanceOf(ethAddress, u1);
         assert.equal(balanceBefore.toString(), toWei('1'));
 

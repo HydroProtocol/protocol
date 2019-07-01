@@ -4,6 +4,7 @@ const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
 const BigNumber = require('bignumber.js');
 const { toWei, logGas } = require('./index');
+const { deposit, transfer } = require('../../sdk/sdk');
 
 BigNumber.config({
     EXPONENTIAL_AT: 1000
@@ -15,7 +16,7 @@ const depositAsset = async (asset, user, amount) => {
     const owner = accounts[0];
 
     if (asset.symbol == 'ETH') {
-        await hydro.deposit(asset.address, amount, {
+        await deposit(asset.address, amount, {
             from: user,
             value: amount
         });
@@ -26,7 +27,7 @@ const depositAsset = async (asset, user, amount) => {
         await asset.approve(hydro.address, amount, {
             from: user
         });
-        await hydro.deposit(asset.address, amount, {
+        await deposit(asset.address, amount, {
             from: user
         });
     }
@@ -35,7 +36,7 @@ const depositAsset = async (asset, user, amount) => {
 const depositMarket = async (marketID, asset, user, amount) => {
     const hydro = await Hydro.deployed();
     await depositAsset(asset, user, amount);
-    await hydro.transfer(
+    await transfer(
         asset.address,
         {
             category: 0,
@@ -102,20 +103,6 @@ const newMarket = async marketConfig => {
         quoteAsset,
         marketID
     };
-};
-
-const deposit = async (token, user, amount) => {
-    const hydro = await Hydro.deployed();
-    await hydro.deposit(token.address, amount, {
-        from: user
-    });
-};
-
-const supply = async (token, user, amount) => {
-    const hydro = await Hydro.deployed();
-    await hydro.supply(token.address, amount, {
-        from: user
-    });
 };
 
 const createAsset = async assetConfig => {
@@ -201,6 +188,5 @@ module.exports = {
     createAssets,
     createAsset,
     depositMarket,
-    supply,
     newMarket
 };

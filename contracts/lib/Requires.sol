@@ -20,6 +20,9 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./Store.sol";
+import "./Consts.sol";
+import "./Decimal.sol";
+import "../interfaces/IStandardToken.sol";
 
 library Requires {
     function requireAssetExist(
@@ -76,6 +79,20 @@ library Requires {
         require(market.baseAsset != market.quoteAsset, "BASE_QUOTE_DUPLICATED");
         require(isAssetExist(state, market.baseAsset), "MARKET_BASE_ASSET_NOT_EXIST");
         require(isAssetExist(state, market.quoteAsset), "MARKET_QUOTE_ASSET_NOT_EXIST");
+    }
+
+    function requireCashLessThanOrEqualContractBalance(
+        Store.State storage state,
+        address asset
+    )
+        internal
+        view
+    {
+        if (asset==Consts.ETHEREUM_TOKEN_ADDRESS()){
+            require(state.cash[asset] <= address(this).balance, "CONTRACT_BALANCE_NOT_ENOUGH");
+        } else {
+            require(state.cash[asset] <= IStandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
+        }
     }
 
     function requirePriceOracleAddressValid(

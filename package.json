@@ -8,12 +8,12 @@
     "node": "ganache-cli -l 0x1fffffffffffff -g 1 --allowUnlimitedContractSize -m \" elephant potato mind luggage remind desk tourist valve license flame favorite tilt\""
   },
   "dependencies": {
+    "@davidqhr/ganache-cli": "6.4.3",
     "bignumber.js": "^7.2.1",
     "debug": "^4.1.1",
     "ethereumjs-util": "^5.2.0",
-    "@davidqhr/ganache-cli": "6.4.3",
     "truffle": "5.0.22",
-    "truffle-privatekey-provider": "^1.1.0"
+    "truffle-hdwallet-provider": "^1.0.12"
   },
   "devDependencies": {
     "ethereumjs-abi": "^0.6.7",

@@ -22,16 +22,16 @@ pragma solidity ^0.5.8;
  * EIP712 Ethereum typed structured data hashing and signing
  */
 library EIP712 {
-    string internal constant DOMAIN_NAME = "Hydro Protocol";
+    string private constant DOMAIN_NAME = "Hydro Protocol";
 
     /**
      * Hash of the EIP712 Domain Separator Schema
      */
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH = keccak256(
+    bytes32 private constant EIP712_DOMAIN_TYPEHASH = keccak256(
         abi.encodePacked("EIP712Domain(string name)")
     );
 
-    bytes32 internal constant DOMAIN_SEPARATOR = keccak256(
+    bytes32 private constant DOMAIN_SEPARATOR = keccak256(
         abi.encodePacked(
             EIP712_DOMAIN_TYPEHASH,
             keccak256(bytes(DOMAIN_NAME))

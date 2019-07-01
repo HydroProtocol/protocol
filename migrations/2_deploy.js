@@ -3,6 +3,10 @@ const PriceOracle = artifacts.require('PriceOracle');
 const HydroToken = artifacts.require('HydroToken');
 const DefaultInterestModel = artifacts.require('DefaultInterestModel');
 
+const Auctions = artifacts.require('Auctions');
+const BatchActions = artifacts.require('BatchActions');
+const OperationsLib = artifacts.require('OperationsLib');
+
 module.exports = async (deployer, network) => {
     let hotAddress;
 
@@ -13,6 +17,15 @@ module.exports = async (deployer, network) => {
         hot = await HydroToken.deployed();
         hotAddress = hot.address;
     }
+
+    await deployer.deploy(BatchActions);
+    await deployer.deploy(Auctions);
+    await deployer.deploy(OperationsLib);
+
+    await deployer.link(BatchActions, Hydro);
+    await deployer.link(OperationsLib, Hydro);
+    await deployer.link(Auctions, Hydro);
+
     await deployer.deploy(DefaultInterestModel);
     await deployer.deploy(Hydro, hotAddress);
     await deployer.deploy(PriceOracle);

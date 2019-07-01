@@ -1,4 +1,4 @@
-var PrivateKeyProvider = require('truffle-privatekey-provider');
+const HDWalletProvider = require('truffle-hdwallet-provider');
 
 module.exports = {
     networks: {
@@ -10,19 +10,39 @@ module.exports = {
             gasPrice: 1
         },
         production: {
-            provider: () => new PrivateKeyProvider(process.env.PK, 'https://mainnet.infura.io'),
+            provider: () => new HDWalletProvider(process.env.PK, 'https://mainnet.infura.io'),
             network_id: 1,
             gasPrice: 10000000000,
             gas: 4000000
         },
         ropsten: {
-            provider: () => new PrivateKeyProvider(process.env.PK, 'https://ropsten.infura.io'),
+            provider: () =>
+                new HDWalletProvider(
+                    process.env.PK,
+                    'https://ropsten.infura.io/v3/d4470e7b7221494caaaa66d3a353c5dc'
+                ),
             network_id: 3,
+            gas: 8000000,
             gasPrice: 10000000000
         },
         rinkeby: {
-            provider: () => new PrivateKeyProvider(process.env.PK, 'https://rinkeby.infura.io'),
+            provider: () =>
+                new HDWalletProvider(
+                    process.env.PK,
+                    'https://rinkeby.infura.io/v3/d4470e7b7221494caaaa66d3a353c5dc'
+                ),
             network_id: 4,
+            gas: 7000000,
+            gasPrice: 10000000000
+        },
+        kovan: {
+            provider: () =>
+                new HDWalletProvider(
+                    process.env.PK,
+                    'https://kovan.infura.io/v3/d4470e7b7221494caaaa66d3a353c5dc'
+                ),
+            network_id: 42,
+            gas: 8000000,
             gasPrice: 10000000000
         },
         coverage: {
@@ -42,13 +62,19 @@ module.exports = {
                     runs: 200
                 }
             }
-        }
+        },
 
         // If you have 0.5.8 solc installed locally, you can use the following config to speed up tests.
         //
-        // solc: {
-        //     version: 'native'
-        // }
+        solc: {
+            version: 'native',
+            settings: {
+                optimizer: {
+                    enabled: true,
+                    runs: 200
+                }
+            }
+        }
     },
     mocha: {
         enableTimeouts: false,

@@ -24,7 +24,6 @@ import "../lib/Store.sol";
 import "../lib/Decimal.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
-import "../funding/Auctions.sol";
 import "../lib/Types.sol";
 import "../lib/ExternalCaller.sol";
 import "./LendingPool.sol";
@@ -71,7 +70,7 @@ library CollateralAccounts {
         ) / Consts.ORACLE_PRICE_BASE();
 
         if (details.status == Types.CollateralAccountStatus.Normal) {
-            details.liquidatable = details.balancesTotalUSDValue < Decimal.mul(details.debtsTotalUSDValue, market.liquidateRate);
+            details.liquidatable = details.balancesTotalUSDValue < Decimal.mulCeil(details.debtsTotalUSDValue, market.liquidateRate);
         } else {
             details.liquidatable = false;
         }
@@ -111,8 +110,8 @@ library CollateralAccounts {
             return 0;
         }
 
-        // If and only if balance USD value is larger than transferableThresholdUSDValue, the user is able to withdraw some assets
-        uint256 transferableThresholdUSDValue = Decimal.mul(
+        // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
+        uint256 transferableThresholdUSDValue = Decimal.mulFloor(
             details.debtsTotalUSDValue,
             state.markets[marketID].withdrawRate
         );
@@ -135,6 +134,7 @@ library CollateralAccounts {
 
         return transferableAmount;
     }
+<<<<<<< HEAD
 
     /**
      * Liquidate a collateral account, potentially resulting in the start of a new auction
@@ -225,4 +225,6 @@ library CollateralAccounts {
 
         return (true, newAuctionID);
     }
+=======
+>>>>>>> 96b7f71315e2d52fc5d229489bf5ac66a98773ae
 }

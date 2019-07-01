@@ -44,7 +44,7 @@ library Decimal {
         return d.add(BASE);
     }
 
-    function mul(
+    function mulFloor(
         uint256 target,
         uint256 d
     )
@@ -53,6 +53,17 @@ library Decimal {
         returns (uint256)
     {
         return target.mul(d) / BASE;
+    }
+
+    function mulCeil(
+        uint256 target,
+        uint256 d
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        return target.mul(d).divCeil(BASE);
     }
 
     function divFloor(
@@ -74,7 +85,6 @@ library Decimal {
         pure
         returns (uint256)
     {
-        // return target.mul(BASE).add(d).sub(1).div(d).mul(d);
-        return target.mul(BASE * 10).div(d).add(5) / 10;
+        return target.mul(BASE).divCeil(d);
     }
 }

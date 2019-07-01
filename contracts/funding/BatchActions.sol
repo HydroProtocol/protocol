@@ -58,7 +58,7 @@ library BatchActions {
         Store.State storage state,
         Action[] memory actions
     )
-        internal
+        public
     {
         for (uint256 i = 0; i < actions.length; i++) {
             Action memory action = actions[i];
