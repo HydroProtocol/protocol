@@ -26,8 +26,23 @@ module.exports = {
             gasPrice: 10000000000
         },
         rinkeby: {
-            provider: () => new HDWalletProvider(process.env.PK, 'https://rinkeby.infura.io'),
+            provider: () =>
+                new HDWalletProvider(
+                    process.env.PK,
+                    'https://rinkeby.infura.io/v3/d4470e7b7221494caaaa66d3a353c5dc'
+                ),
             network_id: 4,
+            gas: 7000000,
+            gasPrice: 10000000000
+        },
+        kovan: {
+            provider: () =>
+                new HDWalletProvider(
+                    process.env.PK,
+                    'https://kovan.infura.io/v3/d4470e7b7221494caaaa66d3a353c5dc'
+                ),
+            network_id: 42,
+            gas: 8000000,
             gasPrice: 10000000000
         },
         coverage: {

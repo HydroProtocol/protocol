@@ -21,6 +21,7 @@ pragma experimental ABIEncoderV2;
 
 import "./Store.sol";
 import "./Consts.sol";
+import "./Decimal.sol";
 import "../interfaces/IStandardToken.sol";
 
 library Requires {

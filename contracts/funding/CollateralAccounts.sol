@@ -24,7 +24,6 @@ import "../lib/Store.sol";
 import "../lib/Decimal.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
-import "../funding/Auctions.sol";
 import "../lib/Types.sol";
 import "../lib/ExternalCaller.sol";
 import "./LendingPool.sol";
