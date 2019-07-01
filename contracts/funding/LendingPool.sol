@@ -291,12 +291,12 @@ library LendingPool {
         // remove compensationAmount from insurance balances
         state.pool.insuranceBalances[debtAsset] = SafeMath.sub(
             state.pool.insuranceBalances[debtAsset],
-            payout
+            compensationAmount
         );
 
         // all suppliers pay debt if insurance not enough
         if (compensationAmount < debtAmount){
-            lose(
+            recognizeLoss(
                 state,
                 debtAsset,
                 debtAmount.sub(compensationAmount)

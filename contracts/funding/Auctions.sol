@@ -195,11 +195,7 @@ library Auctions {
     }
 
     /**
-     * An auction is 'expired' if it remains unfilled at the end of the allocated time.
-     * In this case, the auction should be closed.
-     * The insurance mechanism will try to cover the loss, and in return take the collateral.
-     * If losses remain after insurance is exhausted, the amount is socialized by all lenders in the lending pool.
-     *
+
      * Msg.sender only need to afford bidderRepayAmount and get collateralAmount
      * insurance and suppliers will cover the badDebtAmount
      */
@@ -213,7 +209,7 @@ library Auctions {
         returns (uint256, uint256) // bidderRepay collateral
     {
 
-        uint256 leftDebtAmount = LendingPool.getBorrowedAmount(
+        uint256 leftDebtAmount = LendingPool.getAmountBorrowed(
             state,
             auction.debtAsset,
             auction.borrower,
@@ -243,7 +239,7 @@ library Auctions {
         }
 
         // gather repay capital
-        LendingPool.compensate(state, auction.debtAsset, actualRepay.sub(actualBidderRepay));
+        LendingPool.claimInsurance(state, auction.debtAsset, actualRepay.sub(actualBidderRepay));
 
         state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
             state.balances[msg.sender][auction.debtAsset],

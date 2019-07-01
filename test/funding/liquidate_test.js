@@ -496,7 +496,7 @@ contract('Liquidate', accounts => {
         /////////////////////////////////////////////////////
         // u1 has enough usd, pay 50 USD debt at ratio 50% //
         /////////////////////////////////////////////////////
-        await mineAt(() => hydro.fillAuction(0, toWei('50'), { from: u1 }), time);
+        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
 
         const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
@@ -537,7 +537,7 @@ contract('Liquidate', accounts => {
         // u1 pay 50 USD debt at ratio 80% //
         /////////////////////////////////////
 
-        await mineAt(() => hydro.fillAuction(0, toWei('50'), { from: u1 }), time);
+        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
 
         const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
