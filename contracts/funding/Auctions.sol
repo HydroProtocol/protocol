@@ -176,7 +176,7 @@ library Auctions {
         uint32 auctionID,
         uint256 repayAmount
     )
-        internal
+        external
     {
         Types.Auction storage auction = state.auction.auctions[auctionID];
         uint256 ratio = auction.ratio(state);

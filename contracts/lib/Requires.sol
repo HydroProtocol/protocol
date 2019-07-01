@@ -20,8 +20,8 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "./Store.sol";
-import "../helper/StandardToken.sol";
 import "./Consts.sol";
+import "../interfaces/IStandardToken.sol";
 
 library Requires {
     function requireAssetExist(
@@ -90,7 +90,7 @@ library Requires {
         if (asset==Consts.ETHEREUM_TOKEN_ADDRESS()){
             require(state.cash[asset] <= address(this).balance, "CONTRACT_BALANCE_NOT_ENOUGH");
         } else {
-            require(state.cash[asset] <= StandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
+            require(state.cash[asset] <= IStandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
         }
     }
 
