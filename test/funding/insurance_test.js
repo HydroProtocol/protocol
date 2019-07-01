@@ -2,6 +2,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const { createAssets, newMarket } = require('../utils/assets');
 const { toWei, logGas } = require('../utils');
+const { supply, transfer, borrow } = require('../../sdk/sdk');
 const { mineAt, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const PriceOracle = artifacts.require('./PriceOracle.sol');
@@ -56,7 +57,7 @@ contract('Insurance', accounts => {
     const addCollateral = async (user, asset, amount, timestamp) => {
         await mineAt(
             async () =>
-                hydro.transfer(
+                transfer(
                     asset,
                     {
                         category: 0,
@@ -78,9 +79,9 @@ contract('Insurance', accounts => {
     };
 
     beforeEach(async () => {
-        await mineAt(async () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }), initTime);
+        await mineAt(async () => supply(USDAddr, toWei('1000'), { from: u1 }), initTime);
         await addCollateral(u2, ETHAddr, toWei('1'), initTime);
-        await mineAt(async () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }), initTime);
+        await mineAt(async () => borrow(0, USDAddr, toWei('100'), { from: u2 }), initTime);
     });
 
     it('check interest rate', async () => {
@@ -90,7 +91,7 @@ contract('Insurance', accounts => {
     });
 
     it('check insurance balance', async () => {
-        await mineAt(async () => hydro.supply(USDAddr, '0', { from: u1 }), initTime + 86400 * 90);
+        await mineAt(async () => supply(USDAddr, '0', { from: u1 }), initTime + 86400 * 90);
         assert.equal((await hydro.getInsuranceBalance(USDAddr)).toString(), '61643835616438600');
     });
 });

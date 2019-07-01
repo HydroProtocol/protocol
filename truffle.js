@@ -1,4 +1,4 @@
-var PrivateKeyProvider = require('truffle-privatekey-provider');
+const HDWalletProvider = require('truffle-hdwallet-provider');
 
 module.exports = {
     networks: {
@@ -10,23 +10,23 @@ module.exports = {
             gasPrice: 1
         },
         production: {
-            provider: () => new PrivateKeyProvider(process.env.PK, 'https://mainnet.infura.io'),
+            provider: () => new HDWalletProvider(process.env.PK, 'https://mainnet.infura.io'),
             network_id: 1,
             gasPrice: 10000000000,
             gas: 4000000
         },
         ropsten: {
             provider: () =>
-                new PrivateKeyProvider(
+                new HDWalletProvider(
                     process.env.PK,
                     'https://ropsten.infura.io/v3/d4470e7b7221494caaaa66d3a353c5dc'
                 ),
             network_id: 3,
-            gas: 7001200,
+            gas: 8000000,
             gasPrice: 10000000000
         },
         rinkeby: {
-            provider: () => new PrivateKeyProvider(process.env.PK, 'https://rinkeby.infura.io'),
+            provider: () => new HDWalletProvider(process.env.PK, 'https://rinkeby.infura.io'),
             network_id: 4,
             gasPrice: 10000000000
         },

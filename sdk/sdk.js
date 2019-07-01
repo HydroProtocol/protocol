@@ -1,5 +1,9 @@
 const BigNumber = require('bignumber.js');
+const Hydro = artifacts.require('Hydro.sol');
 const { sha3, ecrecover, hashPersonalMessage, toBuffer, pubToAddress } = require('ethereumjs-util');
+const Ethers = require('ethers');
+
+const encoder = new Ethers.utils.AbiCoder();
 
 const sha3ToHex = message => {
     return '0x' + sha3(message).toString('hex');
@@ -99,6 +103,119 @@ const getOrderHash = order => {
     );
 };
 
+const ActionType = {
+    Deposit: 0,
+    Withdraw: 1,
+    Transfer: 2,
+    Borrow: 3,
+    Repay: 4,
+    Supply: 5,
+    Unsupply: 6
+};
+
+const borrow = async (marketID, asset, amount, options) => {
+    const actions = [
+        {
+            actionType: ActionType.Borrow,
+            encodedParams: encoder.encode(
+                ['uint16', 'address', 'uint256'],
+                [marketID, asset, amount]
+            )
+        }
+    ];
+
+    return batch(actions, options);
+};
+const repay = async (marketID, asset, amount, options) => {
+    const actions = [
+        {
+            actionType: ActionType.Repay,
+            encodedParams: encoder.encode(
+                ['uint16', 'address', 'uint256'],
+                [marketID, asset, amount]
+            )
+        }
+    ];
+
+    return batch(actions, options);
+};
+
+const supply = async (asset, amount, options) => {
+    const actions = [
+        {
+            actionType: ActionType.Supply,
+            encodedParams: encoder.encode(['address', 'uint256'], [asset, amount])
+        }
+    ];
+
+    return batch(actions, options);
+};
+const unsupply = async (asset, amount, options) => {
+    const actions = [
+        {
+            actionType: ActionType.Unsupply,
+            encodedParams: encoder.encode(['address', 'uint256'], [asset, amount])
+        }
+    ];
+
+    return batch(actions, options);
+};
+
+const deposit = async (asset, amount, options) => {
+    const actions = [
+        {
+            actionType: ActionType.Deposit,
+            encodedParams: encoder.encode(['address', 'uint256'], [asset, amount])
+        }
+    ];
+
+    return batch(actions, options);
+};
+const withdraw = async (asset, amount, options) => {
+    const actions = [
+        {
+            actionType: ActionType.Withdraw,
+            encodedParams: encoder.encode(['address', 'uint256'], [asset, amount])
+        }
+    ];
+
+    return batch(actions, options);
+};
+
+const transfer = async (asset, fromPath, toPath, amount, options) => {
+    const actions = [
+        {
+            actionType: ActionType.Transfer,
+            encodedParams: encoder.encode(
+                [
+                    'address',
+                    'tuple(uint8,uint16,address)',
+                    'tuple(uint8,uint16,address)',
+                    'uint256'
+                ],
+                [
+                    asset,
+                    [fromPath.category, fromPath.marketID, fromPath.user],
+                    [toPath.category, toPath.marketID, toPath.user],
+                    amount
+                ]
+            )
+        }
+    ];
+
+    return batch(actions, options);
+};
+
+const batch = async (actions, options) => {
+    const hydro = await Hydro.deployed();
+
+    if (options) {
+        return hydro.batch(actions, options);
+    } else {
+        return hydro.batch(actions);
+    }
+};
+
 module.exports = {
     isValidSignature,
     generateOrderData,
@@ -106,5 +223,12 @@ module.exports = {
     EIP712_ORDER_TYPE,
     getOrderHash,
     getDomainSeparator,
-    getEIP712MessageHash
+    getEIP712MessageHash,
+    deposit,
+    withdraw,
+    supply,
+    unsupply,
+    transfer,
+    borrow,
+    repay
 };

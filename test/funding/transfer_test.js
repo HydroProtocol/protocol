@@ -3,6 +3,7 @@ const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const { toWei, logGas } = require('../utils');
 const { newMarket } = require('../utils/assets');
+const { deposit, withdraw, transfer } = require('../../sdk/sdk.js');
 
 contract('Transfer', accounts => {
     let hydro, res;
@@ -37,7 +38,7 @@ contract('Transfer', accounts => {
     it('deposit ether successfully', async () => {
         const balanceBefore = await hydro.balanceOf(etherAsset, user);
 
-        await hydro.deposit(etherAsset, toWei('1'), { value: toWei('1') });
+        await deposit(etherAsset, toWei('1'), { value: toWei('1') });
         const balanceAfter = await hydro.balanceOf(etherAsset, user);
 
         assert.equal(balanceAfter.sub(balanceBefore).toString(), toWei('1'));
@@ -55,7 +56,7 @@ contract('Transfer', accounts => {
     it('deposit ether unsuccessfully', async () => {
         // msg value and amount not equal
         await assert.rejects(
-            hydro.deposit(etherAsset, toWei('100'), { value: toWei('1') }),
+            deposit(etherAsset, toWei('100'), { value: toWei('1') }),
             /MSG_VALUE_AND_AMOUNT_MISMATCH/
         );
     });
@@ -69,8 +70,8 @@ contract('Transfer', accounts => {
         // have to approve before
         await quoteAsset.approve(hydro.address, hugeAmount);
 
-        res = await hydro.deposit(quoteAsset.address, toWei('1'));
-        logGas(res, 'hydro.deposit');
+        res = await deposit(quoteAsset.address, toWei('1'));
+        logGas(res, 'deposit');
         const balanceAfter = await hydro.balanceOf(quoteAsset.address, user);
 
         assert.equal(balanceAfter.sub(balanceBefore).toString(), toWei('1'));
@@ -80,10 +81,7 @@ contract('Transfer', accounts => {
         const { quoteAsset } = await createMarket();
 
         // try to deposit hugeAmount
-        await assert.rejects(
-            hydro.deposit(quoteAsset.address, hugeAmount),
-            /TOKEN_TRANSFER_FROM_ERROR/
-        );
+        await assert.rejects(deposit(quoteAsset.address, hugeAmount), /TOKEN_TRANSFER_FROM_ERROR/);
     });
 
     it('deposit token unsuccessfully (not enough balance)', async () => {
@@ -93,20 +91,17 @@ contract('Transfer', accounts => {
         await quoteAsset.approve(hydro.address, hugeAmount);
 
         // try to deposit hugeAmount
-        await assert.rejects(
-            hydro.deposit(quoteAsset.address, hugeAmount),
-            /TOKEN_TRANSFER_FROM_ERROR/
-        );
+        await assert.rejects(deposit(quoteAsset.address, hugeAmount), /TOKEN_TRANSFER_FROM_ERROR/);
     });
 
     it('withdraw ether successfully', async () => {
         // prepare
-        await hydro.deposit(etherAsset, toWei('1'), { value: toWei('1') });
+        await deposit(etherAsset, toWei('1'), { value: toWei('1') });
         const balanceBefore = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceBefore.toString(), toWei('1'));
 
         // test
-        await hydro.withdraw(etherAsset, toWei('1'));
+        await withdraw(etherAsset, toWei('1'));
         const balanceAfter = await hydro.balanceOf(etherAsset, user);
 
         assert.equal(balanceAfter.toString(), toWei('0'));
@@ -114,12 +109,12 @@ contract('Transfer', accounts => {
 
     it('withdraw ether unsuccessfully', async () => {
         // prepare
-        await hydro.deposit(etherAsset, toWei('1'), { value: toWei('1') });
+        await deposit(etherAsset, toWei('1'), { value: toWei('1') });
         const balanceBefore = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceBefore.toString(), toWei('1'));
 
         // try to withdraw more than owned amount
-        await assert.rejects(hydro.withdraw(etherAsset, toWei('100')), /BALANCE_NOT_ENOUGH/);
+        await assert.rejects(withdraw(etherAsset, toWei('100')), /BALANCE_NOT_ENOUGH/);
 
         const balanceAfter = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceAfter.toString(), toWei('1'));
@@ -130,11 +125,11 @@ contract('Transfer', accounts => {
         const { quoteAsset } = await createMarket();
         await quoteAsset.approve(hydro.address, hugeAmount);
 
-        await hydro.deposit(quoteAsset.address, toWei('1'));
+        await deposit(quoteAsset.address, toWei('1'));
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('1'));
 
         // test
-        await hydro.withdraw(quoteAsset.address, toWei('1'));
+        await withdraw(quoteAsset.address, toWei('1'));
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('0'));
     });
 
@@ -142,11 +137,11 @@ contract('Transfer', accounts => {
         // prepare
         const { quoteAsset } = await createMarket();
         await quoteAsset.approve(hydro.address, hugeAmount);
-        await hydro.deposit(quoteAsset.address, toWei('1'));
+        await deposit(quoteAsset.address, toWei('1'));
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('1'));
 
         // test
-        await assert.rejects(hydro.withdraw(quoteAsset.address, hugeAmount), /BALANCE_NOT_ENOUGH/);
+        await assert.rejects(withdraw(quoteAsset.address, hugeAmount), /BALANCE_NOT_ENOUGH/);
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('1'));
     });
 
@@ -154,7 +149,7 @@ contract('Transfer', accounts => {
         // prepare
         await createMarket();
 
-        await hydro.deposit(etherAsset, toWei('1'), { value: toWei('1') });
+        await deposit(etherAsset, toWei('1'), { value: toWei('1') });
         const balanceBefore = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceBefore.toString(), toWei('1'));
 
@@ -162,7 +157,7 @@ contract('Transfer', accounts => {
         assert.equal(marketBalanceBefore.toString(), toWei('0'));
 
         // test
-        res = await hydro.transfer(
+        res = await transfer(
             etherAsset,
             {
                 category: 0,
@@ -177,7 +172,7 @@ contract('Transfer', accounts => {
             toWei('1')
         );
 
-        logGas(res, 'hydro.transfer ether (common -> market)');
+        logGas(res, 'transfer ether (common -> market)');
 
         const balanceAfter = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceAfter.toString(), toWei('0'));
@@ -194,7 +189,7 @@ contract('Transfer', accounts => {
 
         // user has insufficient balance
         await assert.rejects(
-            hydro.transfer(
+            transfer(
                 etherAsset,
                 {
                     category: 0,
@@ -216,13 +211,13 @@ contract('Transfer', accounts => {
         // prepare
         const { quoteAsset } = await createMarket();
         await quoteAsset.approve(hydro.address, hugeAmount);
-        await hydro.deposit(quoteAsset.address, toWei('1'));
+        await deposit(quoteAsset.address, toWei('1'));
 
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('1'));
         assert.equal(await hydro.marketBalanceOf(0, quoteAsset.address, user), toWei('0'));
 
         // test
-        res = await hydro.transfer(
+        res = await transfer(
             quoteAsset.address,
             {
                 category: 0,
@@ -237,7 +232,7 @@ contract('Transfer', accounts => {
             toWei('1')
         );
 
-        logGas(res, 'hydro.transfer token (common -> market)');
+        logGas(res, 'transfer token (common -> market)');
 
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('0'));
         assert.equal(await hydro.marketBalanceOf(0, quoteAsset.address, user), toWei('1'));
@@ -247,14 +242,14 @@ contract('Transfer', accounts => {
         // prepare
         const { quoteAsset } = await createMarket();
         await quoteAsset.approve(hydro.address, hugeAmount);
-        await hydro.deposit(quoteAsset.address, toWei('1'));
+        await deposit(quoteAsset.address, toWei('1'));
 
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('1'));
         assert.equal(await hydro.marketBalanceOf(0, quoteAsset.address, user), toWei('0'));
 
         // test
         await assert.rejects(
-            hydro.transfer(
+            transfer(
                 quoteAsset.address,
                 {
                     category: 0,

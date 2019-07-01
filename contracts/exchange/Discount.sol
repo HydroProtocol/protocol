@@ -23,7 +23,6 @@ import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Events.sol";
 import "../lib/ExternalCaller.sol";
-import "../HydroToken.sol";
 
 /**
  * Library to handle fee discount calculation

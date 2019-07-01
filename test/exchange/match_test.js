@@ -5,6 +5,7 @@ const BigNumber = require('bignumber.js');
 const { setHotAmount, pp, clone, toWei, wei, getUserKey, logGas } = require('../utils');
 const { buildOrder } = require('../utils/order');
 const { revert, snapshot } = require('../utils/evm');
+const { transfer } = require('../../sdk/sdk');
 const { createAsset, newMarket } = require('../utils/assets');
 
 const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => {
@@ -90,7 +91,7 @@ contract('Match', async accounts => {
                 baseAssetConfig.initBalances &&
                 baseAssetConfig.initBalances[user]
             ) {
-                await hydro.transfer(
+                await transfer(
                     baseAsset.address,
                     {
                         category: 0,
@@ -108,7 +109,7 @@ contract('Match', async accounts => {
                 quoteAssetConfig.initBalances &&
                 quoteAssetConfig.initBalances[user]
             ) {
-                await hydro.transfer(
+                await transfer(
                     quoteAsset.address,
                     {
                         category: 0,

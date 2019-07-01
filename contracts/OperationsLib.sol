@@ -25,7 +25,8 @@ import "./lib/Types.sol";
 import "./funding/LendingPool.sol";
 import "./exchange/Exchange.sol";
 import "./interfaces/IPriceOracle.sol";
-import "./funding/LendingPoolTokenFactory.sol";
+import "./interfaces/ILendingPoolToken.sol";
+import "./Funding/LendingPoolToken.sol";
 
 /**
  * Only owner can use this contract functions
@@ -97,11 +98,11 @@ library OperationsLib {
 
         state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
         state.assets[asset].interestModel = IInterestModel(interestModalAddress);
-        state.assets[asset].lendingPoolToken = LendingPoolTokenFactory.create(
+        state.assets[asset].lendingPoolToken = ILendingPoolToken(address(new LendingPoolToken(
             poolTokenName,
             poolTokenSymbol,
             poolTokenDecimals
-        );
+        )));
 
         Events.logCreateAsset(
             asset,

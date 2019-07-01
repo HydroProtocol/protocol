@@ -29,7 +29,6 @@ import "../lib/Store.sol";
 import "../lib/Types.sol";
 import "../lib/Transfer.sol";
 import "../lib/Events.sol";
-import "../lib/Transfer.sol";
 
 library Exchange {
     using SafeMath for uint256;

@@ -1,11 +1,12 @@
 const Hydro = artifacts.require('Hydro');
 const PriceOracle = artifacts.require('PriceOracle');
 const HydroToken = artifacts.require('HydroToken');
-const Auctions = artifacts.require('Auctions');
-const OperationsLib = artifacts.require('OperationsLib');
 const DefaultInterestModel = artifacts.require('DefaultInterestModel');
-const LendingPoolTokenFactory = artifacts.require('LendingPoolTokenFactory');
-const ExternalFunctions = artifacts.require('ExternalFunctions');
+
+const Auctions = artifacts.require('Auctions');
+const BatchActions = artifacts.require('BatchActions');
+const OperationsLib = artifacts.require('OperationsLib');
+
 module.exports = async (deployer, network) => {
     let hotAddress;
 
@@ -17,12 +18,11 @@ module.exports = async (deployer, network) => {
         hotAddress = hot.address;
     }
 
-    await deployer.deploy(LendingPoolTokenFactory);
-    await deployer.link(LendingPoolTokenFactory, OperationsLib);
-
+    await deployer.deploy(BatchActions);
     await deployer.deploy(Auctions);
     await deployer.deploy(OperationsLib);
 
+    await deployer.link(BatchActions, Hydro);
     await deployer.link(OperationsLib, Hydro);
     await deployer.link(Auctions, Hydro);
 

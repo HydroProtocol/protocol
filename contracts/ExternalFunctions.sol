@@ -109,16 +109,6 @@ contract ExternalFunctions is GlobalStore {
     // Collateral Account Functions //
     //////////////////////////////////
 
-    function liquidateAccount(
-        address user,
-        uint16 marketID
-    )
-        external
-        returns (bool isLiquidatable, uint32 auctionID)
-    {
-        (isLiquidatable, auctionID) = CollateralAccounts.liquidate(state, user, marketID);
-    }
-
     function isAccountLiquidatable(
         address user,
         uint16 marketID
@@ -164,6 +154,16 @@ contract ExternalFunctions is GlobalStore {
         external
     {
         Auctions.fillAuctionWithAmount(state, auctionID, amount);
+    }
+
+    function liquidateAccount(
+        address user,
+        uint16 marketID
+    )
+        external
+        returns (bool isLiquidatable, uint32 auctionID)
+    {
+        (isLiquidatable, auctionID) = Auctions.liquidate(state, user, marketID);
     }
 
     ///////////////////////////
@@ -232,66 +232,6 @@ contract ExternalFunctions is GlobalStore {
         (borrowInterestRate, supplyInterestRate) = LendingPool.getInterestRates(state, asset, extraBorrowAmount);
     }
 
-    function supply(
-        address asset,
-        uint256 amount
-    )
-        external
-    {
-        LendingPool.supply(
-            state,
-            asset,
-            amount,
-            msg.sender
-        );
-    }
-
-    function unsupply(
-        address asset,
-        uint256 amount
-    )
-        external
-    {
-        LendingPool.withdraw(
-            state,
-            asset,
-            amount,
-            msg.sender
-        );
-    }
-
-    function borrow(
-        address asset,
-        uint256 amount,
-        uint16 marketID
-    )
-        external
-    {
-        LendingPool.borrow(
-            state,
-            msg.sender,
-            marketID,
-            asset,
-            amount
-        );
-    }
-
-    function repay(
-        address asset,
-        uint256 amount,
-        uint16 marketID
-    )
-        external
-    {
-        LendingPool.repay(
-            state,
-            msg.sender,
-            marketID,
-            asset,
-            amount
-        );
-    }
-
     /////////////////////////
     // Insurance Functions //
     /////////////////////////
@@ -351,48 +291,6 @@ contract ExternalFunctions is GlobalStore {
     ////////////////////////
     // Balances Functions //
     ////////////////////////
-
-    function deposit(address asset, uint256 amount)
-        external
-        payable
-    {
-        Transfer.depositFor(
-            state,
-            asset,
-            msg.sender,
-            BalancePath.getCommonPath(msg.sender),
-            amount
-        );
-    }
-
-    function withdraw(address asset, uint256 amount)
-        external
-    {
-        Transfer.withdrawFrom(
-            state,
-            asset,
-            BalancePath.getCommonPath(msg.sender),
-            msg.sender,
-            amount
-        );
-    }
-
-    function transfer(
-        address asset,
-        Types.BalancePath calldata fromBalancePath,
-        Types.BalancePath calldata toBalancePath,
-        uint256 amount
-    )
-        external
-    {
-        Transfer.userTransfer(
-            state,
-            asset,
-            fromBalancePath,
-            toBalancePath,
-            amount
-        );
-    }
 
     function balanceOf(
         address asset,

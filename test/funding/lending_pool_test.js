@@ -5,7 +5,7 @@ const { toWei, logGas } = require('../utils');
 const { mineAt, mine, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
 const LendingPoolToken = artifacts.require('./funding/LendingPoolToken.sol');
-
+const { supply, transfer, unsupply, borrow, repay } = require('../../sdk/sdk');
 // const getInterestRates = borrowRatio => {
 //     const interestRate = 0.2 * borrowRatio + 0.5 * borrowRatio ** 2;
 //     return Math.floor(interestRate * 10000) / 10000;
@@ -55,7 +55,7 @@ contract('LendingPool', accounts => {
     const addCollateral = async (user, asset, amount, timestamp) => {
         await mineAt(
             async () =>
-                hydro.transfer(
+                transfer(
                     asset,
                     {
                         category: 0,
@@ -82,9 +82,9 @@ contract('LendingPool', accounts => {
     };
 
     beforeEach(async () => {
-        await mineAt(async () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }), initTime);
+        await mineAt(async () => supply(USDAddr, toWei('1000'), { from: u1 }), initTime);
         await addCollateral(u2, ETHAddr, toWei('1'), initTime);
-        await mineAt(async () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }), initTime);
+        await mineAt(async () => borrow(0, USDAddr, toWei('100'), { from: u2 }), initTime);
     });
 
     ////////////////
@@ -94,7 +94,7 @@ contract('LendingPool', accounts => {
         poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), toWei('1000'));
         assert.equal((await poolToken.totalSupply()).toString(), toWei('1000'));
-        await mineAt(async () => hydro.unsupply(USDAddr, toWei('500'), { from: u1 }), initTime);
+        await mineAt(async () => unsupply(USDAddr, toWei('500'), { from: u1 }), initTime);
         assert.equal((await poolToken.balanceOf(u1)).toString(), toWei('500'));
         assert.equal((await poolToken.totalSupply()).toString(), toWei('500'));
     });
@@ -113,11 +113,11 @@ contract('LendingPool', accounts => {
 
     it('borrow', async () => {
         res = await mineAt(
-            () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }),
+            () => borrow(0, USDAddr, toWei('100'), { from: u2 }),
             initTime + 86400 * 180
         );
 
-        logGas(res, 'hydro.borrow');
+        logGas(res, 'borrow');
         assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('200'));
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '201232876712328767202');
         // test wether use principle with interest to calculate new interest rate
@@ -128,43 +128,43 @@ contract('LendingPool', accounts => {
 
     it('repay', async () => {
         res = await mineAt(
-            async () => hydro.repay(USDAddr, toWei('50'), 0, { from: u2 }),
+            async () => repay(0, USDAddr, toWei('50'), { from: u2 }),
             initTime + 86400 * 180
         );
-        logGas(res, 'hydro.repay');
+        logGas(res, 'repay');
         assert.equal((await hydro.marketBalanceOf(0, USDAddr, u2)).toString(), toWei('50'));
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '51232876712328767201');
     });
 
     it('supply', async () => {
         res = await mineAt(
-            () => hydro.supply(USDAddr, toWei('1000'), { from: u1 }),
+            () => supply(USDAddr, toWei('1000'), { from: u1 }),
             initTime + 86400 * 180
         );
-        logGas(res, 'hydro.supply');
+        logGas(res, 'supply');
         poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), '1998768641401012450526');
     });
 
-    it('withdraw', async () => {
+    it('unsupply', async () => {
         res = await mineAt(
-            async () => hydro.unsupply(USDAddr, toWei('500'), { from: u1 }),
+            async () => unsupply(USDAddr, toWei('500'), { from: u1 }),
             initTime + 86400 * 180
         );
-        logGas(res, 'hydro.withdraw');
+        logGas(res, 'unsupply');
         assert.equal((await hydro.balanceOf(USDAddr, u1)).toString(), toWei('9500'));
         poolToken = await getLendingPoolToken(USDAddr);
         assert.equal((await poolToken.balanceOf(u1)).toString(), '500615679299493774736');
     });
 
-    it('repay all and withdraw all', async () => {
+    it('repay all and unsupply all', async () => {
         await addCollateral(u2, USDAddr, toWei('10'), initTime);
         res = await mineAt(
-            async () => hydro.repay(USDAddr, toWei('1000'), 0, { from: u2 }),
+            async () => repay(0, USDAddr, toWei('1000'), { from: u2 }),
             initTime + 86400 * 180
         );
 
-        logGas(res, 'hydro.repay all');
+        logGas(res, 'repay all');
         // charge 1232876712328767200 as interest
         assert.equal(
             (await hydro.marketBalanceOf(0, USDAddr, u2)).toString(),
@@ -172,11 +172,11 @@ contract('LendingPool', accounts => {
         );
         assert.equal((await hydro.getBorrowOf(USDAddr, u2, 0)).toString(), '0');
         res = await mineAt(
-            async () => hydro.unsupply(USDAddr, toWei('2000'), { from: u1 }),
+            async () => unsupply(USDAddr, toWei('2000'), { from: u1 }),
             initTime + 86400 * 180
         );
 
-        logGas(res, 'hydro.withdraw all');
+        logGas(res, 'unsupply all');
 
         assert.equal((await hydro.balanceOf(USDAddr, u1)).toString(), '10001232876712328767000'); // 100 wei remains in the system because of precision
         poolToken = await getLendingPoolToken(USDAddr);
@@ -187,9 +187,9 @@ contract('LendingPool', accounts => {
     // Revert Case Test //
     //////////////////////
     it('can not borrow more than collateral', async () => {
-        await hydro.supply(USDAddr, toWei('5000'), { from: u1 });
+        await supply(USDAddr, toWei('5000'), { from: u1 });
         await assert.rejects(
-            hydro.borrow(USDAddr, toWei('3000'), 0, { from: u2 }),
+            borrow(0, USDAddr, toWei('3000'), { from: u2 }),
             /MARKET_ACCOUNT_IS_LIQUIDABLE_AFTER_BORROW/
         );
     });
@@ -197,15 +197,15 @@ contract('LendingPool', accounts => {
     it('can not borrow more than supply', async () => {
         await addCollateral(u2, ETHAddr, toWei('5'), initTime);
         await assert.rejects(
-            mineAt(() => hydro.borrow(USDAddr, toWei('1000'), 0, { from: u2 }), initTime),
+            mineAt(() => borrow(0, USDAddr, toWei('1000'), { from: u2 }), initTime),
             /CONTRACT_BALANCE_NOT_ENOUGH/
         );
     });
 
     it('can not withdraw from pool if free inventory not enough', async () => {
-        await mineAt(async () => hydro.borrow(USDAddr, toWei('100'), 0, { from: u2 }), initTime);
+        await mineAt(async () => borrow(0, USDAddr, toWei('100'), { from: u2 }), initTime);
         await assert.rejects(
-            mineAt(async () => hydro.unsupply(USDAddr, toWei('1000'), { from: u1 }), initTime),
+            mineAt(async () => unsupply(USDAddr, toWei('1000'), { from: u1 }), initTime),
             /CONTRACT_BALANCE_NOT_ENOUGH/
         );
     });
