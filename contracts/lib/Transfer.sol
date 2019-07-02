@@ -110,6 +110,10 @@ library Transfer {
     )
         internal
     {
+        if (toBalancePath.category == Types.BalanceCategory.CollateralAccount) {
+            Requires.requireMarketIDAndAssetMatch(state, toBalancePath.marketID, asset);
+        }
+
         mapping(address => uint256) storage fromBalances = fromBalancePath.getBalances(state);
         mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
 
@@ -137,19 +141,6 @@ library Transfer {
         }
     }
 
-    function requireMarketIDAndAssetMatch(
-        Store.State storage state,
-        Types.BalancePath memory path,
-        address asset
-    )
-        internal
-        view
-    {
-        if (path.category == Types.BalanceCategory.CollateralAccount) {
-            Requires.requireMarketIDAndAssetMatch(state, path.marketID, asset);
-        }
-    }
-
     function userTransfer(
         Store.State storage state,
         address asset,
@@ -164,7 +155,6 @@ library Transfer {
 
         requireNormalMarketAccount(state, fromBalancePath);
         requireNormalMarketAccount(state, toBalancePath);
-        requireMarketIDAndAssetMatch(state, toBalancePath, asset);
 
         if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
             require(
@@ -180,40 +170,5 @@ library Transfer {
             toBalancePath,
             amount
         );
-    }
-
-    /**
-      * This function will check, if it's the balances of a market account:
-      *   1) The status has to be Normal.
-      *   2) When transfer asset to a market account, the asset and marketID shoule be matched.
-      *   3) After transfer, the source market account can't be liquidatable.
-      */
-    function exchangeTransfer(
-        Store.State storage state,
-        address asset,
-        Types.BalancePath memory fromBalancePath,
-        Types.BalancePath memory toBalancePath,
-        uint256 amount
-    )
-        internal
-    {
-        requireNormalMarketAccount(state, fromBalancePath);
-        requireNormalMarketAccount(state, toBalancePath);
-        requireMarketIDAndAssetMatch(state, toBalancePath, asset);
-
-        transfer(
-            state,
-            asset,
-            fromBalancePath,
-            toBalancePath,
-            amount
-        );
-
-        if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
-             require(
-                !CollateralAccounts.getDetails(state, fromBalancePath.user, fromBalancePath.marketID).liquidatable,
-                "COLLATERAL_ACCOUNT_LIQUIDATABLE_AFTER_TRANSFER"
-            );
-        }
     }
 }

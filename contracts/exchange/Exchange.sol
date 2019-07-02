@@ -164,6 +164,13 @@ library Exchange {
 
         orderInfo.balancePath = orderParam.getBalancePathFromOrderData();
 
+        if (orderInfo.balancePath.category == Types.BalanceCategory.CollateralAccount) {
+            require(
+                state.accounts[orderInfo.balancePath.user][orderInfo.balancePath.marketID].status == Types.CollateralAccountStatus.Normal,
+                "CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT"
+            );
+        }
+
         return orderInfo;
     }
 
@@ -458,7 +465,7 @@ library Exchange {
         });
 
         for (uint256 i = 0; i < results.length; i++) {
-            Transfer.exchangeTransfer(
+            Transfer.transfer(
                 state,
                 orderAddressSet.baseAsset,
                 isTakerSell ? results[i].takerBalancePath : results[i].makerBalancePath,
@@ -480,7 +487,7 @@ library Exchange {
                     add(results[i].makerRebate);
             }
 
-            Transfer.exchangeTransfer(
+            Transfer.transfer(
                 state,
                 orderAddressSet.quoteAsset,
                 isTakerSell ? results[i].makerBalancePath : results[i].takerBalancePath,
@@ -493,9 +500,23 @@ library Exchange {
             totalFee = totalFee.sub(results[i].makerRebate);
 
             Events.logMatch(results[i], orderAddressSet);
+
+            if (results[i].makerBalancePath.category == Types.BalanceCategory.CollateralAccount) {
+                 require(
+                    !CollateralAccounts.getDetails(state, results[i].makerBalancePath.user, results[i].makerBalancePath.marketID).liquidatable,
+                    "COLLATERAL_ACCOUNT_LIQUIDATABLE_AFTER_TRANSFER"
+                );
+            }
         }
 
-        Transfer.exchangeTransfer(
+        if (results[0].takerBalancePath.category == Types.BalanceCategory.CollateralAccount) {
+            require(
+                !CollateralAccounts.getDetails(state, results[0].takerBalancePath.user, results[0].takerBalancePath.marketID).liquidatable,
+                "COLLATERAL_ACCOUNT_LIQUIDATABLE_AFTER_TRANSFER"
+            );
+        }
+
+        Transfer.transfer(
             state,
             orderAddressSet.quoteAsset,
             results[0].takerBalancePath,

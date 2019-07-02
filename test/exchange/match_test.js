@@ -5,7 +5,7 @@ const BigNumber = require('bignumber.js');
 const { setHotAmount, pp, clone, toWei, wei, getUserKey, logGas } = require('../utils');
 const { buildOrder } = require('../utils/order');
 const { revert, snapshot } = require('../utils/evm');
-const { transfer } = require('../../sdk/sdk');
+const { transfer, supply, borrow } = require('../../sdk/sdk');
 const { createAsset, newMarket } = require('../utils/assets');
 
 const assertEqual = (a, b, allowPrecisionError = false, message = undefined) => {
@@ -155,11 +155,6 @@ contract('Match', async accounts => {
             );
         }
 
-        const balancesBeforeMatch = await getUsersAssetsBalances(
-            [baseAsset, quoteAsset],
-            userBalancePaths
-        );
-
         const baseAssetAddress = baseAsset.address;
         const quoteAssetAddress = quoteAsset.address;
         const orderAddressSet = {
@@ -182,10 +177,17 @@ contract('Match', async accounts => {
             await beforeMatch({
                 takerOrder,
                 makerOrders,
+                baseAsset,
+                quoteAsset,
                 baseAssetFilledAmounts,
                 orderAddressSet
             });
         }
+
+        const balancesBeforeMatch = await getUsersAssetsBalances(
+            [baseAsset, quoteAsset],
+            userBalancePaths
+        );
 
         const res = await hydro.matchOrders(
             {
@@ -275,6 +277,14 @@ contract('Match', async accounts => {
             marketTestConfig.takerOrderParam.quoteAssetAmount = '0';
         } else {
             marketTestConfig.takerOrderParam.baseAssetAmount = '0';
+        }
+
+        if (config.beforeMatch) {
+            marketTestConfig.beforeMatch = config.beforeMatch;
+        }
+
+        if (config.afterMatch) {
+            marketTestConfig.afterMatch = config.afterMatch;
         }
 
         await matchTest(marketTestConfig);
@@ -1499,6 +1509,108 @@ contract('Match', async accounts => {
                 WETH: {
                     [u1]: toWei('1'),
                     [u2]: toWei('-1'),
+                    [relayer]: toWei('0')
+                }
+            }
+        };
+
+        await limitAndMarketTestMatch(testConfig);
+    });
+
+    it.only('match with market balance with temporary liquidatable', async () => {
+        const testConfig = {
+            userBalancePaths: {
+                [u1]: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                },
+                [u2]: {
+                    category: 0,
+                    marketID: 0,
+                    user: u2
+                }
+            },
+            baseAssetFilledAmounts: [toWei('100')],
+            baseAssetConfig: {
+                name: 'TestToken',
+                symbol: 'TT',
+                decimals: 18,
+                oraclePrice: toWei('0.1'),
+                initBalances: {
+                    [u1]: toWei(75),
+                    [u2]: toWei(25)
+                }
+            },
+            quoteAssetConfig: {
+                name: 'Ethereum',
+                symbol: 'ETH',
+                decimals: 18,
+                initBalances: {
+                    [u2]: toWei(10)
+                }
+            },
+            beforeMatch: async ({ baseAsset }) => {
+                // scenario
+                // u2 supply 25 TT into pool
+                // u1 borrow 25 TT by using 75 TT as collateral
+                await supply(baseAsset.address, toWei('25'), {
+                    from: u2
+                });
+                await borrow(0, baseAsset.address, toWei('25'), {
+                    from: u1
+                });
+                // now the u1 has 100 TT balances and 25 TT debt
+                // assert.equal(await hydro.marketBalanceOf(0, baseAsset.address, u1), toWei('100'));
+                // During the exchange process, the taker will transfer baseToken to maker first.
+                // Before the maker transfer quote tokens back, the taker's collateral account is
+                // in a liquidatable status. But it's reasonable as the transaction is atomic.
+                // We should only care about the finial collateral account is liquidatable or not.
+                // The temporary liquidatable state doesn't not matter.
+            },
+            takerOrderParam: {
+                trader: u1,
+                relayer,
+                version: 2,
+                side: 'sell',
+                type: 'limit',
+                expiredAtSeconds: 3500000000,
+                asMakerFeeRate: 0,
+                asTakerFeeRate: 0,
+                baseAssetAmount: toWei('100'),
+                quoteAssetAmount: toWei('10'),
+                gasTokenAmount: toWei('0'),
+                balancePath: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                }
+            },
+            makerOrdersParams: [
+                {
+                    trader: u2,
+                    relayer,
+                    version: 2,
+                    side: 'buy',
+                    type: 'limit',
+                    expiredAtSeconds: 3500000000,
+                    makerRebateRate: 0,
+                    asMakerFeeRate: 0,
+                    asTakerFeeRate: 0,
+                    quoteAssetAmount: toWei('10'),
+                    baseAssetAmount: toWei('100'),
+                    gasTokenAmount: toWei('0')
+                }
+            ],
+            assertDiffs: {
+                TT: {
+                    [u1]: toWei('-100'),
+                    [u2]: toWei('100'),
+                    [relayer]: toWei('0')
+                },
+                ETH: {
+                    [u1]: toWei('10'),
+                    [u2]: toWei('-10'),
                     [relayer]: toWei('0')
                 }
             }
