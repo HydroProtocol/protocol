@@ -154,10 +154,7 @@ library LendingPool {
         // update interest rate
         updateInterestRate(state, asset);
 
-        require(
-            !CollateralAccounts.getDetails(state, user, marketID).liquidatable,
-            "MARKET_ACCOUNT_IS_LIQUIDABLE_AFTER_BORROW"
-        );
+        Requires.requireCollateralAccountNotLiquidatable(state, user, marketID);
 
         Events.logBorrow(user, marketID, asset, amount);
     }

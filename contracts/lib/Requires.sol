@@ -23,6 +23,7 @@ import "./Store.sol";
 import "./Consts.sol";
 import "./Decimal.sol";
 import "../interfaces/IStandardToken.sol";
+import "../funding/CollateralAccounts.sol";
 
 library Requires {
     function requireAssetExist(
@@ -130,6 +131,47 @@ library Requires {
         view
     {
         require(marketID < state.marketsCount, "MARKET_NOT_EXIST");
+    }
+
+    function requireCollateralAccountNormalStatus(
+        Store.State storage state,
+        Types.BalancePath memory path
+    )
+        internal
+        view
+    {
+        if (path.category == Types.BalanceCategory.CollateralAccount) {
+            require(
+                state.accounts[path.user][path.marketID].status == Types.CollateralAccountStatus.Normal,
+                "CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT"
+            );
+        }
+    }
+
+    function requireCollateralAccountNotLiquidatable(
+        Store.State storage state,
+        Types.BalancePath memory path
+    )
+        internal
+        view
+    {
+        if (path.category == Types.BalanceCategory.CollateralAccount) {
+            requireCollateralAccountNotLiquidatable(state, path.user, path.marketID);
+        }
+    }
+
+    function requireCollateralAccountNotLiquidatable(
+        Store.State storage state,
+        address user,
+        uint16 marketID
+    )
+        internal
+        view
+    {
+        require(
+            !CollateralAccounts.getDetails(state, user, marketID).liquidatable,
+            "COLLATERAL_ACCOUNT_LIQUIDATABLE"
+        );
     }
 
     function isAssetExist(

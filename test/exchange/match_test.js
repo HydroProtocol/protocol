@@ -1517,7 +1517,7 @@ contract('Match', async accounts => {
         await limitAndMarketTestMatch(testConfig);
     });
 
-    it.only('match with market balance with temporary liquidatable', async () => {
+    it('match with market balance with temporary liquidatable should be fine', async () => {
         const testConfig = {
             userBalancePaths: {
                 [u1]: {
@@ -1617,6 +1617,105 @@ contract('Match', async accounts => {
         };
 
         await limitAndMarketTestMatch(testConfig);
+    });
+
+    it('match with market balance results in liquidatable should be reverted', async () => {
+        const testConfig = {
+            userBalancePaths: {
+                [u1]: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                },
+                [u2]: {
+                    category: 0,
+                    marketID: 0,
+                    user: u2
+                }
+            },
+            baseAssetFilledAmounts: [toWei('100')],
+            baseAssetConfig: {
+                name: 'TestToken',
+                symbol: 'TT',
+                decimals: 18,
+                oraclePrice: toWei('100'), // <= note, the base Asset is expensive
+                initBalances: {
+                    [u1]: toWei(75),
+                    [u2]: toWei(25)
+                }
+            },
+            quoteAssetConfig: {
+                name: 'Ethereum',
+                symbol: 'ETH',
+                decimals: 18,
+                initBalances: {
+                    [u2]: toWei(10)
+                }
+            },
+            beforeMatch: async ({ baseAsset }) => {
+                // scenario
+                // u2 supply 25 TT into pool
+                // u1 borrow 25 TT by using 75 TT as collateral
+                await supply(baseAsset.address, toWei('25'), {
+                    from: u2
+                });
+                await borrow(0, baseAsset.address, toWei('25'), {
+                    from: u1
+                });
+                // now the u1 has 100 TT balances and 25 TT debt
+            },
+            takerOrderParam: {
+                trader: u1,
+                relayer,
+                version: 2,
+                side: 'sell',
+                type: 'limit',
+                expiredAtSeconds: 3500000000,
+                asMakerFeeRate: 0,
+                asTakerFeeRate: 0,
+                baseAssetAmount: toWei('100'),
+                quoteAssetAmount: toWei('10'),
+                gasTokenAmount: toWei('0'),
+                balancePath: {
+                    category: 1,
+                    marketID: 0,
+                    user: u1
+                }
+            },
+            makerOrdersParams: [
+                {
+                    trader: u2,
+                    relayer,
+                    version: 2,
+                    side: 'buy',
+                    type: 'limit',
+                    expiredAtSeconds: 3500000000,
+                    makerRebateRate: 0,
+                    asMakerFeeRate: 0,
+                    asTakerFeeRate: 0,
+                    quoteAssetAmount: toWei('10'),
+                    baseAssetAmount: toWei('100'),
+                    gasTokenAmount: toWei('0')
+                }
+            ],
+            assertDiffs: {
+                TT: {
+                    [u1]: toWei('-100'),
+                    [u2]: toWei('100'),
+                    [relayer]: toWei('0')
+                },
+                ETH: {
+                    [u1]: toWei('10'),
+                    [u2]: toWei('-10'),
+                    [relayer]: toWei('0')
+                }
+            }
+        };
+
+        await assert.rejects(
+            limitAndMarketTestMatch(testConfig),
+            /COLLATERAL_ACCOUNT_LIQUIDATABLE/
+        );
     });
 
     it('match with a not participant relayer', async () => {

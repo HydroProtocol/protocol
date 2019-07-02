@@ -190,7 +190,7 @@ contract('LendingPool', accounts => {
         await supply(USDAddr, toWei('5000'), { from: u1 });
         await assert.rejects(
             borrow(0, USDAddr, toWei('3000'), { from: u2 }),
-            /MARKET_ACCOUNT_IS_LIQUIDABLE_AFTER_BORROW/
+            /COLLATERAL_ACCOUNT_LIQUIDATABLE/
         );
     });
 
