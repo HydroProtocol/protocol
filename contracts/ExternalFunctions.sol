@@ -35,7 +35,7 @@ import "./lib/Requires.sol";
 import "./lib/SafeMath.sol";
 
 /**
- * External Functions
+ * A collection of wrappers for all external methods in the protocol
  */
 contract ExternalFunctions is GlobalStore {
 
@@ -198,7 +198,7 @@ contract ExternalFunctions is GlobalStore {
         amount = LendingPool.getTotalSupply(state, asset);
     }
 
-    function getBorrowOf(
+    function getAmountBorrowed(
         address asset,
         address user,
         uint16 marketID
@@ -207,10 +207,10 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
-        amount = LendingPool.getBorrowOf(state, asset, user, marketID);
+        amount = LendingPool.getAmountBorrowed(state, asset, user, marketID);
     }
 
-    function getSupplyOf(
+    function getAmountSupplied(
         address asset,
         address user
     )
@@ -218,7 +218,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
-        amount = LendingPool.getSupplyOf(state, asset, user);
+        amount = LendingPool.getAmountSupplied(state, asset, user);
     }
 
     function getInterestRates(

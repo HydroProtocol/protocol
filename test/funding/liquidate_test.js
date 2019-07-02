@@ -123,7 +123,7 @@ contract('Liquidate', accounts => {
         await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         // u2 has 100 usd debt
-        assert.equal(await hydro.getBorrowOf(usdAsset.address, u2, marketID), toWei('100'));
+        assert.equal(await hydro.getAmountBorrowed(usdAsset.address, u2, marketID), toWei('100'));
 
         // ether price drop to 10
         await mineAt(
@@ -143,7 +143,7 @@ contract('Liquidate', accounts => {
         logGas(res, 'hydro.liquidateAccount (no auction)');
 
         // u2 debt is force repaied, and no auction created
-        assert.equal(await hydro.getBorrowOf(usdAsset.address, u2, marketID), '0');
+        assert.equal(await hydro.getAmountBorrowed(usdAsset.address, u2, marketID), '0');
         assert.equal(await hydro.getAuctionsCount(), '0');
 
         // u2 account is still useable, status is normal
@@ -155,7 +155,7 @@ contract('Liquidate', accounts => {
         await mineAt(() => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }), time);
 
         // u2 has 100 usd debt
-        assert.equal(await hydro.getBorrowOf(usdAsset.address, u2, marketID), toWei('100'));
+        assert.equal(await hydro.getAmountBorrowed(usdAsset.address, u2, marketID), toWei('100'));
 
         // ether price drop to 10
         await mineAt(
@@ -176,7 +176,7 @@ contract('Liquidate', accounts => {
 
         // u2 should have some usd debt
         assert(
-            (await hydro.getBorrowOf(usdAsset.address, u2, marketID)).gt('0'),
+            (await hydro.getAmountBorrowed(usdAsset.address, u2, marketID)).gt('0'),
             'debt should larger than 0'
         );
 
@@ -215,7 +215,7 @@ contract('Liquidate', accounts => {
 
         await mineAt(() => borrow(marketID, ethAsset.address, toWei('1'), { from: u2 }), time);
         // u2 has 1 eth debt
-        assert.equal(await hydro.getBorrowOf(ethAsset.address, u2, marketID), toWei('1'));
+        assert.equal(await hydro.getAmountBorrowed(ethAsset.address, u2, marketID), toWei('1'));
         // u2 has 100 usd and 1 eth in account
         assert.equal(await hydro.marketBalanceOf(marketID, usdAsset.address, u2), toWei('100'));
         assert.equal(await hydro.marketBalanceOf(marketID, ethAsset.address, u2), toWei('1'));
@@ -233,7 +233,7 @@ contract('Liquidate', accounts => {
         await mineAt(() => hydro.liquidateAccount(u2, marketID), time + 86400);
         // u2 should have some eth debt
         assert(
-            (await hydro.getBorrowOf(ethAsset.address, u2, marketID)).gt('0'),
+            (await hydro.getAmountBorrowed(ethAsset.address, u2, marketID)).gt('0'),
             'debt should larger than 0'
         );
         assert.equal(await hydro.getAuctionsCount(), '1');

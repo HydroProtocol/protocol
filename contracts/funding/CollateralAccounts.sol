@@ -56,8 +56,8 @@ library CollateralAccounts {
             quoteAsset
         );
 
-        uint256 baseBorrowOf = LendingPool.getBorrowOf(state, baseAsset, user, marketID);
-        uint256 quoteBorrowOf = LendingPool.getBorrowOf(state, quoteAsset, user, marketID);
+        uint256 baseBorrowOf = LendingPool.getAmountBorrowed(state, baseAsset, user, marketID);
+        uint256 quoteBorrowOf = LendingPool.getAmountBorrowed(state, quoteAsset, user, marketID);
 
         details.debtsTotalUSDValue = SafeMath.add(
             baseBorrowOf.mul(baseUSDPrice),
@@ -76,6 +76,12 @@ library CollateralAccounts {
         }
     }
 
+    /**
+     * The amount that is avaliable to transfer out of the collateral account.
+     * If there are no open loans, this is just the total asset balance.
+     * If there is are open loans, then this is the maximum amount that can be withdrawn
+     * without falling below the minimum collateral ratio
+     */
     function getTransferableAmount(
         Store.State storage state,
         uint16 marketID,
@@ -105,12 +111,12 @@ library CollateralAccounts {
         }
 
         // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
-        uint256 transferableUSDValueBar = Decimal.mulFloor(
+        uint256 transferableThresholdUSDValue = Decimal.mulFloor(
             details.debtsTotalUSDValue,
             state.markets[marketID].withdrawRate
         );
 
-        if(transferableUSDValueBar > details.balancesTotalUSDValue) {
+        if(transferableThresholdUSDValue > details.balancesTotalUSDValue) {
             return 0;
         }
 
@@ -118,7 +124,7 @@ library CollateralAccounts {
 
         // round down
         uint256 transferableAmount = SafeMath.mul(
-            details.balancesTotalUSDValue - transferableUSDValueBar,
+            details.balancesTotalUSDValue - transferableThresholdUSDValue,
             Consts.ORACLE_PRICE_BASE()
         ).div(assetUSDPrice);
 
