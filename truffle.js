@@ -62,19 +62,13 @@ module.exports = {
                     runs: 200
                 }
             }
-        },
+        }
 
         // If you have 0.5.8 solc installed locally, you can use the following config to speed up tests.
         //
-        solc: {
-            version: 'native',
-            settings: {
-                optimizer: {
-                    enabled: true,
-                    runs: 200
-                }
-            }
-        }
+        // solc: {
+        //     version: 'native'
+        // }
     },
     mocha: {
         enableTimeouts: false,

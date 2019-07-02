@@ -163,6 +163,7 @@ library Exchange {
         );
 
         orderInfo.balancePath = orderParam.getBalancePathFromOrderData();
+        Requires.requireCollateralAccountNormalStatus(state, orderInfo.balancePath);
 
         return orderInfo;
     }
@@ -458,7 +459,7 @@ library Exchange {
         });
 
         for (uint256 i = 0; i < results.length; i++) {
-            Transfer.exchangeTransfer(
+            Transfer.transfer(
                 state,
                 orderAddressSet.baseAsset,
                 isTakerSell ? results[i].takerBalancePath : results[i].makerBalancePath,
@@ -480,13 +481,15 @@ library Exchange {
                     add(results[i].makerRebate);
             }
 
-            Transfer.exchangeTransfer(
+            Transfer.transfer(
                 state,
                 orderAddressSet.quoteAsset,
                 isTakerSell ? results[i].makerBalancePath : results[i].takerBalancePath,
                 isTakerSell ? results[i].takerBalancePath : results[i].makerBalancePath,
                 transferredQuoteAmount
             );
+
+            Requires.requireCollateralAccountNotLiquidatable(state, results[i].makerBalancePath);
 
             totalFee = totalFee.add(results[i].takerFee).add(results[i].makerFee);
             totalFee = totalFee.add(results[i].makerGasFee).add(results[i].takerGasFee);
@@ -495,7 +498,9 @@ library Exchange {
             Events.logMatch(results[i], orderAddressSet);
         }
 
-        Transfer.exchangeTransfer(
+        Requires.requireCollateralAccountNotLiquidatable(state, results[0].takerBalancePath);
+
+        Transfer.transfer(
             state,
             orderAddressSet.quoteAsset,
             results[0].takerBalancePath,

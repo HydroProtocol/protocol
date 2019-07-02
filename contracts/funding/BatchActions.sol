@@ -22,6 +22,7 @@ pragma experimental ABIEncoderV2;
 import "./LendingPool.sol";
 
 import "../lib/Store.sol";
+import "../lib/Requires.sol";
 import "../lib/Transfer.sol";
 
 /**
@@ -155,7 +156,20 @@ library BatchActions {
             )
         );
 
-        Transfer.userTransfer(
+        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
+        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
+
+        Requires.requireCollateralAccountNormalStatus(state, fromBalancePath);
+        Requires.requireCollateralAccountNormalStatus(state, toBalancePath);
+
+        if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
+            require(
+                CollateralAccounts.getTransferableAmount(state, fromBalancePath.marketID, fromBalancePath.user, asset) >= amount,
+                "COLLATERAL_ACCOUNT_TRANSFERABLE_AMOUNT_NOT_ENOUGH"
+            );
+        }
+
+        Transfer.transfer(
             state,
             asset,
             fromBalancePath,
