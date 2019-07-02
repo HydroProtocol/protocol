@@ -218,6 +218,10 @@ library Auctions {
             repayAmount
         );
 
+        // auction when ratio>1 cash -= actualBidderRepay
+        // To avoid cash overflow, we add cash temporarily here and sub immediately after
+        state.cash[auction.debtAsset] = state.cash[auction.debtAsset].add(repayAmount);
+
         uint256 actualRepay = LendingPool.repay(
             state,
             auction.borrower,
@@ -233,11 +237,15 @@ library Auctions {
 
         // gather repay capital
         LendingPool.compensate(state, auction.debtAsset, actualRepay.sub(actualBidderRepay));
-
         state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
             state.balances[msg.sender][auction.debtAsset],
             actualBidderRepay
         );
+
+        // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].add(actualRepay);
+        // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(repayAmount);
+        // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(actualBidderRepay);
+        state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(repayAmount.add(actualBidderRepay).sub(actualRepay));
 
         // update collateralAmount
         uint256 collateralForBidder = leftCollateralAmount.mul(actualRepay).div(leftDebtAmount);
