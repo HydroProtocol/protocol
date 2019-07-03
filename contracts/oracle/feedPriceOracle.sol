@@ -1,0 +1,109 @@
+/*
+
+    Copyright 2019 The Hydro Protocol Foundation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+*/
+
+pragma solidity ^0.5.8;
+pragma experimental ABIEncoderV2;
+
+import "../lib/Ownable.sol";
+import "../lib/Decimal.sol";
+import "../lib/SafeMath.sol";
+
+contract FeedPriceOracle is Ownable{
+    using SafeMath for uint256;
+
+    address asset;
+    uint256 price;
+    uint256 lastBlockNumber;
+    uint256 validBlockNumber;
+    uint256 maxChangeRate;
+    uint256 minPrice;
+    uint256 maxPrice;
+
+    event PriceFeed(
+        uint256 price,
+        uint256 blockNumber
+    );
+
+    constructor (
+        address _asset,
+        uint256 _validBlockNumber,
+        uint256 _maxChangeRate,
+        uint256 _minPrice,
+        uint256 _maxPrice
+    )
+        public
+    {
+        asset = _asset;
+        validBlockNumber = _validBlockNumber;
+        maxChangeRate = _maxChangeRate;
+        minPrice = _minPrice;
+        maxPrice = _maxPrice;
+    }
+
+    function setParams(
+        uint256 _validBlockNumber,
+        uint256 _maxChangeRate,
+        uint256 _minPrice,
+        uint256 _maxPrice
+    )
+        public
+        onlyOwner
+    {
+        validBlockNumber = _validBlockNumber;
+        maxChangeRate = _maxChangeRate;
+        minPrice = _minPrice;
+        maxPrice = _maxPrice;
+    }
+
+    function feed(
+        uint256 newPrice,
+        uint256 blockNumber
+    )
+        public
+        onlyOwner
+    {
+        require(blockNumber <= block.number, "BLOCKNUMBER_EXCEED");
+        require(newPrice <= maxPrice, "PRICE_EXCEED_MAX_LIMIT");
+        require(newPrice >= minPrice, "PRICE_EXCEED_MIN_LIMIT");
+
+        uint256 changeRate = Decimal.divFloor(newPrice, price);
+        if (changeRate > Decimal.one()){
+            changeRate = changeRate.sub(Decimal.one());
+        } else {
+            changeRate = Decimal.one().sub(changeRate);
+        }
+        require(changeRate <= maxChangeRate, "PRICE_CHANGE_RATE_EXCEED");
+
+        price = newPrice;
+        lastBlockNumber = blockNumber;
+        emit PriceFeed(price, lastBlockNumber);
+    }
+
+    function getPrice(
+        address _asset
+    )
+        public
+        view
+        returns (uint256)
+    {
+        require(asset == _asset, "ASSET_NOT_MATCH");
+        require(block.number.sub(lastBlockNumber) <= validBlockNumber, "PRICE_EXPIRED");
+        return price;
+    }
+
+}

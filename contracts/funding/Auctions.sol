@@ -243,7 +243,7 @@ library Auctions {
         }
 
         // gather repay capital
-        LendingPool.compensate(state, auction.debtAsset, actualRepay.sub(actualBidderRepay));
+        LendingPool.claimInsurance(state, auction.debtAsset, actualRepay.sub(actualBidderRepay));
         state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
             state.balances[msg.sender][auction.debtAsset],
             actualBidderRepay
