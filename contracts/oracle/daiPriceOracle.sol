@@ -65,7 +65,7 @@ interface IOasisDex{
         returns (uint256);
 }
 
-contract DaiOracle is Ownable {
+contract DaiPriceOracle is Ownable {
     using SafeMath for uint256;
 
     uint256 public price;

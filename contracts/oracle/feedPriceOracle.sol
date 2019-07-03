@@ -20,7 +20,6 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "../lib/Ownable.sol";
-import "../lib/Decimal.sol";
 import "../lib/SafeMath.sol";
 
 contract FeedPriceOracle is Ownable{
@@ -33,6 +32,8 @@ contract FeedPriceOracle is Ownable{
     uint256 maxChangeRate;
     uint256 minPrice;
     uint256 maxPrice;
+
+    uint256 constant ONE = 10**18;
 
     event PriceFeed(
         uint256 price,
@@ -77,17 +78,20 @@ contract FeedPriceOracle is Ownable{
         public
         onlyOwner
     {
-        require(blockNumber <= block.number, "BLOCKNUMBER_EXCEED");
+        require(newPrice > 0, "PRICE_MUST_GREATER_THAN_0");
+        require(blockNumber <= block.number && blockNumber >= lastBlockNumber, "BLOCKNUMBER_WRONG");
         require(newPrice <= maxPrice, "PRICE_EXCEED_MAX_LIMIT");
         require(newPrice >= minPrice, "PRICE_EXCEED_MIN_LIMIT");
 
-        uint256 changeRate = Decimal.divFloor(newPrice, price);
-        if (changeRate > Decimal.one()){
-            changeRate = changeRate.sub(Decimal.one());
-        } else {
-            changeRate = Decimal.one().sub(changeRate);
+        if (price > 0){
+            uint256 changeRate = newPrice.mul(ONE).div(price);
+            if (changeRate > ONE){
+                changeRate = changeRate.sub(ONE);
+            } else {
+                changeRate = ONE.sub(changeRate);
+            }
+            require(changeRate <= maxChangeRate, "PRICE_CHANGE_RATE_EXCEED");
         }
-        require(changeRate <= maxChangeRate, "PRICE_CHANGE_RATE_EXCEED");
 
         price = newPrice;
         lastBlockNumber = blockNumber;
