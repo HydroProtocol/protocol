@@ -31,6 +31,7 @@ import "./CollateralAccounts.sol";
 
 library Auctions {
     using SafeMath for uint256;
+    using SafeMath for int256;
     using Auction for Types.Auction;
 
     /**
@@ -224,11 +225,7 @@ library Auctions {
             state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
             repayAmount
         );
-
-        // auction when ratio>1 cash -= actualBidderRepay
-        // To avoid cash overflow, we add cash temporarily here and sub immediately after
-        state.cash[auction.debtAsset] = state.cash[auction.debtAsset].add(repayAmount);
-
+        
         uint256 actualRepay = LendingPool.repay(
             state,
             auction.borrower,
@@ -240,6 +237,7 @@ library Auctions {
         uint256 actualBidderRepay = bidderRepayAmount;
         if (actualRepay < repayAmount) {
             actualBidderRepay = Decimal.divCeil(actualRepay, ratio);
+            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0; // recover unused principal
         }
 
         // gather repay capital
@@ -249,10 +247,10 @@ library Auctions {
             actualBidderRepay
         );
 
+        // auction when ratio>1 cash -= actualBidderRepay
         // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].add(actualRepay);
-        // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(repayAmount);
         // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(actualBidderRepay);
-        state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(repayAmount.add(actualBidderRepay).sub(actualRepay));
+        state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(actualBidderRepay).add(actualRepay);
 
         // update collateralAmount
         uint256 collateralForBidder = leftCollateralAmount.mul(actualRepay).div(leftDebtAmount);

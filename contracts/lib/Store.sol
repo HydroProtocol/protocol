@@ -143,7 +143,7 @@ library Store {
         uint16 marketsCount;
 
         mapping(address => Types.Asset) assets;
-        mapping(address => uint256) cash;
+        mapping(address => int256) cash;
 
         // user => marketID => account
         mapping(address => mapping(uint16 => Types.CollateralAccount)) accounts;

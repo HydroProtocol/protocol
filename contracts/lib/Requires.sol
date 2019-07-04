@@ -90,9 +90,13 @@ library Requires {
         view
     {
         if (asset==Consts.ETHEREUM_TOKEN_ADDRESS()){
-            require(state.cash[asset] <= address(this).balance, "CONTRACT_BALANCE_NOT_ENOUGH");
+            if (state.cash[asset] > 0) {
+                require(uint256(state.cash[asset]) <= address(this).balance, "CONTRACT_BALANCE_NOT_ENOUGH");
+            }
         } else {
-            require(state.cash[asset] <= IStandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
+            if (state.cash[asset] > 0) {
+                require(uint256(state.cash[asset]) <= IStandardToken(asset).balanceOf(address(this)), "CONTRACT_BALANCE_NOT_ENOUGH");
+            }
         }
     }
 

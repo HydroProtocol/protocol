@@ -30,6 +30,7 @@ import "../funding/CollateralAccounts.sol";
 
 library Transfer {
     using SafeMath for uint256;
+    using SafeMath for int256;
     using BalancePath for Types.BalancePath;
 
     /** @dev Transfer asset into current contract

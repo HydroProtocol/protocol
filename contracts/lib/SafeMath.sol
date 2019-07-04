@@ -83,6 +83,20 @@ library SafeMath {
         return a - b;
     }
 
+    function sub(
+        int256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (int256)
+    {
+        require(b < 2**255-1, "INT256_SUB_ERROR");
+        int256 c = a - int256(b);
+        require(c <= a, "INT256_SUB_ERROR");
+        return c;
+    }
+
     /// @dev Adds two numbers, reverts on overflow.
     function add(
         uint256 a,
@@ -94,6 +108,20 @@ library SafeMath {
     {
         uint256 c = a + b;
         require(c >= a, "ADD_ERROR");
+        return c;
+    }
+
+    function add(
+        int256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (int256)
+    {
+        require(b < 2**255 - 1, "INT256_ADD_ERROR");
+        int256 c = a + int256(b);
+        require(c >= a, "INT256_ADD_ERROR");
         return c;
     }
 

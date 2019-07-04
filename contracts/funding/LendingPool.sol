@@ -49,6 +49,7 @@ import "./CollateralAccounts.sol";
 
 library LendingPool {
     using SafeMath for uint256;
+    using SafeMath for int256;
 
     // create new pool
     function initializeAssetLendingPool(
