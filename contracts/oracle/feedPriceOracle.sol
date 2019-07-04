@@ -25,13 +25,13 @@ import "../lib/SafeMath.sol";
 contract FeedPriceOracle is Ownable{
     using SafeMath for uint256;
 
-    address asset;
-    uint256 price;
-    uint256 lastBlockNumber;
-    uint256 validBlockNumber;
-    uint256 maxChangeRate;
-    uint256 minPrice;
-    uint256 maxPrice;
+    address public asset;
+    uint256 public price;
+    uint256 public lastBlockNumber;
+    uint256 public validBlockNumber;
+    uint256 public maxChangeRate;
+    uint256 public minPrice;
+    uint256 public maxPrice;
 
     uint256 constant ONE = 10**18;
 
@@ -49,6 +49,7 @@ contract FeedPriceOracle is Ownable{
     )
         public
     {
+        require(_minPrice <= _maxPrice, "MIN_PRICE_MUST_LESS_THAN_MAX_PRICE");
         asset = _asset;
         validBlockNumber = _validBlockNumber;
         maxChangeRate = _maxChangeRate;
@@ -65,6 +66,7 @@ contract FeedPriceOracle is Ownable{
         public
         onlyOwner
     {
+        require(_minPrice <= _maxPrice, "MIN_PRICE_MUST_LESS_THAN_MAX_PRICE");
         validBlockNumber = _validBlockNumber;
         maxChangeRate = _maxChangeRate;
         minPrice = _minPrice;

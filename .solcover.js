@@ -10,7 +10,10 @@ module.exports = {
         // have to skip the three files below
         'PriceOracle.sol',
         'HydroToken.sol',
-        'DefaultInterestModel.sol'
+        'DefaultInterestModel.sol',
+        'oracle/daiPriceOracle.sol',
+        'oracle/ethPriceOracle.sol',
+        'oracle/constPriceOracle.sol'
     ],
     testrpcOptions: '--port 6545 -g 1'
 };

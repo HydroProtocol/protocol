@@ -537,7 +537,8 @@ contract('Liquidate', accounts => {
         // u1 pay 50 USD debt at ratio 80% //
         /////////////////////////////////////
 
-        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+        // input 80 but will only use 50 of 80
+        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('80'), { from: u1 }), time);
 
         const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
@@ -569,7 +570,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
     });
 
-    it.only('fill auction when ratio more than 1', async () => {
+    it('fill auction when ratio more than 1', async () => {
         const initiaior = accounts[0];
         await hydro.updateInsuranceRatio(toWei('0.5'));
         await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));

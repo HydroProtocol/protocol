@@ -93,6 +93,8 @@ contract('Markets', accounts => {
         const market = await hydro.getMarket(0);
         assert.equal(market.baseAsset, baseAsset.address);
         assert.equal(market.quoteAsset, quoteAsset.address);
+        assert.equal((await hydro.getAssetOraclePrice(baseAsset.address)).toString(), toWei('100'));
+        assert.equal((await hydro.getAssetOraclePrice(quoteAsset.address)).toString(), toWei('1'));
     });
 
     it('can not add invalid market, same quote and base', async () => {

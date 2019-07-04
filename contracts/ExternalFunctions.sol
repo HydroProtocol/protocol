@@ -170,18 +170,6 @@ contract ExternalFunctions is GlobalStore {
     // LendingPool Functions //
     ///////////////////////////
 
-    function getLogicBorrowOf(
-        address asset,
-        address user,
-        uint16 marketID
-    )
-        external
-        view
-        returns (uint256 amount)
-    {
-        amount = state.pool.logicBorrow[user][marketID][asset];
-    }
-
     function getTotalBorrow(address asset)
         external
         view
