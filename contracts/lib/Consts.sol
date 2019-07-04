@@ -27,14 +27,6 @@ library Consts {
         return 31536000;
     }
 
-    function ORACLE_PRICE_BASE()
-        internal
-        pure
-        returns (uint256)
-    {
-        return 1000000000000000000;
-    }
-
     function ETHEREUM_TOKEN_ADDRESS()
         internal
         pure

@@ -62,12 +62,12 @@ library CollateralAccounts {
         details.debtsTotalUSDValue = SafeMath.add(
             baseBorrowOf.mul(baseUSDPrice),
             quoteBorrowOf.mul(quoteUSDPrice)
-        ) / Consts.ORACLE_PRICE_BASE();
+        ) / Decimal.one();
 
         details.balancesTotalUSDValue = SafeMath.add(
             account.balances[baseAsset].mul(baseUSDPrice),
             account.balances[quoteAsset].mul(quoteUSDPrice)
-        ) / Consts.ORACLE_PRICE_BASE();
+        ) / Decimal.one();
 
         if (details.status == Types.CollateralAccountStatus.Normal) {
             details.liquidatable = details.balancesTotalUSDValue < Decimal.mulCeil(details.debtsTotalUSDValue, market.liquidateRate);
@@ -80,7 +80,7 @@ library CollateralAccounts {
      * The amount that is avaliable to transfer out of the collateral account.
      * If there are no open loans, this is just the total asset balance.
      * If there is are open loans, then this is the maximum amount that can be withdrawn
-     * without falling below the minimum collateral ratio
+     * without falling below the withdraw collateral ratio
      */
     function getTransferableAmount(
         Store.State storage state,
@@ -94,44 +94,28 @@ library CollateralAccounts {
     {
         Types.CollateralAccountDetails memory details = getDetails(state, user, marketID);
 
+        // already checked at batch operation
         // liquidating or liquidatable account can't move asset
-        if (details.status == Types.CollateralAccountStatus.Liquid || details.liquidatable) {
-            return 0;
-        }
 
         uint256 assetBalance = state.accounts[user][marketID].balances[asset];
 
-        // no debt, can move all assets out
-        if (details.debtsTotalUSDValue == 0) {
-            return assetBalance;
-        }
-
-        if (assetBalance == 0) {
-            return 0;
-        }
-
         // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
-        uint256 transferableThresholdUSDValue = Decimal.mulFloor(
+        uint256 transferableThresholdUSDValue = Decimal.mulCeil(
             details.debtsTotalUSDValue,
             state.markets[marketID].withdrawRate
         );
 
         if(transferableThresholdUSDValue > details.balancesTotalUSDValue) {
             return 0;
+        } else {
+            uint256 transferableUSD = details.balancesTotalUSDValue - transferableThresholdUSDValue;
+            uint256 assetUSDPrice = state.assets[asset].priceOracle.getPrice(asset);
+            uint256 transferableAmount = Decimal.divFloor(transferableUSD, assetUSDPrice);
+            if (transferableAmount > assetBalance){
+                return assetBalance;
+            } else {
+                return transferableAmount;
+            }
         }
-
-        uint256 assetUSDPrice = state.assets[asset].priceOracle.getPrice(asset);
-
-        // round down
-        uint256 transferableAmount = SafeMath.mul(
-            details.balancesTotalUSDValue - transferableThresholdUSDValue,
-            Consts.ORACLE_PRICE_BASE()
-        ).div(assetUSDPrice);
-
-        if (transferableAmount > assetBalance) {
-            return assetBalance;
-        }
-
-        return transferableAmount;
     }
 }

@@ -27,7 +27,7 @@ contract PriceOracle is Ownable {
     // token price to ether price
     mapping(address => uint256) public tokenPrices;
 
-    // price decimals is 18 (ORACLE_PRICE_BASE)
+    // price decimals is 18
     function setPrice(
         address asset,
         uint256 price
