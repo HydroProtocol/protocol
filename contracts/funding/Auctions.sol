@@ -118,7 +118,7 @@ library Auctions {
         return (true, newAuctionID);
     }
 
-    function fillAuctionWithRatioLessOrEqualThanOne(
+    function fillHealthyAuction(
         Store.State storage state,
         Types.Auction storage auction,
         uint256 ratio,
@@ -200,7 +200,7 @@ library Auctions {
      * Msg.sender only need to afford bidderRepayAmount and get collateralAmount
      * insurance and suppliers will cover the badDebtAmount
      */
-    function fillAuctionWithRatioGreaterThanOne(
+    function fillBadAuction(
         Store.State storage state,
         Types.Auction storage auction,
         uint256 ratio,
@@ -225,7 +225,7 @@ library Auctions {
             state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
             repayAmount
         );
-        
+
         uint256 actualRepay = LendingPool.repay(
             state,
             auction.borrower,
@@ -281,9 +281,9 @@ library Auctions {
         uint256 ratio = auction.ratio(state);
 
         if (ratio <= Decimal.one()){
-            fillAuctionWithRatioLessOrEqualThanOne(state, auction, ratio, repayAmount);
+            fillHealthyAuction(state, auction, ratio, repayAmount);
         } else {
-            fillAuctionWithRatioGreaterThanOne(state, auction, ratio, repayAmount);
+            fillBadAuction(state, auction, ratio, repayAmount);
         }
 
         // reset account state if all debts are paid
