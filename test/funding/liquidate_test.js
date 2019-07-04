@@ -569,7 +569,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
     });
 
-    it('fill auction when ratio more than 1', async () => {
+    it.only('fill auction when ratio more than 1', async () => {
         const initiaior = accounts[0];
         await hydro.updateInsuranceRatio(toWei('0.5'));
         await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
@@ -600,74 +600,63 @@ contract('Liquidate', accounts => {
         /////////////////////////////////////////////////////
         // u1 has enough usd, pay 50 USD debt at ratio 150% //
         /////////////////////////////////////////////////////
-        // await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
 
-        // const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
-        // const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
+        const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
+        const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
 
-        // const u2USDBalance2 = await hydro.balanceOf(usdAsset.address, u2);
-        // const u2EthBalance2 = await hydro.balanceOf(ethAsset.address, u2);
+        const u2USDBalance2 = await hydro.balanceOf(usdAsset.address, u2);
+        const u2EthBalance2 = await hydro.balanceOf(ethAsset.address, u2);
 
-        // const initiaiorUSDBalance2 = await hydro.balanceOf(usdAsset.address, initiaior);
-        // const initiaiorEthBalance2 = await hydro.balanceOf(ethAsset.address, initiaior);
+        const initiaiorUSDBalance2 = await hydro.balanceOf(usdAsset.address, initiaior);
+        const initiaiorEthBalance2 = await hydro.balanceOf(ethAsset.address, initiaior);
 
-        // assert.equal(u1USDBalance2.sub(u1USDBalance1).toString(), toWei('-50'));
-        // assert.equal(u1EthBalance2.sub(u1EthBalance1).toString(), '749621081946249087');
+        assert.equal(u1USDBalance2.sub(u1USDBalance1).toString(), toWei('-50'));
+        assert.equal(u1EthBalance2.sub(u1EthBalance1).toString(), '749621081946249087');
 
-        // assert.equal(u2USDBalance2.sub(u2USDBalance1).toString(), toWei('0'));
-        // assert.equal(u2EthBalance2.sub(u2EthBalance1).toString(), toWei('0'));
+        assert.equal(u2USDBalance2.sub(u2USDBalance1).toString(), toWei('0'));
+        assert.equal(u2EthBalance2.sub(u2EthBalance1).toString(), toWei('0'));
 
-        // assert.equal(initiaiorUSDBalance2.sub(initiaiorUSDBalance1).toString(), toWei('0'));
-        // assert.equal(initiaiorEthBalance2.sub(initiaiorEthBalance1).toString(), toWei('0'));
+        assert.equal(initiaiorUSDBalance2.sub(initiaiorUSDBalance1).toString(), toWei('0'));
+        assert.equal(initiaiorEthBalance2.sub(initiaiorEthBalance1).toString(), toWei('0'));
 
-        // auctionDetails = await hydro.getAuctionDetails('0');
-        // assert.equal(auctionDetails.leftCollateralAmount, '250378918053750913');
-        // assert.equal(auctionDetails.leftDebtAmount, toWei('50'));
-        // assert.equal(auctionDetails.ratio, toWei('1.5'));
+        auctionDetails = await hydro.getAuctionDetails('0');
+        assert.equal(auctionDetails.leftCollateralAmount, '250378918053750913');
+        assert.equal(auctionDetails.leftDebtAmount, '25050547945205479501');
+        assert.equal(auctionDetails.ratio, toWei('1.5'));
 
-        // let accountDetails = await hydro.getAccountDetails(u2, marketID);
-        // assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
-        // assert.equal(accountDetails.debtsTotalUSDValue, toWei('50'));
-        // assert.equal(accountDetails.balancesTotalUSDValue, toWei('25'));
+        assert.equal((await hydro.getInsuranceBalance(usdAsset.address)).toString(), '0');
+        assert.equal(
+            (await hydro.getTotalSupply(usdAsset.address)).toString(),
+            '9975050547945205470000'
+        );
 
-        // // 49 blocks later
-        // for (let i = 0; i < 49; i++) await mine(time);
-        // auctionDetails = await hydro.getAuctionDetails('0');
+        let accountDetails = await hydro.getAccountDetails(u2, marketID);
+        assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
 
-        // // the next block number ratio will be 200%
-        // assert.equal(auctionDetails.ratio, toWei('1.99'));
+        //////////////////////////
+        // u1 pay the rest debt //
+        //////////////////////////
+        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
 
-        // /////////////////////////////////////
-        // // u1 pay 50 USD debt at ratio 200% //
-        // /////////////////////////////////////
-        // await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('80'), { from: u1 }), time);
+        const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
+        const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
 
-        // const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
-        // const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
+        assert.equal(u1USDBalance3.sub(u1USDBalance2).toString(), '-16589766851129456624');
+        assert.equal(u1EthBalance3.sub(u1EthBalance2).toString(), '250378918053750913');
+        assert.equal(
+            (await hydro.getTotalSupply(usdAsset.address)).toString(),
+            '9966589766851129440000'
+        );
 
-        // const u2USDBalance3 = await hydro.balanceOf(usdAsset.address, u2);
-        // const u2EthBalance3 = await hydro.balanceOf(ethAsset.address, u2);
+        auctionDetails = await hydro.getAuctionDetails('0');
 
-        // const initiaiorUSDBalance3 = await hydro.balanceOf(usdAsset.address, initiaior);
-        // const initiaiorEthBalance3 = await hydro.balanceOf(ethAsset.address, initiaior);
+        assert.equal(auctionDetails.leftCollateralAmount, toWei('0'));
+        assert.equal(auctionDetails.leftDebtAmount, toWei('0'));
 
-        // assert.equal(u1USDBalance3.sub(u1USDBalance2).toString(), toWei('-25'));
-        // assert.equal(u1EthBalance3.sub(u1EthBalance2).toString(), toWei('0.25'));
-
-        // assert.equal(u2USDBalance3.sub(u2USDBalance2).toString(), toWei('0'));
-        // assert.equal(u2EthBalance3.sub(u2EthBalance2).toString(), toWei('0'));
-
-        // assert.equal(initiaiorUSDBalance3.sub(initiaiorUSDBalance2).toString(), toWei('0'));
-        // assert.equal(initiaiorEthBalance3.sub(initiaiorEthBalance2).toString(), toWei('0'));
-
-        // auctionDetails = await hydro.getAuctionDetails('0');
-        // assert.equal(auctionDetails.leftCollateralAmount, toWei('0'));
-        // assert.equal(auctionDetails.leftDebtAmount, toWei('50'));
-        // assert.equal(auctionDetails.ratio, toWei('1.5'));
-
-        // let accountDetails = await hydro.getAccountDetails(u2, marketID);
-        // assert.equal(accountDetails.status, CollateralAccountStatus.Liquid);
-        // assert.equal(accountDetails.debtsTotalUSDValue, toWei('50'));
-        // assert.equal(accountDetails.balancesTotalUSDValue, toWei('25'));
+        accountDetails = await hydro.getAccountDetails(u2, marketID);
+        assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
+        assert.equal(accountDetails.debtsTotalUSDValue, toWei('0'));
+        assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
     });
 });
