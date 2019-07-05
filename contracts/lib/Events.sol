@@ -31,70 +31,117 @@ library Events {
 
     // some assets move into contract
     event Deposit(
-        address asset,
-        address from,
-        Types.BalancePath toPath,
+        address indexed user,
+        address indexed asset,
         uint256 amount
     );
 
     function logDeposit(
+        address user,
         address asset,
-        address from,
-        Types.BalancePath memory toPath,
         uint256 amount
     )
         internal
     {
         emit Deposit(
+            user,
             asset,
-            from,
-            toPath,
             amount
         );
     }
 
     // some assets move out of contract
     event Withdraw(
-        address asset,
-        Types.BalancePath fromPath,
-        address to,
+        address indexed user,
+        address indexed asset,
         uint256 amount
     );
 
     function logWithdraw(
+        address user,
         address asset,
-        Types.BalancePath memory fromPath,
-        address to,
         uint256 amount
     )
         internal
     {
-        emit Withdraw(asset,
-            fromPath,
-            to,
+        emit Withdraw(
+            user,
+            asset,
             amount
         );
     }
 
-    // internal assets movement
-    event Transfer(
-        address asset,
-        Types.BalancePath fromPath,
-        Types.BalancePath toPath,
+    // transfer between collateral account
+    event TransferCollateral (
+        address indexed user,
+        address indexed asset,
+        uint16 fromMarketID,
+        uint16 toMarketID,
         uint256 amount
     );
 
-    function logTransfer(
+    function logTransferCollateral(
+        address user,
         address asset,
-        Types.BalancePath memory fromPath,
-        Types.BalancePath memory toPath,
+        uint16 fromMarketID,
+        uint16 toMarketID,
         uint256 amount
     )
         internal
     {
-        emit Transfer(asset,
-            fromPath,
-            toPath,
+        emit TransferCollateral(
+            user,
+            asset,
+            fromMarketID,
+            toMarketID,
+            amount
+        );
+    }
+
+    // transfer from balance to collateral account
+    event IncreaseCollateral (
+        address indexed user,
+        uint16 indexed marketID,
+        address indexed asset,
+        uint256 amount
+    );
+
+    function logIncreaseCollateral(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit IncreaseCollateral(
+            user,
+            marketID,
+            asset,
+            amount
+        );
+    }
+
+    // transfer from collateral account to balance
+    event DecreaseCollateral (
+        address indexed user,
+        uint16 indexed marketID,
+        address indexed asset,
+        uint256 amount
+    );
+
+    function logDecreaseCollateral(
+        address user,
+        uint16 marketID,
+        address asset,
+        uint256 amount
+    )
+        internal
+    {
+        emit DecreaseCollateral(
+            user,
+            marketID,
+            asset,
             amount
         );
     }
@@ -104,9 +151,9 @@ library Events {
     //////////////////
 
     event Borrow(
-        address user,
-        uint16 marketID,
-        address asset,
+        address indexed user,
+        uint16 indexed marketID,
+        address indexed asset,
         uint256 amount
     );
 
@@ -127,9 +174,9 @@ library Events {
     }
 
     event Repay(
-        address user,
-        uint16 marketID,
-        address asset,
+        address indexed user,
+        uint16 indexed marketID,
+        address indexed asset,
         uint256 amount
     );
 
@@ -150,8 +197,8 @@ library Events {
     }
 
     event Supply(
-        address user,
-        address asset,
+        address indexed user,
+        address indexed asset,
         uint256 amount
     );
 
@@ -170,8 +217,8 @@ library Events {
     }
 
     event Unsupply(
-        address user,
-        address asset,
+        address indexed user,
+        address indexed asset,
         uint256 amount
     );
 
@@ -190,7 +237,7 @@ library Events {
     }
 
     event Loss(
-        address asset,
+        address indexed asset,
         uint256 amount
     );
 
@@ -207,19 +254,19 @@ library Events {
     }
 
     event InsuranceCompensation(
-        address debtAsset,
-        uint256 compensationAmount
+        address indexed asset,
+        uint256 amount
     );
 
     function logInsuranceCompensation(
-        address debtAsset,
-        uint256 compensationAmount
+        address asset,
+        uint256 amount
     )
         internal
     {
         emit InsuranceCompensation(
-            debtAsset,
-            compensationAmount
+            asset,
+            amount
         );
     }
 
@@ -361,25 +408,31 @@ library Events {
 
     // a user filled an acution
     event FillAuction(
-        uint256 auctionID,
-        uint256 filledAmount
+        uint256 indexed auctionID,
+        uint256 repayDebt,
+        uint256 bidderCollateral,
+        uint256 leftDebt
     );
 
     function logFillAuction(
         uint256 auctionID,
-        uint256 filledAmount
+        uint256 repayDebt,
+        uint256 bidderCollateral,
+        uint256 leftDebt
     )
         internal
     {
         emit FillAuction(
             auctionID,
-            filledAmount
+            repayDebt,
+            bidderCollateral,
+            leftDebt
         );
     }
 
     // an auction is finished
     event AuctionFinished(
-        uint256 auctionID
+        uint256 indexed auctionID
     );
 
     function logAuctionFinished(

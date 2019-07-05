@@ -7,13 +7,13 @@ module.exports = {
         'helper/TestSafeErc20.sol',
 
         // staticcall doesn't allow to emit events
-        // have to skip the three files below
+        // have to skip the files below
         'PriceOracle.sol',
         'HydroToken.sol',
         'DefaultInterestModel.sol',
-        'oracle/daiPriceOracle.sol',
-        'oracle/ethPriceOracle.sol',
-        'oracle/constPriceOracle.sol'
+        'oracle/DaiPriceOracle.sol',
+        'oracle/EthPriceOracle.sol',
+        'oracle/ConstPriceOracle.sol'
     ],
     testrpcOptions: '--port 6545 -g 1'
 };

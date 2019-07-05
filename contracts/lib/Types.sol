@@ -244,6 +244,17 @@ library Auction {
 }
 
 library BalancePath {
+
+    function isCollateralAccount(
+        Types.BalancePath memory path
+    )
+        internal
+        pure
+        returns (bool)
+    {
+        return path.category == Types.BalanceCategory.CollateralAccount;
+    }
+
     function getBalances(
         Types.BalancePath memory path,
         Store.State storage state

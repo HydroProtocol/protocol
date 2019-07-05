@@ -22,7 +22,7 @@ pragma experimental ABIEncoderV2;
 import "../lib/Ownable.sol";
 import "../lib/SafeMath.sol";
 
-contract FeedPriceOracle is Ownable{
+contract FeedPriceOracle is Ownable {
     using SafeMath for uint256;
 
     address public asset;
@@ -49,7 +49,7 @@ contract FeedPriceOracle is Ownable{
     )
         public
     {
-        require(_minPrice <= _maxPrice, "MIN_PRICE_MUST_LESS_THAN_MAX_PRICE");
+        require(_minPrice <= _maxPrice, "MIN_PRICE_MUST_LESS_OR_EQUAL_THAN_MAX_PRICE");
         asset = _asset;
         validBlockNumber = _validBlockNumber;
         maxChangeRate = _maxChangeRate;
@@ -66,7 +66,7 @@ contract FeedPriceOracle is Ownable{
         public
         onlyOwner
     {
-        require(_minPrice <= _maxPrice, "MIN_PRICE_MUST_LESS_THAN_MAX_PRICE");
+        require(_minPrice <= _maxPrice, "MIN_PRICE_MUST_LESS_OR_EQUAL_THAN_MAX_PRICE");
         validBlockNumber = _validBlockNumber;
         maxChangeRate = _maxChangeRate;
         minPrice = _minPrice;

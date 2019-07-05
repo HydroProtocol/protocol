@@ -277,32 +277,32 @@ library LendingPool {
      */
     function claimInsurance(
         Store.State storage state,
-        address debtAsset,
-        uint256 debtAmount
+        address asset,
+        uint256 amount
     )
         internal
     {
-        uint256 insuranceBalance = state.pool.insuranceBalances[debtAsset];
+        uint256 insuranceBalance = state.pool.insuranceBalances[asset];
 
-        uint256 compensationAmount = Math.min(debtAmount, insuranceBalance);
+        uint256 compensationAmount = Math.min(amount, insuranceBalance);
 
         // remove compensationAmount from insurance balances
-        state.pool.insuranceBalances[debtAsset] = SafeMath.sub(
-            state.pool.insuranceBalances[debtAsset],
+        state.pool.insuranceBalances[asset] = SafeMath.sub(
+            state.pool.insuranceBalances[asset],
             compensationAmount
         );
 
         // all suppliers pay debt if insurance not enough
-        if (compensationAmount < debtAmount){
+        if (compensationAmount < amount){
             recognizeLoss(
                 state,
-                debtAsset,
-                debtAmount.sub(compensationAmount)
+                asset,
+                amount.sub(compensationAmount)
             );
         }
 
         Events.logInsuranceCompensation(
-            debtAsset,
+            asset,
             compensationAmount
         );
 

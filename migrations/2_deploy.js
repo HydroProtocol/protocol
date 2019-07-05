@@ -1,5 +1,5 @@
 const Hydro = artifacts.require('Hydro');
-const PriceOracle = artifacts.require('PriceOracle');
+const PriceOracle = artifacts.require('./helper/PriceOracle');
 const HydroToken = artifacts.require('HydroToken');
 const DefaultInterestModel = artifacts.require('DefaultInterestModel');
 

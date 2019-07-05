@@ -5,7 +5,6 @@ const { toWei, logGas } = require('../utils');
 const { supply, transfer, borrow } = require('../../sdk/sdk');
 const { mineAt, getBlockTimestamp } = require('../utils/evm');
 const Hydro = artifacts.require('./Hydro.sol');
-const PriceOracle = artifacts.require('./PriceOracle.sol');
 
 contract('Insurance', accounts => {
     let hydro;

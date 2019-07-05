@@ -17,31 +17,38 @@
 */
 
 pragma solidity ^0.5.8;
-pragma experimental ABIEncoderV2;
 
-import "./lib/Ownable.sol";
-import "./lib/Consts.sol";
+interface IEth2Dai{
+    function isClosed()
+        external
+        view
+        returns (bool);
 
-contract PriceOracle is Ownable {
+    function buyEnabled()
+        external
+        view
+        returns (bool);
 
-    // token price to ether price
-    mapping(address => uint256) public tokenPrices;
-
-    // price decimals is 18
-    function setPrice(
-        address asset,
-        uint256 price
-    ) external onlyOwner {
-        tokenPrices[asset] = price;
-    }
-
-    function getPrice(
-        address asset
+    function matchingEnabled()
+        external
+        view
+        returns (bool);
+    
+    function getBuyAmount(
+        address buy_gem,
+        address pay_gem,
+        uint256 pay_amt
     )
         external
         view
-        returns (uint256)
-    {
-        return tokenPrices[asset];
-    }
+        returns (uint256);
+
+    function getPayAmount(
+        address pay_gem,
+        address buy_gem,
+        uint256 buy_amt
+    )
+        external
+        view
+        returns (uint256);
 }

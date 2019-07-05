@@ -1,7 +1,7 @@
 require('../utils/hooks');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
-const PriceOracle = artifacts.require('./PriceOracle.sol');
+const PriceOracle = artifacts.require('./helper/PriceOracle.sol');
 // const TestToken = artifacts.require('./helper/TestToken.sol');
 
 const { newMarket, depositMarket } = require('../utils/assets');
@@ -475,7 +475,7 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.ratio, toWei('0.01'));
     };
 
-    it('fill auction when ratio less than 1', async () => {
+    it('fill healthy auction', async () => {
         const initiaior = accounts[0];
         await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
         await createLiquidatingAccount();
@@ -499,7 +499,11 @@ contract('Liquidate', accounts => {
         /////////////////////////////////////////////////////
         // u1 has enough usd, pay 50 USD debt at ratio 50% //
         /////////////////////////////////////////////////////
-        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+        let res = await mineAt(
+            () => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }),
+            time
+        );
+        logGas(res, 'hydro.fillHealthyAuction (no truncate)');
 
         const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
@@ -529,7 +533,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('50'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('50'));
 
-        // 29 blocks later
+        // // 29 blocks later
         for (let i = 0; i < 29; i++) await mine(time);
         auctionDetails = await hydro.getAuctionDetails('0');
 
@@ -541,7 +545,8 @@ contract('Liquidate', accounts => {
         /////////////////////////////////////
 
         // input 80 but will only use 50 of 80
-        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('80'), { from: u1 }), time);
+        res = await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('80'), { from: u1 }), time);
+        logGas(res, 'hydro.fillHealthyAuction (truncate)');
 
         const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
@@ -573,7 +578,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
     });
 
-    it('fill auction when ratio more than 1', async () => {
+    it.only('fill bad auction', async () => {
         const initiaior = accounts[0];
         await hydro.updateInsuranceRatio(toWei('0.5'));
         await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));
@@ -604,7 +609,11 @@ contract('Liquidate', accounts => {
         /////////////////////////////////////////////////////
         // u1 has enough usd, pay 50 USD debt at ratio 150% //
         /////////////////////////////////////////////////////
-        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+        let res = await mineAt(
+            () => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }),
+            time
+        );
+        logGas(res, 'hydro.fillBadAuction (no truncate)');
 
         const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
@@ -641,7 +650,8 @@ contract('Liquidate', accounts => {
         //////////////////////////
         // u1 pay the rest debt //
         //////////////////////////
-        await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+        res = await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+        logGas(res, 'hydro.fillHealthyAuction (truncate)');
 
         const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);

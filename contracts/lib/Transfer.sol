@@ -35,54 +35,47 @@ library Transfer {
 
     /** @dev Transfer asset into current contract
       */
-    function depositFor(
+    function deposit(
         Store.State storage state,
         address asset,
-        address from,
-        Types.BalancePath memory toBalancePath,
         uint256 amount
     )
         internal
     {
         if (asset != Consts.ETHEREUM_TOKEN_ADDRESS()) {
-            SafeERC20.safeTransferFrom(asset, from, address(this), amount);
+            SafeERC20.safeTransferFrom(asset, msg.sender, address(this), amount);
         } else {
             require(amount == msg.value, "MSG_VALUE_AND_AMOUNT_MISMATCH");
         }
 
-        mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
-        toBalances[asset] = toBalances[asset].add(amount);
+        state.balances[msg.sender][asset] = state.balances[msg.sender][asset].add(amount);
 
         state.cash[asset] = state.cash[asset].add(amount);
-        Events.logDeposit(asset, from, toBalancePath, amount);
+        Events.logDeposit(msg.sender, asset, amount);
     }
 
     /** @dev Transfer asset out of current contract
       */
-    function withdrawFrom(
+    function withdraw(
         Store.State storage state,
         address asset,
-        Types.BalancePath memory fromBalancePath,
-        address payable to,
         uint256 amount
     )
         internal
     {
-        mapping(address => uint256) storage fromBalances = fromBalancePath.getBalances(state);
+       require(state.balances[msg.sender][asset] >= amount, "BALANCE_NOT_ENOUGH");
 
-        require(fromBalances[asset] >= amount, "BALANCE_NOT_ENOUGH");
-
-        fromBalances[asset] = fromBalances[asset] - amount;
+        state.balances[msg.sender][asset] = state.balances[msg.sender][asset] - amount;
 
         if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
-            to.transfer(amount);
+            msg.sender.transfer(amount);
         } else {
-            SafeERC20.safeTransfer(asset, to, amount);
+            SafeERC20.safeTransfer(asset, msg.sender, amount);
         }
 
         state.cash[asset] = state.cash[asset].sub(amount);
 
-        Events.logWithdraw(asset, fromBalancePath, to, amount);
+        Events.logWithdraw(msg.sender, asset, amount);
     }
 
     /** @dev Get a user's asset balance
@@ -124,6 +117,17 @@ library Transfer {
         fromBalances[asset] = fromBalances[asset] - amount;
         toBalances[asset] = toBalances[asset].add(amount);
 
-        Events.logTransfer(asset, fromBalancePath, toBalancePath, amount);
+        if (fromBalancePath.isCollateralAccount() && toBalancePath.isCollateralAccount()) {
+            Events.logTransferCollateral(msg.sender, asset, fromBalancePath.marketID, toBalancePath.marketID, amount);
+            return;
+        }
+        if (toBalancePath.isCollateralAccount()){
+            Events.logIncreaseCollateral(msg.sender, toBalancePath.marketID, asset, amount);
+            return;
+        }
+        if (fromBalancePath.isCollateralAccount()){
+            Events.logDecreaseCollateral(msg.sender, fromBalancePath.marketID, asset, amount);
+            return;
+        }
     }
 }

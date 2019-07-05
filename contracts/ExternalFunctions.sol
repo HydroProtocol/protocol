@@ -321,11 +321,9 @@ contract ExternalFunctions is GlobalStore {
         payable
     {
         // deposit ${msg.value} ether for ${msg.sender}
-        Transfer.depositFor(
+        Transfer.deposit(
             state,
             Consts.ETHEREUM_TOKEN_ADDRESS(),
-            msg.sender,
-            BalancePath.getCommonPath(msg.sender),
             msg.value
         );
     }

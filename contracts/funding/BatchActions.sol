@@ -24,6 +24,7 @@ import "./LendingPool.sol";
 import "../lib/Store.sol";
 import "../lib/Requires.sol";
 import "../lib/Transfer.sol";
+import "../lib/Events.sol";
 
 /**
  * A library allows user to do multi actions at once in a single transaction.
@@ -100,11 +101,9 @@ library BatchActions {
             )
         );
 
-        Transfer.depositFor(
+        Transfer.deposit(
             state,
             asset,
-            msg.sender,
-            BalancePath.getCommonPath(msg.sender),
             amount
         );
     }
@@ -126,11 +125,9 @@ library BatchActions {
             )
         );
 
-        Transfer.withdrawFrom(
+        Transfer.withdraw(
             state,
             asset,
-            BalancePath.getCommonPath(msg.sender),
-            msg.sender,
             amount
         );
     }
@@ -156,8 +153,8 @@ library BatchActions {
             )
         );
 
-        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHERS_ASSET");
-        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER");
+        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHER_USER_ASSET");
+        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER_USER");
 
         Requires.requireCollateralAccountNormalStatus(state, fromBalancePath);
         Requires.requireCollateralAccountNormalStatus(state, toBalancePath);

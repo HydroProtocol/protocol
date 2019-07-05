@@ -19,30 +19,29 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "../interfaces/IMakerDaoOracle.sol";
+import "../lib/Ownable.sol";
+import "../lib/Consts.sol";
 
-contract EthPriceOracle {
+contract PriceOracle is Ownable {
 
-    IMakerDaoOracle public makerDaoOracle;
+    // token price to ether price
+    mapping(address => uint256) public tokenPrices;
 
-    constructor(
-        address _makerDaoOracle
-    )
-        public
-    {
-        makerDaoOracle = IMakerDaoOracle(_makerDaoOracle);
+    // price decimals is 18
+    function setPrice(
+        address asset,
+        uint256 price
+    ) external onlyOwner {
+        tokenPrices[asset] = price;
     }
 
     function getPrice(
-        address _asset
+        address asset
     )
-        public
+        external
         view
         returns (uint256)
     {
-        require(_asset == address(0), "ASSET_NOT_MATCH");
-        (bytes32 value, ) = makerDaoOracle.peek();
-        return uint256(value);
+        return tokenPrices[asset];
     }
-
 }

@@ -1,4 +1,4 @@
-const PriceOracle = artifacts.require('./PriceOracle.sol');
+const PriceOracle = artifacts.require('./helper/PriceOracle.sol');
 const Hydro = artifacts.require('./Hydro.sol');
 const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');

@@ -2,7 +2,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const { toWei, logGas } = require('../utils');
-const { newMarket } = require('../utils/assets');
+const { newMarket, createAsset } = require('../utils/assets');
 const { deposit, withdraw, transfer } = require('../../sdk/sdk.js');
 
 contract('Transfer', accounts => {
@@ -12,7 +12,7 @@ contract('Transfer', accounts => {
     const hugeAmount = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
     const user = accounts[0];
 
-    const createMarket = () => {
+    const createMarketETHUSD = () => {
         return newMarket({
             assetConfigs: [
                 {
@@ -62,7 +62,7 @@ contract('Transfer', accounts => {
     });
 
     it('deposit token successfully', async () => {
-        const { quoteAsset } = await createMarket();
+        const { quoteAsset } = await createMarketETHUSD();
 
         const balanceBefore = await hydro.balanceOf(quoteAsset.address, user);
         assert.equal(balanceBefore.toString(), toWei('0'));
@@ -78,14 +78,14 @@ contract('Transfer', accounts => {
     });
 
     it('deposit token unsuccessfully (no allowance)', async () => {
-        const { quoteAsset } = await createMarket();
+        const { quoteAsset } = await createMarketETHUSD();
 
         // try to deposit hugeAmount
         await assert.rejects(deposit(quoteAsset.address, hugeAmount), /TOKEN_TRANSFER_FROM_ERROR/);
     });
 
     it('deposit token unsuccessfully (not enough balance)', async () => {
-        const { quoteAsset } = await createMarket();
+        const { quoteAsset } = await createMarketETHUSD();
 
         // approve
         await quoteAsset.approve(hydro.address, hugeAmount);
@@ -122,7 +122,7 @@ contract('Transfer', accounts => {
 
     it('withdraw token successfully', async () => {
         // prepare
-        const { quoteAsset } = await createMarket();
+        const { quoteAsset } = await createMarketETHUSD();
         await quoteAsset.approve(hydro.address, hugeAmount);
 
         await deposit(quoteAsset.address, toWei('1'));
@@ -135,7 +135,7 @@ contract('Transfer', accounts => {
 
     it('withdraw token unsuccessfully', async () => {
         // prepare
-        const { quoteAsset } = await createMarket();
+        const { quoteAsset } = await createMarketETHUSD();
         await quoteAsset.approve(hydro.address, hugeAmount);
         await deposit(quoteAsset.address, toWei('1'));
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('1'));
@@ -147,7 +147,7 @@ contract('Transfer', accounts => {
 
     it('transfer ether successfully', async () => {
         // prepare
-        await createMarket();
+        await createMarketETHUSD();
 
         await deposit(etherAsset, toWei('1'), { value: toWei('1') });
         const balanceBefore = await hydro.balanceOf(etherAsset, user);
@@ -172,17 +172,52 @@ contract('Transfer', accounts => {
             toWei('1')
         );
 
-        logGas(res, 'transfer ether (common -> market)');
+        logGas(res, 'transfer ether (common -> collateralAccount)');
 
         const balanceAfter = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceAfter.toString(), toWei('0'));
 
         const marketBalanceAfter = await hydro.marketBalanceOf(0, etherAsset, user);
         assert.equal(marketBalanceAfter.toString(), toWei('1'));
+
+        const daiAddress = (await createAsset({
+            symbol: 'DAI',
+            name: 'DAI',
+            decimals: 18,
+            oraclePrice: toWei('1')
+        })).address;
+        await hydro.createMarket({
+            liquidateRate: toWei('1.2'),
+            withdrawRate: toWei('2'),
+            baseAsset: daiAddress,
+            quoteAsset: etherAsset,
+            auctionRatioStart: toWei('0.01'),
+            auctionRatioPerBlock: toWei('0.01')
+        });
+
+        res = await transfer(
+            etherAsset,
+            {
+                category: 1,
+                marketID: 0,
+                user: user
+            },
+            {
+                category: 1,
+                marketID: 1,
+                user: user
+            },
+            toWei('1')
+        );
+
+        logGas(res, 'transfer ether (collateralAccount -> collateralAccount)');
+
+        assert.equal((await hydro.marketBalanceOf(1, etherAsset, user)).toString(), toWei('1'));
+        assert.equal((await hydro.marketBalanceOf(0, etherAsset, user)).toString(), toWei('0'));
     });
 
     it('transfer ether unsuccessfully', async () => {
-        await createMarket();
+        await createMarketETHUSD();
 
         const balanceBefore = await hydro.balanceOf(etherAsset, user);
         assert.equal(balanceBefore.toString(), toWei('0'));
@@ -209,7 +244,7 @@ contract('Transfer', accounts => {
 
     it('transfer token successfully', async () => {
         // prepare
-        const { quoteAsset } = await createMarket();
+        const { quoteAsset } = await createMarketETHUSD();
         await quoteAsset.approve(hydro.address, hugeAmount);
         await deposit(quoteAsset.address, toWei('1'));
 
@@ -232,15 +267,56 @@ contract('Transfer', accounts => {
             toWei('1')
         );
 
-        logGas(res, 'transfer token (common -> market)');
+        logGas(res, 'transfer token (common -> collateralAccount)');
 
         assert.equal(await hydro.balanceOf(quoteAsset.address, user), toWei('0'));
         assert.equal(await hydro.marketBalanceOf(0, quoteAsset.address, user), toWei('1'));
+
+        const daiAddress = (await createAsset({
+            symbol: 'DAI',
+            name: 'DAI',
+            decimals: 18,
+            oraclePrice: toWei('1')
+        })).address;
+        await hydro.createMarket({
+            liquidateRate: toWei('1.2'),
+            withdrawRate: toWei('2'),
+            baseAsset: daiAddress,
+            quoteAsset: quoteAsset.address,
+            auctionRatioStart: toWei('0.01'),
+            auctionRatioPerBlock: toWei('0.01')
+        });
+
+        res = await transfer(
+            quoteAsset.address,
+            {
+                category: 1,
+                marketID: 0,
+                user: user
+            },
+            {
+                category: 1,
+                marketID: 1,
+                user: user
+            },
+            toWei('1')
+        );
+
+        logGas(res, 'transfer ether (collateralAccount -> collateralAccount)');
+
+        assert.equal(
+            (await hydro.marketBalanceOf(1, quoteAsset.address, user)).toString(),
+            toWei('1')
+        );
+        assert.equal(
+            (await hydro.marketBalanceOf(0, quoteAsset.address, user)).toString(),
+            toWei('0')
+        );
     });
 
     it('transfer token unsuccessfully', async () => {
         // prepare
-        const { quoteAsset } = await createMarket();
+        const { quoteAsset } = await createMarketETHUSD();
         await quoteAsset.approve(hydro.address, hugeAmount);
         await deposit(quoteAsset.address, toWei('1'));
 

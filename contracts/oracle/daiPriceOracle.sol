@@ -22,48 +22,8 @@ pragma experimental ABIEncoderV2;
 import "../lib/Ownable.sol";
 import "../lib/SafeMath.sol";
 import "../interfaces/IStandardToken.sol";
-
-interface IMakerDaoOracle{
-    function peek()
-        external
-        view
-        returns (bytes32, bool);
-}
-
-interface IOasisDex{
-    function isClosed()
-        external
-        view
-        returns (bool);
-
-    function buyEnabled()
-        external
-        view
-        returns (bool);
-
-    function matchingEnabled()
-        external
-        view
-        returns (bool);
-    
-    function getBuyAmount(
-        address buy_gem,
-        address pay_gem,
-        uint256 pay_amt
-    )
-        external
-        view
-        returns (uint256);
-
-    function getPayAmount(
-        address pay_gem,
-        address buy_gem,
-        uint256 buy_amt
-    )
-        external
-        view
-        returns (uint256);
-}
+import "../interfaces/IEth2Dai.sol";
+import "../interfaces/IMakerDaoOracle.sol";
 
 contract DaiPriceOracle is Ownable {
     using SafeMath for uint256;
@@ -73,7 +33,7 @@ contract DaiPriceOracle is Ownable {
     IStandardToken public WETH;
     IStandardToken public DAI;
     IMakerDaoOracle public makerDaoOracle;
-    IOasisDex public OASIS;
+    IEth2Dai public OASIS;
     address public UNISWAP;
 
     uint256 public oasisETHAmount;
@@ -81,6 +41,9 @@ contract DaiPriceOracle is Ownable {
     uint256 public uniswapMinETHAmount;
 
     uint256 constant ONE = 10**18;
+
+    event UpdatePrice(uint256 newPrice);
+    event UpdatePriceMannually(uint256 newPrice);
 
     constructor(
         address _weth,
@@ -98,7 +61,7 @@ contract DaiPriceOracle is Ownable {
         DAI = IStandardToken(_dai);
         makerDaoOracle = IMakerDaoOracle(_makerDaoOracle);
 
-        OASIS = IOasisDex(_oasis);
+        OASIS = IEth2Dai(_oasis);
         UNISWAP = _uniswap;
 
         oasisETHAmount = _oasisETHAmount;
@@ -125,14 +88,15 @@ contract DaiPriceOracle is Ownable {
         uint256 oasisPrice = getOasisPrice();
         if (oasisPrice > 0){
             price = ethUsdPrice.mul(ONE).div(oasisPrice);
-            return price;
+        } else {
+            uint256 uniswapPrice = getUniswapPrice();
+            if (uniswapPrice > 0){
+                price = ethUsdPrice.mul(ONE).div(uniswapPrice);
+            } else {
+                return 0;
+            }
         }
-        uint256 uniswapPrice = getUniswapPrice();
-        if (uniswapPrice > 0){
-            price = ethUsdPrice.mul(ONE).div(uniswapPrice);
-            return price;
-        }
-        return 0;
+        emit UpdatePrice(price);
     }
 
     // only enabled when oasis and uniswap both failed
@@ -146,6 +110,7 @@ contract DaiPriceOracle is Ownable {
         uint256 autoUpdatedPrice = updatePrice();
         if (autoUpdatedPrice == 0){
             price = newPrice;
+            emit UpdatePriceMannually(newPrice);
         }
         return price;
     }
@@ -164,10 +129,10 @@ contract DaiPriceOracle is Ownable {
             return 0;
         }
 
-        // TODO usd call to catch revert
+        // TODO use call to catch revert
         // https://blog.polymath.network/try-catch-in-solidity-handling-the-revert-exception-f53718f76047
         uint256 bidDai = OASIS.getBuyAmount(address(DAI), address(WETH), oasisETHAmount); // bid
-        uint256 askDai = OASIS.getPayAmount(address(DAI), address(WETH), oasisETHAmount); // ask 
+        uint256 askDai = OASIS.getPayAmount(address(DAI), address(WETH), oasisETHAmount); // ask
 
         uint256 bidPrice = bidDai.mul(ONE).div(oasisETHAmount);
         uint256 askPrice = askDai.mul(ONE).div(oasisETHAmount);

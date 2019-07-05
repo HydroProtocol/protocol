@@ -17,32 +17,10 @@
 */
 
 pragma solidity ^0.5.8;
-pragma experimental ABIEncoderV2;
 
-import "../interfaces/IMakerDaoOracle.sol";
-
-contract EthPriceOracle {
-
-    IMakerDaoOracle public makerDaoOracle;
-
-    constructor(
-        address _makerDaoOracle
-    )
-        public
-    {
-        makerDaoOracle = IMakerDaoOracle(_makerDaoOracle);
-    }
-
-    function getPrice(
-        address _asset
-    )
-        public
+interface IMakerDaoOracle{
+    function peek()
+        external
         view
-        returns (uint256)
-    {
-        require(_asset == address(0), "ASSET_NOT_MATCH");
-        (bytes32 value, ) = makerDaoOracle.peek();
-        return uint256(value);
-    }
-
+        returns (bytes32, bool);
 }

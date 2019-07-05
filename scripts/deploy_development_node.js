@@ -1,7 +1,7 @@
 const TestToken = artifacts.require('./helper/TestToken.sol');
 const BigNumber = require('bignumber.js');
 const Hydro = artifacts.require('./Hydro.sol');
-const PriceOracle = artifacts.require('./PriceOracle.sol');
+const PriceOracle = artifacts.require('./helper/PriceOracle.sol');
 const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 BigNumber.config({
     EXPONENTIAL_AT: 1000
