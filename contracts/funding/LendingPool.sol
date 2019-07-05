@@ -30,20 +30,22 @@ import "../lib/ExternalCaller.sol";
 import "./CollateralAccounts.sol";
 
 /**
+ * This library contains a full implementation of a lending pool with algorithmly determined interest rates.
  *
- * Inside this library, the concept of normalizedAmount and poolIndex are used to simplify computations.
- * Index is a number that starts at 1 and increases as interest accumilates.
- * An index of 2 means 100% interest rate has bee accumiliated.
+ * There are two variables used throughout this library to simplify computations:
+ * 1) index: a number that starts at 1 and increases as interest accumulates.
+ * An index of 2 means 100% interest rate has been already earned.
  * 
- * For an amount x, normalizedAmount = x/index. This means if you put in x/index in the beginning, it would be worth exactly x now.
- * The benefit of lining it this way is that its easier to aggregate and less book-keeping is needed.
+ * 2) normalizedAmount: For an amount x, normalizedAmount = x/index.
+ * If you put in normalizedAmount at time=0, it would be worth exactly x currently.
+ * normalizedAmount in effect 'lines' up all balances for much simpler aggregation and computation.
  *
  * There are four primary operations for the lending pool:
- * supply, unsupply, borrow, repay. The order of operation is consistent for all of them:
- * 1. update index first, then compute the normalizedAmount
+ * supply, unsupply, borrow, repay. The order of operation needs to be consistent:
+ * 1. update index(based on interest)
  * 2. transfer asset
- * 3. change normalizedAmount for supply and borrow
- * 4. update interest rate based on new state
+ * 3. update new total amounts for borrow/supply
+ * 4. update interest rate based on new total amounts
  */
 
 
@@ -85,7 +87,7 @@ library LendingPool {
         updateIndex(state, asset);
 
         // compute the normalized value of 'amount'
-        // round floor
+        // conservatively round down when adding to the pool
         uint256 logicAmount = Decimal.divFloor(amount, state.pool.supplyIndex[asset]);
 
         // transfer asset from user's balance account
@@ -120,7 +122,7 @@ library LendingPool {
         updateIndex(state, asset);
 
         // compute the normalized value of 'amount'
-        // round ceiling
+        // conservatively round up when taking out of the pool
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
 
         uint256 withdrawAmount = amount;
