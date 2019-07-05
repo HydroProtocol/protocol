@@ -228,6 +228,15 @@ library Types {
 library Auction {
     using SafeMath for uint256;
 
+    /**
+     * In the simplest case, the auction mechanism starts by offering a percentage of the collateral
+     * in return for repayment of the entire debt. The percentage increases over time to entice filling of the auction.
+     * This method returns the percentage of collateral currently offered.
+     *
+     * A ratio of 1 already implies the entire collateral is up for grabs.
+     * However, the ratio can actually be greater than one, which means the auction currently has subsidies,
+     * and only `debt/ratio` has to be paid in order to receive the entire collateral.
+     */
     function ratio(
         Types.Auction memory auction,
         Store.State storage state
