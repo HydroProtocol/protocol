@@ -119,7 +119,13 @@ library Auctions {
         return (true, newAuctionID);
     }
 
-    function fillHealthyAuction(
+    /**
+     * An auction is considered standard if the collateral is more valuable than the debt.
+     * The overwhelming of auctions in practice falls into this standard case.
+     * Given the constrant that collateral > debt, once the debt is paid of, the remaining collateral is divided
+     * between the borrower and the initiator.
+     */
+    function fillStandardAuction(
         Store.State storage state,
         Types.Auction storage auction,
         uint256 ratio,
@@ -284,7 +290,7 @@ library Auctions {
         uint256 collateralForBidder;
 
         if (ratio <= Decimal.one()){
-            (actualRepayAmount, collateralForBidder) = fillHealthyAuction(state, auction, ratio, repayAmount);
+            (actualRepayAmount, collateralForBidder) = fillStandardAuction(state, auction, ratio, repayAmount);
         } else {
             (actualRepayAmount, collateralForBidder) = fillSubsidizedAuction(state, auction, ratio, repayAmount);
         }
