@@ -378,7 +378,7 @@ library Auctions {
         details.debtAsset = auction.debtAsset;
         details.collateralAsset = auction.collateralAsset;
 
-        details.remainingDebt = LendingPool.getAmountBorrowed(
+        details.leftDebtAmount = LendingPool.getAmountBorrowed(
             state,
             auction.debtAsset,
             auction.borrower,
@@ -391,7 +391,7 @@ library Auctions {
         details.ratioNextBlock = details.ratio.add(state.markets[auction.marketID].auctionRatioPerBlock);
 
         if (details.leftCollateralAmount != 0){
-            uint256 bookPrice = Decimal.divFloor(details.remainingDebt, details.leftCollateralAmount);
+            uint256 bookPrice = Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount);
             if (details.ratio != 0){
                 details.price = Decimal.divFloor(bookPrice, details.ratio);
             }
