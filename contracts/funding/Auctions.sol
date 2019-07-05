@@ -35,7 +35,8 @@ library Auctions {
     using Auction for Types.Auction;
 
     /**
-     * Liquidate a collateral account
+     * Liquidate a collateral account.
+     * This will revert unless the account is deemed liquidatable (insufficient collateral)
      */
     function liquidate(
         Store.State storage state,
