@@ -270,7 +270,7 @@ library Auctions {
     }
 
     // ensure repay no more than repayAmount
-    function fillAuctionWithAmount(
+    function fillAuction(
         Store.State storage state,
         uint32 auctionID,
         uint256 repayAmount

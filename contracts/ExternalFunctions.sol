@@ -147,13 +147,13 @@ contract ExternalFunctions is GlobalStore {
         details = Auctions.getAuctionDetails(state, auctionID);
     }
 
-    function fillAuctionWithAmount(
+    function fillAuction(
         uint32 auctionID,
         uint256 amount
     )
         external
     {
-        Auctions.fillAuctionWithAmount(state, auctionID, amount);
+        Auctions.fillAuction(state, auctionID, amount);
     }
 
     function liquidateAccount(

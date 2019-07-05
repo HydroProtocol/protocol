@@ -500,7 +500,7 @@ contract('Liquidate', accounts => {
         // u1 has enough usd, pay 50 USD debt at ratio 50% //
         /////////////////////////////////////////////////////
         let res = await mineAt(
-            () => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }),
+            () => hydro.fillAuction(0, toWei('50'), { from: u1 }),
             time
         );
         logGas(res, 'hydro.fillHealthyAuction (no truncate)');
@@ -545,7 +545,7 @@ contract('Liquidate', accounts => {
         /////////////////////////////////////
 
         // input 80 but will only use 50 of 80
-        res = await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('80'), { from: u1 }), time);
+        res = await mineAt(() => hydro.fillAuction(0, toWei('80'), { from: u1 }), time);
         logGas(res, 'hydro.fillHealthyAuction (truncate)');
 
         const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
@@ -610,7 +610,7 @@ contract('Liquidate', accounts => {
         // u1 has enough usd, pay 50 USD debt at ratio 150% //
         /////////////////////////////////////////////////////
         let res = await mineAt(
-            () => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }),
+            () => hydro.fillAuction(0, toWei('50'), { from: u1 }),
             time
         );
         logGas(res, 'hydro.fillSubsidizedAuction (no truncate)');
@@ -650,7 +650,7 @@ contract('Liquidate', accounts => {
         //////////////////////////
         // u1 pay the rest debt //
         //////////////////////////
-        res = await mineAt(() => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }), time);
+        res = await mineAt(() => hydro.fillAuction(0, toWei('50'), { from: u1 }), time);
         logGas(res, 'hydro.fillHealthyAuction (truncate)');
 
         const u1USDBalance3 = await hydro.balanceOf(usdAsset.address, u1);
