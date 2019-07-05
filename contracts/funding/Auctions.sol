@@ -359,6 +359,7 @@ library Auctions {
         return id;
     }
 
+    // price = debt / collateral / ratio
     function getAuctionDetails(
         Store.State storage state,
         uint32 auctionID
@@ -380,6 +381,12 @@ library Auctions {
         );
 
         details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
+
         details.ratio = auction.ratio(state);
+        details.ratioNextBlock = details.ratio.add(state.markets[auction.marketID].auctionRatioPerBlock);
+
+        uint256 bookPrice = Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount);
+        details.price = Decimal.divFloor(bookPrice, details.ratio);
+        details.priceNextBlock = Decimal.divFloor(bookPrice, details.ratioNextBlock);
     }
 }

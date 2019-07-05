@@ -138,6 +138,9 @@ library Types {
         uint256 leftDebtAmount;
         uint256 leftCollateralAmount;
         uint256 ratio;
+        uint256 ratioNextBlock;
+        uint256 price;
+        uint256 priceNextBlock;
     }
 
     struct Order {
