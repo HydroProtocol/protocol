@@ -195,11 +195,11 @@ library Auctions {
     }
 
     /**
-
-     * Msg.sender only need to afford bidderRepayAmount and get collateralAmount
-     * insurance and suppliers will cover the badDebtAmount
+     * In the case where the collateral is no longer valuable enough to cover the debt,
+     * subsidies kicks in. Participant can bid for the entire collateral
+     * for only paying part of the debt. The remaining debt is subsidized by the insurance pool
      */
-    function fillBadAuction(
+    function fillSubsidizedAuction(
         Store.State storage state,
         Types.Auction storage auction,
         uint256 ratio,
@@ -285,7 +285,7 @@ library Auctions {
         if (ratio <= Decimal.one()){
             (actualRepayAmount, collateralForBidder) = fillHealthyAuction(state, auction, ratio, repayAmount);
         } else {
-            (actualRepayAmount, collateralForBidder) = fillBadAuction(state, auction, ratio, repayAmount);
+            (actualRepayAmount, collateralForBidder) = fillSubsidizedAuction(state, auction, ratio, repayAmount);
         }
 
         // reset account state if all debts are paid

@@ -613,7 +613,7 @@ contract('Liquidate', accounts => {
             () => hydro.fillAuctionWithAmount(0, toWei('50'), { from: u1 }),
             time
         );
-        logGas(res, 'hydro.fillBadAuction (no truncate)');
+        logGas(res, 'hydro.fillSubsidizedAuction (no truncate)');
 
         const u1USDBalance2 = await hydro.balanceOf(usdAsset.address, u1);
         const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
