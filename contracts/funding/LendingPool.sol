@@ -35,7 +35,7 @@ import "./CollateralAccounts.sol";
  * There are two variables used throughout this library to simplify computations:
  * 1) index: a number that starts at 1 and increases as interest accumulates.
  * An index of 2 means 100% interest rate has been already earned.
- * 
+ *
  * 2) normalizedAmount: For an amount x, normalizedAmount = x/index.
  * If you put in normalizedAmount at time=0, it would be worth exactly x currently.
  * normalizedAmount in effect 'lines' up all balances for much simpler aggregation and computation.
@@ -84,7 +84,7 @@ library LendingPool {
         mapping(address => uint256) storage balances = state.balances[user];
 
         // update value of index at this moment in time
-        updateIndex(state, asset);
+        updateIndices(state, asset);
 
         // compute the normalized value of 'amount'
         // conservatively round down when adding to the pool
@@ -119,7 +119,7 @@ library LendingPool {
         mapping(address => uint256) storage balances = state.balances[user];
 
         // update value of index at this moment in time
-        updateIndex(state, asset);
+        updateIndices(state, asset);
 
         // compute the normalized value of 'amount'
         // conservatively round up when taking out of the pool
@@ -166,7 +166,7 @@ library LendingPool {
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
         // update value of index at this moment in time
-        updateIndex(state, asset);
+        updateIndices(state, asset);
 
         // compute the normalized value of 'amount'
         uint256 logicAmount = Decimal.divCeil(amount, state.pool.borrowIndex[asset]);
@@ -208,7 +208,7 @@ library LendingPool {
         mapping(address => uint256) storage balances = state.accounts[user][marketID].balances;
 
         // update value of index at this moment in time
-        updateIndex(state, asset);
+        updateIndices(state, asset);
 
         // get normalized value of amount to be repaid, which in effect take into account interest
         // (ex: if you borrowed 10, with index at 1.1, amount repaid needs to be 11 to make 11/1.1 = 10)
@@ -358,7 +358,7 @@ library LendingPool {
     /**
      * update the index value
      */
-    function updateIndex(
+    function updateIndices(
         Store.State storage state,
         address asset
     )
