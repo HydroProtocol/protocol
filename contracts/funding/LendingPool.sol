@@ -98,7 +98,7 @@ library LendingPool {
         state.assets[asset].lendingPoolToken.mint(user, logicAmount);
 
         // update interest rate based on latest state
-        updateInterestRate(state, asset);
+        updateInterestRates(state, asset);
 
         Events.logSupply(user, asset, amount);
     }
@@ -142,7 +142,7 @@ library LendingPool {
         state.assets[asset].lendingPoolToken.burn(user, logicAmount);
 
         // update interest rate based on latest state
-        updateInterestRate(state, asset);
+        updateInterestRates(state, asset);
 
         Events.logUnsupply(user, asset, withdrawAmount);
 
@@ -183,7 +183,7 @@ library LendingPool {
         state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].add(logicAmount);
 
         // update interest rate based on latest state
-        updateInterestRate(state, asset);
+        updateInterestRates(state, asset);
 
         Requires.requireCollateralAccountNotLiquidatable(state, user, marketID);
 
@@ -235,7 +235,7 @@ library LendingPool {
         state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].sub(logicAmount);
 
         // update interest rate
-        updateInterestRate(state, asset);
+        updateInterestRates(state, asset);
 
         Events.logRepay(user, marketID, asset, repayAmount);
 
@@ -310,7 +310,7 @@ library LendingPool {
 
     }
 
-    function updateInterestRate(
+    function updateInterestRates(
         Store.State storage state,
         address asset
     )
