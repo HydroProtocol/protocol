@@ -99,7 +99,7 @@ library CollateralAccounts {
 
         uint256 assetBalance = state.accounts[user][marketID].balances[asset];
 
-        // If and only if balance USD value is larger than transferableUSDValueBar, the user is able to withdraw some assets
+        // If and only if balance USD value is larger than transferableThresholdUSDValue, the user is able to withdraw some assets
         uint256 transferableThresholdUSDValue = Decimal.mulCeil(
             details.debtsTotalUSDValue,
             state.markets[marketID].withdrawRate
