@@ -182,7 +182,7 @@ library Requires {
         Store.State storage state,
         address asset
     )
-        internal
+        private
         view
         returns (bool)
     {
@@ -193,7 +193,7 @@ library Requires {
         Store.State storage state,
         Types.Market memory market
     )
-        internal
+        private
         view
         returns (bool)
     {

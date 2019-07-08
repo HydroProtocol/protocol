@@ -48,7 +48,7 @@ contract LendingPoolToken is StandardToken, Ownable {
         address user,
         uint256 value
     )
-        public
+        external
         onlyOwner
     {
         balances[user] = balances[user].add(value);
@@ -60,7 +60,7 @@ contract LendingPoolToken is StandardToken, Ownable {
         address user,
         uint256 value
     )
-        public
+        external
         onlyOwner
     {
         balances[user] = balances[user].sub(value);

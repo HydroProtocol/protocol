@@ -34,7 +34,7 @@ import "./CollateralAccounts.sol";
  * Inside this library, the concept of normalizedAmount and poolIndex are used to simplify computations.
  * Index is a number that starts at 1 and increases as interest accumilates.
  * An index of 2 means 100% interest rate has bee accumiliated.
- * 
+ *
  * For an amount x, normalizedAmount = x/index. This means if you put in x/index in the beginning, it would be worth exactly x now.
  * The benefit of lining it this way is that its easier to aggregate and less book-keeping is needed.
  *
@@ -312,7 +312,7 @@ library LendingPool {
         Store.State storage state,
         address asset
     )
-        internal
+        private
     {
         (uint256 borrowInterestRate, uint256 supplyInterestRate) = getInterestRates(state, asset, 0);
         state.pool.borrowAnnualInterestRate[asset] = borrowInterestRate;
@@ -360,7 +360,7 @@ library LendingPool {
         Store.State storage state,
         address asset
     )
-        internal
+        private
     {
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
 
@@ -452,7 +452,7 @@ library LendingPool {
         Store.State storage state,
         address asset
     )
-        internal
+        private
         view
         returns (uint256 currentSupplyIndex, uint256 currentBorrowIndex)
     {
@@ -476,7 +476,7 @@ library LendingPool {
         address asset,
         address user
     )
-        internal
+        private
         view
         returns (uint256)
     {
@@ -487,7 +487,7 @@ library LendingPool {
         Store.State storage state,
         address asset
     )
-        internal
+        private
         view
         returns (uint256)
     {
