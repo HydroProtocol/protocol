@@ -25,6 +25,7 @@ import "./exchange/Exchange.sol";
 import "./exchange/Relayer.sol";
 
 import "./funding/LendingPool.sol";
+
 import "./funding/CollateralAccounts.sol";
 import "./funding/BatchActions.sol";
 import "./funding/Auctions.sol";
@@ -219,10 +220,6 @@ contract ExternalFunctions is GlobalStore {
     {
         (borrowInterestRate, supplyInterestRate) = LendingPool.getInterestRates(state, asset, extraBorrowAmount);
     }
-
-    /////////////////////////
-    // Insurance Functions //
-    /////////////////////////
 
     function getInsuranceBalance(address asset)
         external

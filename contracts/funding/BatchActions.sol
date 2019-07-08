@@ -88,7 +88,7 @@ library BatchActions {
         Store.State storage state,
         Action memory action
     )
-        internal
+        private
     {
         (
             address asset,
@@ -112,7 +112,7 @@ library BatchActions {
         Store.State storage state,
         Action memory action
     )
-        internal
+        private
     {
         (
             address asset,
@@ -136,7 +136,7 @@ library BatchActions {
         Store.State storage state,
         Action memory action
     )
-        internal
+        private
     {
         (
             address asset,
@@ -186,7 +186,7 @@ library BatchActions {
         Store.State storage state,
         Action memory action
     )
-        internal
+        private
     {
         (
             uint16 marketID,
@@ -214,7 +214,7 @@ library BatchActions {
         Store.State storage state,
         Action memory action
     )
-        internal
+        private
     {
         (
             uint16 marketID,
@@ -242,7 +242,7 @@ library BatchActions {
         Store.State storage state,
         Action memory action
     )
-        internal
+        private
     {
         (
             address asset,
@@ -267,7 +267,7 @@ library BatchActions {
         Store.State storage state,
         Action memory action
     )
-        internal
+        private
     {
         (
             address asset,

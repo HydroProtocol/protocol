@@ -576,7 +576,7 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
     });
 
-    it.only('fill bad auction', async () => {
+    it('fill bad auction', async () => {
         const initiaior = accounts[0];
         await hydro.updateInsuranceRatio(toWei('0.5'));
         await hydro.updateAuctionInitiatorRewardRatio(toWei('0.05'));

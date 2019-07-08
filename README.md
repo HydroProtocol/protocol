@@ -41,13 +41,6 @@ npm run compile
 npm run coverage
 ```
 
-## Acknowledgments
-
-Hydro is inspired by the [0x project](https://github.com/0xProject).
-
-In addition, projects such as [IDEX](https://github.com/AuroraDAO/idex) and [Paradex](https://github.com/ParadexRelayer) motivated the decision to focus on first order support for **off-chain matching**.
-
-
 ## Contributing
 
 1. Fork it (<https://github.com/hydroprotocol/protocol/fork>)

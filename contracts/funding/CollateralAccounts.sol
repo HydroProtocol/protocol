@@ -36,7 +36,8 @@ library CollateralAccounts {
         address user,
         uint16 marketID
     )
-        internal view
+        internal
+        view
         returns (Types.CollateralAccountDetails memory details)
     {
         Types.CollateralAccount storage account = state.accounts[user][marketID];

@@ -42,7 +42,7 @@ library Auctions {
         address user,
         uint16 marketID
     )
-        internal
+        external
         returns (bool, uint32)
     {
         // if the account is in liquidate progress, liquidatable will be false
@@ -125,7 +125,7 @@ library Auctions {
         uint256 ratio,
         uint256 repayAmount
     )
-        internal
+        private
         returns (uint256, uint256) // bidderRepay collateral
     {
         uint256 leftDebtAmount = LendingPool.getAmountBorrowed(
@@ -202,7 +202,7 @@ library Auctions {
         uint256 ratio,
         uint256 bidderRepayAmount
     )
-        internal
+        private
         returns (uint256, uint256) // bidderRepay collateral
     {
 
@@ -308,7 +308,7 @@ library Auctions {
         Store.State storage state,
         Types.Auction storage auction
     )
-        internal
+        private
     {
         auction.status = Types.AuctionStatus.Finished;
 
@@ -335,7 +335,7 @@ library Auctions {
         address debtAsset,
         address collateralAsset
     )
-        internal
+        private
         returns (uint32)
     {
         uint32 id = state.auction.auctionsCount++;
@@ -364,7 +364,7 @@ library Auctions {
         Store.State storage state,
         uint32 auctionID
     )
-        internal
+        external
         view
         returns (Types.AuctionDetails memory details)
     {

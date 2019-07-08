@@ -130,7 +130,7 @@ library Exchange {
         Types.OrderParam memory orderParam,
         Types.OrderAddressSet memory orderAddressSet
     )
-        internal
+        private
         view
         returns (OrderInfo memory orderInfo)
     {
@@ -178,7 +178,7 @@ library Exchange {
         Types.OrderParam memory orderParam,
         Types.OrderAddressSet memory orderAddressSet
     )
-        internal
+        private
         pure
         returns (Types.Order memory order)
     {
@@ -224,7 +224,7 @@ library Exchange {
         Types.OrderParam memory takerOrderParam,
         Types.OrderParam memory makerOrderParam
     )
-        internal
+        private
         pure
     {
         uint256 left = takerOrderParam.quoteAssetAmount.mul(makerOrderParam.baseAssetAmount);
@@ -254,7 +254,7 @@ library Exchange {
         uint256 takerFeeRate,
         bool isParticipantRelayer
     )
-        internal
+        private
         view
         returns (Types.MatchResult memory result)
     {
@@ -337,7 +337,7 @@ library Exchange {
         Types.OrderParam memory orderParam,
         bool isParticipantRelayer
     )
-        internal
+        private
         view
         returns(uint256)
     {
@@ -360,7 +360,7 @@ library Exchange {
         uint256 rate,
         bool isParticipantRelayer
     )
-        internal
+        private
         view
         returns(uint256)
     {
@@ -383,7 +383,7 @@ library Exchange {
         Types.OrderParam memory orderParam,
         uint256 amount
     )
-        internal
+        private
         pure
         returns (uint256)
     {
@@ -445,7 +445,7 @@ library Exchange {
         Types.OrderParam memory takerOrderParam,
         Types.OrderAddressSet memory orderAddressSet
     )
-        internal
+        private
     {
         bool isTakerSell = takerOrderParam.isSell();
 

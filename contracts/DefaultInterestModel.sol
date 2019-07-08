@@ -27,7 +27,7 @@ contract DefaultInterestModel {
         uint256 a,
         uint256 b
     )
-        internal
+        private
         pure
         returns (uint256)
     {
@@ -46,7 +46,7 @@ contract DefaultInterestModel {
         uint256 a,
         uint256 b
     )
-        internal
+        private
         pure
         returns (uint256)
     {

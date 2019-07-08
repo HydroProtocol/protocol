@@ -5,7 +5,8 @@ const DefaultInterestModel = artifacts.require('DefaultInterestModel');
 
 const Auctions = artifacts.require('Auctions');
 const BatchActions = artifacts.require('BatchActions');
-const OperationsLib = artifacts.require('OperationsLib');
+
+const OperationsComponent = artifacts.require('OperationsComponent');
 
 module.exports = async (deployer, network) => {
     let hotAddress;
@@ -20,10 +21,10 @@ module.exports = async (deployer, network) => {
 
     await deployer.deploy(BatchActions);
     await deployer.deploy(Auctions);
-    await deployer.deploy(OperationsLib);
+    await deployer.deploy(OperationsComponent);
 
     await deployer.link(BatchActions, Hydro);
-    await deployer.link(OperationsLib, Hydro);
+    await deployer.link(OperationsComponent, Hydro);
     await deployer.link(Auctions, Hydro);
 
     await deployer.deploy(DefaultInterestModel);
