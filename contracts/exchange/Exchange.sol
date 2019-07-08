@@ -23,7 +23,6 @@ import "./Relayer.sol";
 import "./Discount.sol";
 
 import "../lib/SafeMath.sol";
-import "../lib/Math.sol";
 import "../lib/Signature.sol";
 import "../lib/Store.sol";
 import "../lib/Types.sol";
@@ -388,7 +387,7 @@ library Exchange {
         pure
         returns (uint256)
     {
-        return Math.getPartialAmountFloor(
+        return SafeMath.getPartialAmountFloor(
             orderParam.quoteAssetAmount,
             orderParam.baseAssetAmount,
             amount

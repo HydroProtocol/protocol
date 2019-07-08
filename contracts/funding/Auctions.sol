@@ -387,16 +387,10 @@ library Auctions {
         details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
         details.ratio = auction.ratio(state);
-        details.ratioNextBlock = details.ratio.add(state.markets[auction.marketID].auctionRatioPerBlock);
 
-        if (details.leftCollateralAmount != 0){
-            uint256 bookPrice = Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount);
-            if (details.ratio != 0){
-                details.price = Decimal.divFloor(bookPrice, details.ratio);
-            }
-            if (details.ratioNextBlock != 0){
-                details.priceNextBlock = Decimal.divFloor(bookPrice, details.ratioNextBlock);
-            }
+        if (details.leftCollateralAmount != 0 && details.ratio != 0){
+            // price = debt/collateral/ratio
+            details.price = Decimal.divFloor(Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount), details.ratio);
         }
     }
 }

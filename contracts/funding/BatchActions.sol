@@ -173,6 +173,13 @@ library BatchActions {
             toBalancePath,
             amount
         );
+
+        if (toBalancePath.category == Types.BalanceCategory.CollateralAccount){
+            Events.logIncreaseCollateral(msg.sender, toBalancePath.marketID, asset, amount);
+        }
+        if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount){
+            Events.logDecreaseCollateral(msg.sender, fromBalancePath.marketID, asset, amount);
+        }
     }
 
     function borrow(

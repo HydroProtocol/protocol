@@ -21,7 +21,6 @@ pragma experimental ABIEncoderV2;
 
 import "./SafeMath.sol";
 import "./EIP712.sol";
-import "./Math.sol";
 import "./Consts.sol";
 import "./Store.sol";
 import "./Signature.sol";
@@ -138,9 +137,7 @@ library Types {
         uint256 leftDebtAmount;
         uint256 leftCollateralAmount;
         uint256 ratio;
-        uint256 ratioNextBlock;
         uint256 price;
-        uint256 priceNextBlock;
     }
 
     struct Order {
@@ -244,16 +241,6 @@ library Auction {
 }
 
 library BalancePath {
-
-    function isCollateralAccount(
-        Types.BalancePath memory path
-    )
-        internal
-        pure
-        returns (bool)
-    {
-        return path.category == Types.BalanceCategory.CollateralAccount;
-    }
 
     function getBalances(
         Types.BalancePath memory path,
@@ -470,7 +457,7 @@ library OrderParam {
         uint256 makerRebate = uint256(uint16(bytes2(order.data << (8*12))));
 
         // make sure makerRebate will never be larger than REBATE_RATE_BASE, which is 100
-        return Math.min(makerRebate, Consts.REBATE_RATE_BASE());
+        return SafeMath.min(makerRebate, Consts.REBATE_RATE_BASE());
     }
 
     function getBalancePathFromOrderData(

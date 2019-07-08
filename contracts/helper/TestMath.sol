@@ -18,7 +18,7 @@
 
 pragma solidity 0.5.8;
 
-import "../lib/Math.sol";
+import "../lib/SafeMath.sol";
 
 // Test wrapper
 
@@ -32,7 +32,7 @@ contract TestMath {
         pure
         returns (bool)
     {
-        return Math.isRoundingError(a, b, c);
+        return SafeMath.isRoundingError(a, b, c);
     }
 
     function getPartialAmountFloor(
@@ -44,7 +44,7 @@ contract TestMath {
         pure
         returns (uint256)
     {
-        return Math.getPartialAmountFloor(a, b, c);
+        return SafeMath.getPartialAmountFloor(a, b, c);
     }
 
     function min(
@@ -55,6 +55,6 @@ contract TestMath {
         pure
         returns (uint256)
     {
-        return Math.min(a, b);
+        return SafeMath.min(a, b);
     }
 }

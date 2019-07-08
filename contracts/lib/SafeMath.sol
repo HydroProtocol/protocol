@@ -91,7 +91,7 @@ library SafeMath {
         pure
         returns (int256)
     {
-        require(b < 2**255-1, "INT256_SUB_ERROR");
+        require(b <= 2**255-1, "INT256_SUB_ERROR");
         int256 c = a - int256(b);
         require(c <= a, "INT256_SUB_ERROR");
         return c;
@@ -119,7 +119,7 @@ library SafeMath {
         pure
         returns (int256)
     {
-        require(b < 2**255 - 1, "INT256_ADD_ERROR");
+        require(b <= 2**255 - 1, "INT256_ADD_ERROR");
         int256 c = a + int256(b);
         require(c >= a, "INT256_ADD_ERROR");
         return c;
@@ -136,5 +136,86 @@ library SafeMath {
     {
         require(b != 0, "MOD_ERROR");
         return a % b;
+    }
+
+    /**
+     * Check the amount of precision lost by calculating multiple * (numerator / denominator). To
+     * do this, we check the remainder and make sure it's proportionally less than 0.1%. So we have:
+     *
+     *     ((numerator * multiple) % denominator)     1
+     *     -------------------------------------- < ----
+     *              numerator * multiple            1000
+     *
+     * To avoid further division, we can move the denominators to the other sides and we get:
+     *
+     *     ((numerator * multiple) % denominator) * 1000 < numerator * multiple
+     *
+     * Since we want to return true if there IS a rounding error, we simply flip the sign and our
+     * final equation becomes:
+     *
+     *     ((numerator * multiple) % denominator) * 1000 >= numerator * multiple
+     *
+     * @param numerator The numerator of the proportion
+     * @param denominator The denominator of the proportion
+     * @param multiple The amount we want a proportion of
+     * @return Boolean indicating if there is a rounding error when calculating the proportion
+     */
+    function isRoundingError(
+        uint256 numerator,
+        uint256 denominator,
+        uint256 multiple
+    )
+        internal
+        pure
+        returns (bool)
+    {
+        // numerator.mul(multiple).mod(denominator).mul(1000) >= numerator.mul(multiple)
+        return mul(mod(mul(numerator, multiple), denominator), 1000) >= mul(numerator, multiple);
+    }
+
+    /// @dev calculate "multiple * (numerator / denominator)", rounded down.
+    /// revert when there is a rounding error.
+    /**
+     * Takes an amount (multiple) and calculates a proportion of it given a numerator/denominator
+     * pair of values. The final value will be rounded down to the nearest integer value.
+     *
+     * This function will revert the transaction if rounding the final value down would lose more
+     * than 0.1% precision.
+     *
+     * @param numerator The numerator of the proportion
+     * @param denominator The denominator of the proportion
+     * @param multiple The amount we want a proportion of
+     * @return The final proportion of multiple rounded down
+     */
+    function getPartialAmountFloor(
+        uint256 numerator,
+        uint256 denominator,
+        uint256 multiple
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        require(!isRoundingError(numerator, denominator, multiple), "ROUNDING_ERROR");
+        // numerator.mul(multiple).div(denominator)
+        return div(mul(numerator, multiple), denominator);
+    }
+
+    /**
+     * Returns the smaller integer of the two passed in.
+     *
+     * @param a Unsigned integer
+     * @param b Unsigned integer
+     * @return The smaller of the two integers
+     */
+    function min(
+        uint256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        return a < b ? a : b;
     }
 }
