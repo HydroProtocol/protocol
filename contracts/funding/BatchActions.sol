@@ -280,7 +280,7 @@ library BatchActions {
             )
         );
 
-        LendingPool.withdraw(
+        LendingPool.unsupply(
             state,
             asset,
             amount,

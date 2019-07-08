@@ -86,14 +86,14 @@ library LendingPool {
 
         // compute the normalized value of 'amount'
         // round floor
-        uint256 logicAmount = Decimal.divFloor(amount, state.pool.supplyIndex[asset]);
+        uint256 normalizedAmount = Decimal.divFloor(amount, state.pool.supplyIndex[asset]);
 
         // transfer asset from user's balance account
         balances[asset] = balances[asset].sub(amount);
         state.cash[asset] = state.cash[asset].sub(amount);
 
         // mint normalizedAmount of pool token for user
-        state.assets[asset].lendingPoolToken.mint(user, logicAmount);
+        state.assets[asset].lendingPoolToken.mint(user, normalizedAmount);
 
         // update interest rate based on latest state
         updateInterestRate(state, asset);
@@ -102,9 +102,9 @@ library LendingPool {
     }
 
     /**
-     * Withdraw asset from the pool, up to initial asset supplied plus interest
+     * unsupply asset from the pool, up to initial asset supplied plus interest
      */
-    function withdraw(
+    function unsupply(
         Store.State storage state,
         address asset,
         uint256 amount,
@@ -121,30 +121,30 @@ library LendingPool {
 
         // compute the normalized value of 'amount'
         // round ceiling
-        uint256 logicAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
+        uint256 normalizedAmount = Decimal.divCeil(amount, state.pool.supplyIndex[asset]);
 
-        uint256 withdrawAmount = amount;
+        uint256 unsupplyAmount = amount;
 
         // check and cap the amount so user can't overdraw
-        if (getLogicSupplyOf(state, asset, user) <= logicAmount) {
-            logicAmount = getLogicSupplyOf(state, asset, user);
-            withdrawAmount = Decimal.mulFloor(logicAmount, state.pool.supplyIndex[asset]);
+        if (getNormalizedSupplyOf(state, asset, user) <= normalizedAmount) {
+            normalizedAmount = getNormalizedSupplyOf(state, asset, user);
+            unsupplyAmount = Decimal.mulFloor(normalizedAmount, state.pool.supplyIndex[asset]);
         }
 
         // transfer asset to user's balance account
-        balances[asset] = balances[asset].add(withdrawAmount);
-        state.cash[asset] = state.cash[asset].add(withdrawAmount);
+        balances[asset] = balances[asset].add(unsupplyAmount);
+        state.cash[asset] = state.cash[asset].add(unsupplyAmount);
         Requires.requireCashLessThanOrEqualContractBalance(state, asset);
 
         // subtract normalizedAmount from the pool
-        state.assets[asset].lendingPoolToken.burn(user, logicAmount);
+        state.assets[asset].lendingPoolToken.burn(user, normalizedAmount);
 
         // update interest rate based on latest state
         updateInterestRate(state, asset);
 
-        Events.logUnsupply(user, asset, withdrawAmount);
+        Events.logUnsupply(user, asset, unsupplyAmount);
 
-        return withdrawAmount;
+        return unsupplyAmount;
     }
 
     /**
@@ -167,7 +167,7 @@ library LendingPool {
         updateIndex(state, asset);
 
         // compute the normalized value of 'amount'
-        uint256 logicAmount = Decimal.divCeil(amount, state.pool.borrowIndex[asset]);
+        uint256 normalizedAmount = Decimal.divCeil(amount, state.pool.borrowIndex[asset]);
 
         // transfer assets to user's balance account
         balances[asset] = balances[asset].add(amount);
@@ -175,10 +175,10 @@ library LendingPool {
         Requires.requireCashLessThanOrEqualContractBalance(state, asset);
 
         // update normalized amount borrowed by user
-        state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].add(logicAmount);
+        state.pool.normalizedBorrow[user][marketID][asset] = state.pool.normalizedBorrow[user][marketID][asset].add(normalizedAmount);
 
         // update normalized amount borrowed from the pool
-        state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].add(logicAmount);
+        state.pool.normalizedTotalBorrow[asset] = state.pool.normalizedTotalBorrow[asset].add(normalizedAmount);
 
         // update interest rate based on latest state
         updateInterestRate(state, asset);
@@ -210,16 +210,16 @@ library LendingPool {
 
         // get normalized value of amount to be repaid, which in effect take into account interest
         // (ex: if you borrowed 10, with index at 1.1, amount repaid needs to be 11 to make 11/1.1 = 10)
-        uint256 logicAmount = Decimal.divFloor(amount, state.pool.borrowIndex[asset]);
+        uint256 normalizedAmount = Decimal.divFloor(amount, state.pool.borrowIndex[asset]);
 
         uint256 repayAmount = amount;
 
         // make sure user cannot repay more than amount owed
-        if (state.pool.logicBorrow[user][marketID][asset] <= logicAmount){
-            logicAmount = state.pool.logicBorrow[user][marketID][asset];
+        if (state.pool.normalizedBorrow[user][marketID][asset] <= normalizedAmount){
+            normalizedAmount = state.pool.normalizedBorrow[user][marketID][asset];
             // repayAmount <= amount
             // because ⌈⌊a/b⌋*b⌉ <= a
-            repayAmount = Decimal.mulCeil(logicAmount, state.pool.borrowIndex[asset]);
+            repayAmount = Decimal.mulCeil(normalizedAmount, state.pool.borrowIndex[asset]);
         }
 
         // transfer assets from user's balance account
@@ -227,10 +227,10 @@ library LendingPool {
         state.cash[asset] = state.cash[asset].sub(repayAmount);
 
         // update amount(normalized) borrowed by user
-        state.pool.logicBorrow[user][marketID][asset] = state.pool.logicBorrow[user][marketID][asset].sub(logicAmount);
+        state.pool.normalizedBorrow[user][marketID][asset] = state.pool.normalizedBorrow[user][marketID][asset].sub(normalizedAmount);
 
         // update total amount(normalized) borrowed from pool
-        state.pool.logicTotalBorrow[asset] = state.pool.logicTotalBorrow[asset].sub(logicAmount);
+        state.pool.normalizedTotalBorrow[asset] = state.pool.normalizedTotalBorrow[asset].sub(normalizedAmount);
 
         // update interest rate
         updateInterestRate(state, asset);
@@ -251,7 +251,7 @@ library LendingPool {
     )
         internal
     {
-        uint256 totalLogicSupply = getTotalLogicSupply(
+        uint256 totalnormalizedSupply = getTotalNormalizedSupply(
             state,
             asset
         );
@@ -263,10 +263,8 @@ library LendingPool {
 
         state.pool.supplyIndex[asset] = Decimal.divFloor(
             actualSupply,
-            totalLogicSupply
+            totalnormalizedSupply
         );
-
-        state.cash[asset] = state.cash[asset].add(amount);
 
         Events.logLoss(asset, amount);
     }
@@ -365,15 +363,15 @@ library LendingPool {
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
 
         // get the total equity value
-        uint256 logicBorrow = state.pool.logicTotalBorrow[asset];
-        uint256 logicSupply = getTotalLogicSupply(state, asset);
+        uint256 normalizedBorrow = state.pool.normalizedTotalBorrow[asset];
+        uint256 normalizedSupply = getTotalNormalizedSupply(state, asset);
 
         // interest = equity value * (current index value - starting index value)
-        uint256 borrowInterest = Decimal.mulCeil(logicBorrow, currentBorrowIndex).
-        sub(Decimal.mulCeil(logicBorrow, state.pool.borrowIndex[asset]));
+        uint256 borrowInterest = Decimal.mulCeil(normalizedBorrow, currentBorrowIndex).
+        sub(Decimal.mulCeil(normalizedBorrow, state.pool.borrowIndex[asset]));
 
-        uint256 supplyInterest = Decimal.mulFloor(logicSupply, currentSupplyIndex).
-        sub(Decimal.mulFloor(logicSupply, state.pool.supplyIndex[asset]));
+        uint256 supplyInterest = Decimal.mulFloor(normalizedSupply, currentSupplyIndex).
+        sub(Decimal.mulFloor(normalizedSupply, state.pool.supplyIndex[asset]));
 
         // the interest rate spread goes into the insurance pool
         state.pool.insuranceBalances[asset] = state.pool.insuranceBalances[asset].add(borrowInterest.sub(supplyInterest));
@@ -396,7 +394,7 @@ library LendingPool {
         Requires.requireAssetExist(state, asset);
 
         (uint256 currentSupplyIndex, ) = getCurrentIndex(state, asset);
-        return Decimal.mulFloor(getLogicSupplyOf(state, asset, user), currentSupplyIndex);
+        return Decimal.mulFloor(getNormalizedSupplyOf(state, asset, user), currentSupplyIndex);
     }
 
     function getAmountBorrowed(
@@ -413,7 +411,7 @@ library LendingPool {
 
         // the actual amount borrowed = normalizedAmount * poolIndex
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
-        return Decimal.mulCeil(state.pool.logicBorrow[user][marketID][asset], currentBorrowIndex);
+        return Decimal.mulCeil(state.pool.normalizedBorrow[user][marketID][asset], currentBorrowIndex);
 
     }
 
@@ -428,7 +426,7 @@ library LendingPool {
         Requires.requireAssetExist(state, asset);
 
         (uint256 currentSupplyIndex, ) = getCurrentIndex(state, asset);
-        return Decimal.mulFloor(getTotalLogicSupply(state, asset), currentSupplyIndex);
+        return Decimal.mulFloor(getTotalNormalizedSupply(state, asset), currentSupplyIndex);
     }
 
     function getTotalBorrow(
@@ -442,7 +440,7 @@ library LendingPool {
         Requires.requireAssetExist(state, asset);
 
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
-        return Decimal.mulCeil(state.pool.logicTotalBorrow[asset], currentBorrowIndex);
+        return Decimal.mulCeil(state.pool.normalizedTotalBorrow[asset], currentBorrowIndex);
     }
 
     /**
@@ -463,7 +461,7 @@ library LendingPool {
             .mul(timeDelta).divCeil(secondsOfYear); // Ceil Ensure asset greater than liability
 
         uint256 supplyInterestRate = state.pool.supplyAnnualInterestRate[asset]
-            .mul(timeDelta) / secondsOfYear;
+            .mul(timeDelta).div(secondsOfYear);
 
         currentBorrowIndex = Decimal.mulCeil(state.pool.borrowIndex[asset], Decimal.onePlus(borrowInterestRate));
         currentSupplyIndex = Decimal.mulFloor(state.pool.supplyIndex[asset], Decimal.onePlus(supplyInterestRate));
@@ -471,7 +469,7 @@ library LendingPool {
         return (currentSupplyIndex, currentBorrowIndex);
     }
 
-    function getLogicSupplyOf(
+    function getNormalizedSupplyOf(
         Store.State storage state,
         address asset,
         address user
@@ -483,7 +481,7 @@ library LendingPool {
         return state.assets[asset].lendingPoolToken.balanceOf(user);
     }
 
-    function getTotalLogicSupply(
+    function getTotalNormalizedSupply(
         Store.State storage state,
         address asset
     )
