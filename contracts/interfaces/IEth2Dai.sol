@@ -33,7 +33,7 @@ interface IEth2Dai{
         external
         view
         returns (bool);
-    
+
     function getBuyAmount(
         address buy_gem,
         address pay_gem,

@@ -19,5 +19,10 @@
 pragma solidity ^0.5.8;
 
 interface IInterestModel {
-    function polynomialInterestModel(uint256 borrowRatio) external pure returns(uint256);
+    function polynomialInterestModel(
+        uint256 borrowRatio
+    )
+        external
+        pure
+        returns(uint256);
 }
