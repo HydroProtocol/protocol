@@ -19,19 +19,18 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./lib/Requires.sol";
-import "./lib/Events.sol";
-import "./lib/Types.sol";
-import "./funding/LendingPool.sol";
-import "./exchange/Exchange.sol";
-import "./interfaces/IPriceOracle.sol";
-import "./interfaces/ILendingPoolToken.sol";
-import "./Funding/LendingPoolToken.sol";
+import "../lib/Requires.sol";
+import "../lib/Events.sol";
+import "../lib/Types.sol";
+import "../funding/LendingPool.sol";
+import "../interfaces/IPriceOracle.sol";
+import "../interfaces/ILendingPoolToken.sol";
+import "../Funding/LendingPoolToken.sol";
 
 /**
  * Only owner can use this contract functions
  */
-library OperationsLib {
+library OperationsComponent {
 
     function createMarket(
         Store.State storage state,

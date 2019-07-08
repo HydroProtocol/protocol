@@ -22,7 +22,7 @@ pragma experimental ABIEncoderV2;
 import "./GlobalStore.sol";
 import "./lib/Ownable.sol";
 import "./lib/Types.sol";
-import "./OperationsLib.sol";
+import "./components/OperationsComponent.sol";
 
 /**
  * Only owner can use this contract functions
@@ -35,7 +35,7 @@ contract Operations is Ownable, GlobalStore {
         public
         onlyOwner
     {
-        OperationsLib.createMarket(state, market);
+        OperationsComponent.createMarket(state, market);
     }
 
     function updateMarket(
@@ -48,7 +48,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        OperationsLib.updateMarket(
+        OperationsComponent.updateMarket(
             state,
             marketID,
             newAuctionRatioStart,
@@ -69,7 +69,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        OperationsLib.createAsset(
+        OperationsComponent.createAsset(
             state,
             asset,
             oracleAddress,
@@ -88,7 +88,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        OperationsLib.updateAsset(
+        OperationsComponent.updateAsset(
             state,
             asset,
             oracleAddress,
@@ -105,7 +105,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        OperationsLib.updateDiscountConfig(
+        OperationsComponent.updateDiscountConfig(
             state,
             newConfig
         );
@@ -117,7 +117,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        OperationsLib.updateAuctionInitiatorRewardRatio(
+        OperationsComponent.updateAuctionInitiatorRewardRatio(
             state,
             newInitiatorRewardRatio
         );
@@ -129,7 +129,7 @@ contract Operations is Ownable, GlobalStore {
         external
         onlyOwner
     {
-        OperationsLib.updateInsuranceRatio(
+        OperationsComponent.updateInsuranceRatio(
             state,
             newInsuranceRatio
         );
