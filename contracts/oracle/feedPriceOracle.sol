@@ -21,6 +21,7 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/Ownable.sol";
 import "../lib/SafeMath.sol";
+import "../lib/Decimal.sol";
 
 contract FeedPriceOracle is Ownable {
     using SafeMath for uint256;
@@ -32,8 +33,6 @@ contract FeedPriceOracle is Ownable {
     uint256 public maxChangeRate;
     uint256 public minPrice;
     uint256 public maxPrice;
-
-    uint256 constant ONE = 10**18;
 
     event PriceFeed(
         uint256 price,
@@ -86,11 +85,11 @@ contract FeedPriceOracle is Ownable {
         require(newPrice >= minPrice, "PRICE_EXCEED_MIN_LIMIT");
 
         if (price > 0){
-            uint256 changeRate = newPrice.mul(ONE).div(price);
-            if (changeRate > ONE){
-                changeRate = changeRate.sub(ONE);
+            uint256 changeRate = Decimal.divFloor(newPrice, price);
+            if (changeRate > Decimal.one()){
+                changeRate = changeRate.sub(Decimal.one());
             } else {
-                changeRate = ONE.sub(changeRate);
+                changeRate = Decimal.one().sub(changeRate);
             }
             require(changeRate <= maxChangeRate, "PRICE_CHANGE_RATE_EXCEED");
         }

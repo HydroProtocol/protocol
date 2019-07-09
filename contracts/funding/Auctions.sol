@@ -45,6 +45,7 @@ library Auctions {
         external
         returns (bool, uint32)
     {
+        // if the account is in liquidate progress, liquidatable will be false
         Types.CollateralAccountDetails memory details = CollateralAccounts.getDetails(
             state,
             user,
@@ -150,16 +151,13 @@ library Auctions {
             auction.debtAsset,
             repayAmount
         );
+        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0;
 
         // compute how much collateral is divided up amongst the bidder, auction initiator, and borrower
         state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
             state.balances[msg.sender][auction.debtAsset],
             actualRepayAmount
         );
-
-        if (actualRepayAmount < repayAmount) {
-            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0;
-        }
 
         uint256 collateralToProcess = leftCollateralAmount.mul(actualRepayAmount).div(leftDebtAmount);
         uint256 collateralForBidder = Decimal.mulFloor(collateralToProcess, ratio);
@@ -195,7 +193,6 @@ library Auctions {
     }
 
     /**
-
      * Msg.sender only need to afford bidderRepayAmount and get collateralAmount
      * insurance and suppliers will cover the badDebtAmount
      */
@@ -232,11 +229,11 @@ library Auctions {
             auction.debtAsset,
             repayAmount
         );
+        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0; // recover unused principal
 
         uint256 actualBidderRepay = bidderRepayAmount;
         if (actualRepayAmount < repayAmount) {
             actualBidderRepay = Decimal.divCeil(actualRepayAmount, ratio);
-            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0; // recover unused principal
         }
 
         // gather repay capital
@@ -315,8 +312,7 @@ library Auctions {
     {
         auction.status = Types.AuctionStatus.Finished;
 
-        Types.CollateralAccount storage account = state.accounts[auction.borrower][auction.marketID];
-        account.status = Types.CollateralAccountStatus.Normal;
+        state.accounts[auction.borrower][auction.marketID].status = Types.CollateralAccountStatus.Normal;
 
         for (uint i = 0; i < state.auction.currentAuctions.length; i++){
             if (state.auction.currentAuctions[i] == auction.id){
@@ -387,16 +383,10 @@ library Auctions {
         details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
         details.ratio = auction.ratio(state);
-        details.ratioNextBlock = details.ratio.add(state.markets[auction.marketID].auctionRatioPerBlock);
 
-        if (details.leftCollateralAmount != 0){
-            uint256 bookPrice = Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount);
-            if (details.ratio != 0){
-                details.price = Decimal.divFloor(bookPrice, details.ratio);
-            }
-            if (details.ratioNextBlock != 0){
-                details.priceNextBlock = Decimal.divFloor(bookPrice, details.ratioNextBlock);
-            }
+        if (details.leftCollateralAmount != 0 && details.ratio != 0){
+            // price = debt/collateral/ratio
+            details.price = Decimal.divFloor(Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount), details.ratio);
         }
     }
 }

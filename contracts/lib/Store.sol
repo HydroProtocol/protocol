@@ -117,10 +117,10 @@ library Store {
         mapping (address => uint256) supplyAnnualInterestRate; // decimal
 
         // total borrow
-        mapping(address => uint256) logicTotalBorrow;
+        mapping(address => uint256) normalizedTotalBorrow;
 
         // user => marketID => balances
-        mapping (address => mapping (uint16 => mapping(address => uint256))) logicBorrow;
+        mapping (address => mapping (uint16 => mapping(address => uint256))) normalizedBorrow;
     }
 
     struct AuctionState {

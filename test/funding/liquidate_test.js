@@ -192,9 +192,7 @@ contract('Liquidate', accounts => {
         assert.equal(auctionDetails.leftCollateralAmount, toWei('1'));
         assert.equal(auctionDetails.leftDebtAmount, '561643835616501');
         assert.equal(auctionDetails.ratio, toWei('0.01'));
-        assert.equal(auctionDetails.ratioNextBlock, toWei('0.02'));
         assert.equal(auctionDetails.price, '56164383561650100');
-        assert.equal(auctionDetails.priceNextBlock, '28082191780825050');
     });
 
     it('liquidation with debt left should result in an auction #2', async () => {

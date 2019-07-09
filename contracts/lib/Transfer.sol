@@ -116,18 +116,5 @@ library Transfer {
 
         fromBalances[asset] = fromBalances[asset] - amount;
         toBalances[asset] = toBalances[asset].add(amount);
-
-        if (fromBalancePath.isCollateralAccount() && toBalancePath.isCollateralAccount()) {
-            Events.logTransferCollateral(msg.sender, asset, fromBalancePath.marketID, toBalancePath.marketID, amount);
-            return;
-        }
-        if (toBalancePath.isCollateralAccount()){
-            Events.logIncreaseCollateral(msg.sender, toBalancePath.marketID, asset, amount);
-            return;
-        }
-        if (fromBalancePath.isCollateralAccount()){
-            Events.logDecreaseCollateral(msg.sender, fromBalancePath.marketID, asset, amount);
-            return;
-        }
     }
 }

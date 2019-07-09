@@ -71,33 +71,6 @@ library Events {
         );
     }
 
-    // transfer between collateral account
-    event TransferCollateral (
-        address indexed user,
-        address indexed asset,
-        uint16 fromMarketID,
-        uint16 toMarketID,
-        uint256 amount
-    );
-
-    function logTransferCollateral(
-        address user,
-        address asset,
-        uint16 fromMarketID,
-        uint16 toMarketID,
-        uint256 amount
-    )
-        internal
-    {
-        emit TransferCollateral(
-            user,
-            asset,
-            fromMarketID,
-            toMarketID,
-            amount
-        );
-    }
-
     // transfer from balance to collateral account
     event IncreaseCollateral (
         address indexed user,

@@ -3,6 +3,7 @@ require('../utils/hooks');
 const { newMarket } = require('../utils/assets');
 const { toWei, etherAsset, logGas } = require('../utils');
 const Hydro = artifacts.require('./Hydro.sol');
+const LendingPoolToken = artifacts.require('./LendingPoolToken.sol');
 const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
 const assert = require('assert');
 
@@ -37,6 +38,9 @@ contract('Markets', accounts => {
 
         const asset = await hydro.getAsset(etherAsset);
         assert.equal(asset.priceOracle, fakePriceOracleAddress);
+
+        const poolToken = await LendingPoolToken.at(asset.lendingPoolToken);
+        assert.equal(hydro.address, await poolToken.owner());
     });
 
     it('can update asset', async () => {
