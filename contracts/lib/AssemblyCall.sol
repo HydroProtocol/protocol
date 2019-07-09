@@ -90,6 +90,7 @@ library AssemblyCall {
         returns (uint256)
     {
         // saves about 1200 gas.
+        // return IInterestModel(interestModel).polynomialInterestModel(borrowRatio);
 
         // keccak256('polynomialInterestModel(uint256)') & 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
         bytes32 functionSelector = 0x69e8a15f00000000000000000000000000000000000000000000000000000000;
