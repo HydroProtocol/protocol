@@ -497,8 +497,6 @@ library Exchange {
             Events.logMatch(results[i], orderAddressSet);
         }
 
-        Requires.requireCollateralAccountNotLiquidatable(state, results[0].takerBalancePath);
-
         Transfer.transfer(
             state,
             orderAddressSet.quoteAsset,
@@ -506,5 +504,7 @@ library Exchange {
             relayerBalancePath,
             totalFee
         );
+
+        Requires.requireCollateralAccountNotLiquidatable(state, results[0].takerBalancePath);
     }
 }
