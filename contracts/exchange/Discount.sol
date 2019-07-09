@@ -22,7 +22,7 @@ import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
 import "../lib/Events.sol";
-import "../lib/ExternalCaller.sol";
+import "../lib/AssemblyCall.sol";
 
 /**
  * Library to handle fee discount calculation
@@ -88,7 +88,7 @@ library Discount {
         view
         returns (uint256 result)
     {
-        uint256 hotBalance = ExternalCaller.getHotBalance(
+        uint256 hotBalance = AssemblyCall.getHotBalance(
             state.exchange.hotTokenAddress,
             user
         );

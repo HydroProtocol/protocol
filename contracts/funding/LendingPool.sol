@@ -26,7 +26,7 @@ import "../lib/Store.sol";
 import "../lib/Decimal.sol";
 import "../lib/Events.sol";
 import "../lib/Requires.sol";
-import "../lib/ExternalCaller.sol";
+import "../lib/AssemblyCall.sol";
 import "./CollateralAccounts.sol";
 
 /**
@@ -338,7 +338,7 @@ library LendingPool {
 
         uint256 borrowRatio = _borrow.mul(Decimal.one()).div(_supply);
         // borrowInterestRate = state.assets[asset].interestModel.polynomialInterestModel(borrowRatio);
-        borrowInterestRate = ExternalCaller.getBorrowInterestRate(
+        borrowInterestRate = AssemblyCall.getBorrowInterestRate(
             address(state.assets[asset].interestModel),
             borrowRatio
         );

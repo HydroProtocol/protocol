@@ -93,7 +93,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 price)
     {
-        price = ExternalCaller.getAssetPriceFromPriceOracle(
+        price = AssemblyCall.getAssetPriceFromPriceOracle(
             address(state.assets[assetAddress].priceOracle),
             assetAddress
         );

@@ -25,7 +25,7 @@ import "../lib/Decimal.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../lib/Types.sol";
-import "../lib/ExternalCaller.sol";
+import "../lib/AssemblyCall.sol";
 import "./LendingPool.sol";
 
 library CollateralAccounts {
@@ -48,11 +48,11 @@ library CollateralAccounts {
         address baseAsset = market.baseAsset;
         address quoteAsset = market.quoteAsset;
 
-        uint256 baseUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(
+        uint256 baseUSDPrice = AssemblyCall.getAssetPriceFromPriceOracle(
             address(state.assets[baseAsset].priceOracle),
             baseAsset
         );
-        uint256 quoteUSDPrice = ExternalCaller.getAssetPriceFromPriceOracle(
+        uint256 quoteUSDPrice = AssemblyCall.getAssetPriceFromPriceOracle(
             address(state.assets[quoteAsset].priceOracle),
             quoteAsset
         );
