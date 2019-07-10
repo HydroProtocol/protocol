@@ -21,7 +21,6 @@ pragma solidity ^0.5.8;
 import "../lib/SafeMath.sol";
 import "../lib/Consts.sol";
 import "../lib/Store.sol";
-import "../lib/Events.sol";
 import "../lib/AssemblyCall.sol";
 
 /**
