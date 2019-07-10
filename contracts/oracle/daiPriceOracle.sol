@@ -86,11 +86,11 @@ contract DaiPriceOracle is Ownable {
     {
         uint256 ethUsdPrice = getMakerDaoPrice();
         uint256 oasisPrice = getOasisPrice();
-        if (oasisPrice > 0){
+        if (oasisPrice > 0) {
             price = ethUsdPrice.mul(ONE).div(oasisPrice);
         } else {
             uint256 uniswapPrice = getUniswapPrice();
-            if (uniswapPrice > 0){
+            if (uniswapPrice > 0) {
                 price = ethUsdPrice.mul(ONE).div(uniswapPrice);
             } else {
                 return 0;
@@ -108,7 +108,7 @@ contract DaiPriceOracle is Ownable {
         returns (uint256)
     {
         uint256 autoUpdatedPrice = updatePrice();
-        if (autoUpdatedPrice == 0){
+        if (autoUpdatedPrice == 0) {
             price = newPrice;
             emit UpdatePriceMannually(newPrice);
         }
@@ -153,7 +153,7 @@ contract DaiPriceOracle is Ownable {
         uint256 ethAmount = UNISWAP.balance;
         uint256 daiAmount = DAI.balanceOf(UNISWAP);
         uint256 uniswapPrice = daiAmount.mul(10**18).div(ethAmount);
-        if (ethAmount < uniswapMinETHAmount){
+        if (ethAmount < uniswapMinETHAmount) {
             return 0;
         } else {
             return uniswapPrice;

@@ -84,9 +84,9 @@ contract FeedPriceOracle is Ownable {
         require(newPrice <= maxPrice, "PRICE_EXCEED_MAX_LIMIT");
         require(newPrice >= minPrice, "PRICE_EXCEED_MIN_LIMIT");
 
-        if (price > 0){
+        if (price > 0) {
             uint256 changeRate = Decimal.divFloor(newPrice, price);
-            if (changeRate > Decimal.one()){
+            if (changeRate > Decimal.one()) {
                 changeRate = changeRate.sub(Decimal.one());
             } else {
                 changeRate = Decimal.one().sub(changeRate);

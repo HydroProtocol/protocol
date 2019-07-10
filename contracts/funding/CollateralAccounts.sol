@@ -112,7 +112,7 @@ library CollateralAccounts {
             uint256 transferableUSD = details.balancesTotalUSDValue - transferableThresholdUSDValue;
             uint256 assetUSDPrice = state.assets[asset].priceOracle.getPrice(asset);
             uint256 transferableAmount = Decimal.divFloor(transferableUSD, assetUSDPrice);
-            if (transferableAmount > assetBalance){
+            if (transferableAmount > assetBalance) {
                 return assetBalance;
             } else {
                 return transferableAmount;

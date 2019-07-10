@@ -25,7 +25,6 @@ import "../lib/Events.sol";
  * @title Relayer provides two distinct features for relayers.
  *
  * First, Relayers can opt into or out of the Hydro liquidity incentive system.
- *
  * Second, a relayer can register a delegate address.
  * Delegates can send matching requests on behalf of relayers.
  * The delegate scheme allows additional possibilities for smart contract interaction.

@@ -279,7 +279,7 @@ library Auctions {
         uint256 actualRepayAmount;
         uint256 collateralForBidder;
 
-        if (ratio <= Decimal.one()){
+        if (ratio <= Decimal.one()) {
             (actualRepayAmount, collateralForBidder) = fillHealthyAuction(state, auction, ratio, repayAmount);
         } else {
             (actualRepayAmount, collateralForBidder) = fillBadAuction(state, auction, ratio, repayAmount);
@@ -314,8 +314,8 @@ library Auctions {
 
         state.accounts[auction.borrower][auction.marketID].status = Types.CollateralAccountStatus.Normal;
 
-        for (uint i = 0; i < state.auction.currentAuctions.length; i++){
-            if (state.auction.currentAuctions[i] == auction.id){
+        for (uint i = 0; i < state.auction.currentAuctions.length; i++) {
+            if (state.auction.currentAuctions[i] == auction.id) {
                 state.auction.currentAuctions[i] = state.auction.currentAuctions[state.auction.currentAuctions.length-1];
                 state.auction.currentAuctions.length--;
             }
@@ -384,7 +384,7 @@ library Auctions {
 
         details.ratio = auction.ratio(state);
 
-        if (details.leftCollateralAmount != 0 && details.ratio != 0){
+        if (details.leftCollateralAmount != 0 && details.ratio != 0) {
             // price = debt/collateral/ratio
             details.price = Decimal.divFloor(Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount), details.ratio);
         }

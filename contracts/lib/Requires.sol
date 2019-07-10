@@ -89,7 +89,7 @@ library Requires {
         internal
         view
     {
-        if (asset==Consts.ETHEREUM_TOKEN_ADDRESS()){
+        if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
             if (state.cash[asset] > 0) {
                 require(uint256(state.cash[asset]) <= address(this).balance, "CONTRACT_BALANCE_NOT_ENOUGH");
             }
