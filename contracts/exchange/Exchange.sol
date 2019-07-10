@@ -28,7 +28,9 @@ import "../lib/Store.sol";
 import "../lib/Types.sol";
 import "../lib/Transfer.sol";
 import "../lib/Events.sol";
+import "../lib/Consts.sol";
 
+/**
  * Library to handle asset exchanges
  */
 library Exchange {
