@@ -28,13 +28,15 @@ import "./Types.sol";
 import "./Requires.sol";
 import "../funding/CollateralAccounts.sol";
 
+/**
+ * Library to moving assets
+ */
 library Transfer {
     using SafeMath for uint256;
     using SafeMath for int256;
     using BalancePath for Types.BalancePath;
 
-    /** @dev Transfer asset into current contract
-      */
+    // Transfer asset into current contract
     function deposit(
         Store.State storage state,
         address asset,
@@ -54,8 +56,7 @@ library Transfer {
         Events.logDeposit(msg.sender, asset, amount);
     }
 
-    /** @dev Transfer asset out of current contract
-      */
+    // Transfer asset out of current contract
     function withdraw(
         Store.State storage state,
         address asset,
@@ -78,8 +79,7 @@ library Transfer {
         Events.logWithdraw(msg.sender, asset, amount);
     }
 
-    /** @dev Get a user's asset balance
-      */
+    // Get a user's asset balance
     function balanceOf(
         Store.State storage state,
         Types.BalancePath memory balancePath,
@@ -93,8 +93,7 @@ library Transfer {
         return balances[asset];
     }
 
-    /** Move asset from a balances map to another
-      */
+    // Move asset from a balances map to another
     function transfer(
         Store.State storage state,
         address asset,

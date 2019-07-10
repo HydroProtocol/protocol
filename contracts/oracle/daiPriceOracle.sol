@@ -25,6 +25,9 @@ import "../interfaces/IStandardToken.sol";
 import "../interfaces/IEth2Dai.sol";
 import "../interfaces/IMakerDaoOracle.sol";
 
+/**
+ * Dai USD price oracle
+ */
 contract DaiPriceOracle is Ownable {
     using SafeMath for uint256;
 

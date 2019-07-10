@@ -18,10 +18,12 @@
 
 pragma solidity ^0.5.8;
 
-/// @dev Math operations with safety checks that revert on error
+/**
+ * Math operations with safety checks that revert on error
+ */
 library SafeMath {
 
-    /// @dev Multiplies two numbers, reverts on overflow.
+    // Multiplies two numbers, reverts on overflow.
     function mul(
         uint256 a,
         uint256 b
@@ -40,7 +42,7 @@ library SafeMath {
         return c;
     }
 
-    /// @dev Integer division of two numbers truncating the quotient, reverts on division by zero.
+    // Integer division of two numbers truncating the quotient, reverts on division by zero.
     function div(
         uint256 a,
         uint256 b
@@ -70,7 +72,7 @@ library SafeMath {
         }
     }
 
-    /// @dev Subtracts two numbers, reverts on overflow (i.e. if subtrahend is greater than minuend).
+    // Subtracts two numbers, reverts on overflow (i.e. if subtrahend is greater than minuend).
     function sub(
         uint256 a,
         uint256 b
@@ -97,7 +99,7 @@ library SafeMath {
         return c;
     }
 
-    /// @dev Adds two numbers, reverts on overflow.
+    // Adds two numbers, reverts on overflow.
     function add(
         uint256 a,
         uint256 b
@@ -125,7 +127,7 @@ library SafeMath {
         return c;
     }
 
-    /// @dev Divides two numbers and returns the remainder (unsigned integer modulo), reverts when dividing by zero.
+    // Divides two numbers and returns the remainder (unsigned integer modulo), reverts when dividing by zero.
     function mod(
         uint256 a,
         uint256 b
@@ -173,8 +175,6 @@ library SafeMath {
         return mul(mod(mul(numerator, multiple), denominator), 1000) >= mul(numerator, multiple);
     }
 
-    /// @dev calculate "multiple * (numerator / denominator)", rounded down.
-    /// revert when there is a rounding error.
     /**
      * Takes an amount (multiple) and calculates a proportion of it given a numerator/denominator
      * pair of values. The final value will be rounded down to the nearest integer value.

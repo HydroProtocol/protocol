@@ -21,6 +21,9 @@ pragma experimental ABIEncoderV2;
 
 import "./Types.sol";
 
+/**
+ * Library to handle signature verification
+ */
 library Signature {
 
     enum SignatureMethod {

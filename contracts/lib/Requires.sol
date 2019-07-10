@@ -25,6 +25,9 @@ import "./Decimal.sol";
 import "../interfaces/IStandardToken.sol";
 import "../funding/CollateralAccounts.sol";
 
+/**
+ * Library to handle restrictions
+ */
 library Requires {
     function requireAssetExist(
         Store.State storage state,

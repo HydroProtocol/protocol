@@ -25,7 +25,7 @@ import "./lib/Types.sol";
 import "./components/OperationsComponent.sol";
 
 /**
- * Only owner can use this contract functions
+ * Admin operations
  */
 contract Operations is Ownable, GlobalStore {
 

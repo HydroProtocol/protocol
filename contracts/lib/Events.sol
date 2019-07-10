@@ -24,6 +24,9 @@ pragma experimental ABIEncoderV2;
 
 import "./Types.sol";
 
+/**
+ * Library to define and emit Events
+ */
 library Events {
     //////////////////
     // Funds moving //

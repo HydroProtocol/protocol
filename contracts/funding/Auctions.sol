@@ -19,7 +19,7 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./LendingPool.sol";
+
 import "../lib/Store.sol";
 import "../lib/SafeMath.sol";
 import "../lib/Types.sol";
@@ -27,8 +27,12 @@ import "../lib/Events.sol";
 import "../lib/Decimal.sol";
 import "../lib/Transfer.sol";
 
+import "./LendingPool.sol";
 import "./CollateralAccounts.sol";
 
+/**
+ * Independently deployment library to liquidate unhealthy collateral accounts and handle auctions.
+ */
 library Auctions {
     using SafeMath for uint256;
     using SafeMath for int256;

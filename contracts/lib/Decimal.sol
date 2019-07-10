@@ -21,6 +21,9 @@ pragma experimental ABIEncoderV2;
 
 import { SafeMath } from "./SafeMath.sol";
 
+/**
+ * A library to handle decimls represented by uint256
+ */
 library Decimal {
     using SafeMath for uint256;
 

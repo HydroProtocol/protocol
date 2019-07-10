@@ -21,6 +21,9 @@ pragma experimental ABIEncoderV2;
 
 import "../interfaces/IMakerDaoOracle.sol";
 
+/**
+ * Eth USD price oracle
+ */
 contract EthPriceOracle {
 
     IMakerDaoOracle public makerDaoOracle;

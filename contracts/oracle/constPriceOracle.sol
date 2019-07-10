@@ -19,6 +19,9 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
+/**
+ * Price Oracle for some stabilized assets
+ */
 contract ConstPriceOracle {
 
     address asset;

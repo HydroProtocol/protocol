@@ -22,6 +22,9 @@ pragma experimental ABIEncoderV2;
 import "./Types.sol";
 import "../interfaces/IPriceOracle.sol";
 
+/**
+ * Library to define store data types
+ */
 library Store {
 
     struct RelayerState {

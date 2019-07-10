@@ -30,6 +30,9 @@ import "../interfaces/IInterestModel.sol";
 import "../interfaces/IPriceOracle.sol";
 import "../interfaces/ILendingPoolToken.sol";
 
+/**
+ * Library to define enum and structs, acts as a namespace.
+ */
 library Types {
     enum AuctionStatus {
         InProgress,

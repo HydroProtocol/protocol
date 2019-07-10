@@ -20,8 +20,10 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "../lib/Ownable.sol";
-import "../lib/Consts.sol";
 
+/**
+ * A simple static oracle for test purpose.
+ */
 contract PriceOracle is Ownable {
 
     // token price to ether price

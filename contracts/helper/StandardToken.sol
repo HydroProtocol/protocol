@@ -21,11 +21,7 @@ pragma solidity 0.5.8;
 import "../lib/SafeMath.sol";
 
 /**
- * @title Standard ERC20 token
- *
- * @dev Implementation of the basic standard token.
- * @dev https://github.com/ethereum/EIPs/issues/20
- * @dev Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
+ * Standard ERC20 token
  */
 contract StandardToken {
     using SafeMath for uint256;
@@ -38,91 +34,90 @@ contract StandardToken {
 
     /**
     * @dev transfer token for a specified address
-    * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
+    * @param to The address to transfer to.
+    * @param amount The amount to be transferred.
     */
     function transfer(
-        address _to,
-        uint256 _amount
+        address to,
+        uint256 amount
     )
         public
         returns (bool)
     {
-        require(_to != address(0), "TO_ADDRESS_IS_EMPTY");
-        require(_amount <= balances[msg.sender], "BALANCE_NOT_ENOUGH");
+        require(to != address(0), "TO_ADDRESS_IS_EMPTY");
+        require(amount <= balances[msg.sender], "BALANCE_NOT_ENOUGH");
 
-        // SafeMath.sub will throw if there is not enough balance.
-        balances[msg.sender] = balances[msg.sender].sub(_amount);
-        balances[_to] = balances[_to].add(_amount);
-        emit Transfer(msg.sender, _to, _amount);
+        balances[msg.sender] = balances[msg.sender].sub(amount);
+        balances[to] = balances[to].add(amount);
+        emit Transfer(msg.sender, to, amount);
         return true;
     }
 
     /**
     * @dev Gets the balance of the specified address.
-    * @param _owner The address to query the the balance of.
+    * @param owner The address to query the the balance of.
     * @return An uint256 representing the amount owned by the passed address.
     */
-    function balanceOf(address _owner) public view returns (uint256 balance) {
-        return balances[_owner];
+    function balanceOf(address owner) public view returns (uint256 balance) {
+        return balances[owner];
     }
 
     /**
     * @dev Transfer tokens from one address to another
-    * @param _from address The address which you want to send tokens from
-    * @param _to address The address which you want to transfer to
-    * @param _amount uint256 the amount of tokens to be transferred
+    * @param from address The address which you want to send tokens from
+    * @param to address The address which you want to transfer to
+    * @param amount uint256 the amount of tokens to be transferred
     */
     function transferFrom(
-        address _from,
-        address _to,
-        uint256 _amount
+        address from,
+        address to,
+        uint256 amount
     )
         public
         returns (bool)
     {
-        require(_to != address(0), "TO_ADDRESS_IS_EMPTY");
-        require(_amount <= balances[_from], "BALANCE_NOT_ENOUGH");
-        require(_amount <= allowed[_from][msg.sender], "ALLOWANCE_NOT_ENOUGH");
+        require(to != address(0), "TO_ADDRESS_IS_EMPTY");
+        require(amount <= balances[from], "BALANCE_NOT_ENOUGH");
+        require(amount <= allowed[from][msg.sender], "ALLOWANCE_NOT_ENOUGH");
 
-        balances[_from] = balances[_from].sub(_amount);
-        balances[_to] = balances[_to].add(_amount);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_amount);
-        emit Transfer(_from, _to, _amount);
+        balances[from] = balances[from].sub(amount);
+        balances[to] = balances[to].add(amount);
+        allowed[from][msg.sender] = allowed[from][msg.sender].sub(amount);
+        emit Transfer(from, to, amount);
         return true;
     }
 
     /**
     * @dev Approve the passed address to spend the specified amount of tokens on behalf of msg.sender.
-    * @param _spender The address which will spend the funds.
-    * @param _amount The amount of tokens to be spent.
+    * @param spender The address which will spend the funds.
+    * @param amount The amount of tokens to be spent.
     */
     function approve(
-        address _spender,
-        uint256 _amount
+        address spender,
+        uint256 amount
     )
         public
         returns (bool)
     {
-        allowed[msg.sender][_spender] = _amount;
-        emit Approval(msg.sender, _spender, _amount);
+        allowed[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
         return true;
     }
 
     /**
     * @dev Function to check the amount of tokens that an owner allowed to a spender.
-    * @param _owner address The address which owns the funds.
-    * @param _spender address The address which will spend the funds.
+    * @param owner address The address which owns the funds.
+    * @param spender address The address which will spend the funds.
     * @return A uint256 specifying the amount of tokens still available for the spender.
     */
     function allowance(
-        address _owner,
-        address _spender
+        address owner,
+        address spender
     )
         public
         view
         returns (uint256)
     {
-        return allowed[_owner][_spender];
+        return allowed[owner][spender];
     }
 }

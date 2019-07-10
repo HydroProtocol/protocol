@@ -18,6 +18,12 @@
 
 pragma solidity 0.5.8;
 
+/**
+ * Some ERC20 Token contract doesn't return any value when calling the transfer function successfully.
+ * So we consider the transfer call is successful in either case below.
+ *   1. call successfully and nothing return.
+ *   2. call successfully, return value is 32 bytes long and the value isn't equal to zero.
+ */
 library SafeERC20 {
     function safeTransfer(
         address token,
@@ -46,10 +52,7 @@ library SafeERC20 {
             mstore(4, tmp2)
             mstore(36, tmp3)
 
-            // Some ERC20 Token contract doesn't return any value when calling the transfer function successfully.
-            // So we consider the transfer call is successful in either case below.
-            //   1. call successfully and nothing return.
-            //   2. call successfully, return value is 32 bytes long and the value isn't equal to zero.
+            // result check
             result := and (
                 eq(callResult, 1),
                 or(eq(returndatasize, 0), and(eq(returndatasize, 32), gt(returnValue, 0)))
@@ -92,10 +95,7 @@ library SafeERC20 {
             mstore(36, tmp3)
             mstore(68, tmp4)
 
-            // Some ERC20 Token contract doesn't return any value when calling the transferFrom function successfully.
-            // So we consider the transferFrom call is successful in either case below.
-            //   1. call successfully and nothing return.
-            //   2. call successfully, return value is 32 bytes long and the value isn't equal to zero.
+            // result check
             result := and (
                 eq(callResult, 1),
                 or(eq(returndatasize, 0), and(eq(returndatasize, 32), gt(returnValue, 0)))

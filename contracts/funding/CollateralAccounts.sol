@@ -19,15 +19,17 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-
 import "../lib/Store.sol";
 import "../lib/Decimal.sol";
 import "../lib/SafeMath.sol";
-import "../lib/Consts.sol";
 import "../lib/Types.sol";
 import "../lib/AssemblyCall.sol";
+
 import "./LendingPool.sol";
 
+/**
+ * Library to get infomation of collateral accounts.
+ */
 library CollateralAccounts {
     using SafeMath for uint256;
 
@@ -78,10 +80,12 @@ library CollateralAccounts {
     }
 
     /**
-     * The amount that is avaliable to transfer out of the collateral account.
+     * Get the amount that is avaliable to transfer out of the collateral account.
+     *
      * If there are no open loans, this is just the total asset balance.
-     * If there is are open loans, then this is the maximum amount that can be withdrawn
-     * without falling below the withdraw collateral ratio
+     *
+     * If there are open loans, then this is the maximum amount that can be withdrawn
+     *   without falling below the withdraw collateral ratio
      */
     function getTransferableAmount(
         Store.State storage state,

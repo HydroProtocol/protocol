@@ -18,6 +18,9 @@
 
 pragma solidity ^0.5.8;
 
+/**
+ * Consts used in multi files
+ */
 library Consts {
     function ETHEREUM_TOKEN_ADDRESS()
         internal

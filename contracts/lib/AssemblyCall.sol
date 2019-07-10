@@ -20,6 +20,10 @@ pragma solidity ^0.5.8;
 
 import "./Store.sol";
 
+/**
+ * A collection of others contract function calls.
+ * Use assembly to save gas.
+ */
 library AssemblyCall {
     function getAssetPriceFromPriceOracle(
         address oracleAddress,
