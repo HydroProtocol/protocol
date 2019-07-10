@@ -20,8 +20,9 @@ pragma solidity 0.5.8;
 
 import "../lib/SafeMath.sol";
 
-// Test wrapper
-
+/**
+ * Test wrapper
+ */
 contract TestMath {
     function isRoundingError(
         uint256 a,

@@ -20,6 +20,9 @@ pragma solidity 0.5.8;
 
 import "./StandardToken.sol";
 
+/**
+ * Test wrapper
+ */
 contract TestToken is StandardToken {
     string public name;
     string public symbol;

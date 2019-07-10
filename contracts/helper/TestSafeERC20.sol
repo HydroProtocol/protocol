@@ -21,8 +21,9 @@ pragma solidity 0.5.8;
 import "../lib/SafeERC20.sol";
 import "./TestToken.sol";
 
-// Test wrapper
-
+/**
+ * Test wrapper
+ */
 contract TestSafeERC20 {
     address public tokenAddress;
 
