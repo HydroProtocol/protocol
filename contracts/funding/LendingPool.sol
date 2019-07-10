@@ -357,7 +357,7 @@ library LendingPool {
 
         // interest = equity value * (current index value - starting index value)
         uint256 recentBorrowInterest = Decimal.mulCeil(
-            normalizedSupply,
+            normalizedBorrow,
             currentBorrowIndex.sub(state.pool.borrowIndex[asset])
         );
 
