@@ -27,12 +27,12 @@ import "../lib/Transfer.sol";
 import "../lib/Events.sol";
 
 /**
- * A library allows user to do multi actions at once in a single transaction.
+ * Library to allow executing multiple actions at once in a single transaction.
  */
 library BatchActions {
 
     /**
-     * All actions can be included in a batch
+     * All allowed actions types
      */
     enum ActionType {
         Deposit,   // Move asset from your wallet to tradeable balance
@@ -174,10 +174,10 @@ library BatchActions {
             amount
         );
 
-        if (toBalancePath.category == Types.BalanceCategory.CollateralAccount){
+        if (toBalancePath.category == Types.BalanceCategory.CollateralAccount) {
             Events.logIncreaseCollateral(msg.sender, toBalancePath.marketID, asset, amount);
         }
-        if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount){
+        if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
             Events.logDecreaseCollateral(msg.sender, fromBalancePath.marketID, asset, amount);
         }
     }
