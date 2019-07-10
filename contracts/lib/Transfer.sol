@@ -50,9 +50,7 @@ library Transfer {
             require(amount == msg.value, "MSG_VALUE_AND_AMOUNT_MISMATCH");
         }
 
-        state.balances[msg.sender][asset] = state.balances[msg.sender][asset].add(amount);
-
-        state.cash[asset] = state.cash[asset].add(amount);
+        transferIn(state, asset, BalancePath.getCommonPath(msg.sender), amount);
         Events.logDeposit(msg.sender, asset, amount);
     }
 
@@ -64,9 +62,7 @@ library Transfer {
     )
         internal
     {
-       require(state.balances[msg.sender][asset] >= amount, "BALANCE_NOT_ENOUGH");
-
-        state.balances[msg.sender][asset] = state.balances[msg.sender][asset] - amount;
+        require(state.balances[msg.sender][asset] >= amount, "BALANCE_NOT_ENOUGH");
 
         if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
             msg.sender.transfer(amount);
@@ -74,7 +70,7 @@ library Transfer {
             SafeERC20.safeTransfer(asset, msg.sender, amount);
         }
 
-        state.cash[asset] = state.cash[asset].sub(amount);
+        transferOut(state, asset, BalancePath.getCommonPath(msg.sender), amount);
 
         Events.logWithdraw(msg.sender, asset, amount);
     }
@@ -110,10 +106,35 @@ library Transfer {
         mapping(address => uint256) storage fromBalances = fromBalancePath.getBalances(state);
         mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
 
-        // TODO, save from balance before to save gas
         require(fromBalances[asset] >= amount, "TRANSFER_BALANCE_NOT_ENOUGH");
 
         fromBalances[asset] = fromBalances[asset] - amount;
         toBalances[asset] = toBalances[asset].add(amount);
+    }
+
+    function transferIn(
+        Store.State storage state,
+        address asset,
+        Types.BalancePath memory path,
+        uint256 amount
+    )
+        internal
+    {
+        mapping(address => uint256) storage balances = path.getBalances(state);
+        balances[asset] = balances[asset].add(amount);
+        state.cash[asset] = state.cash[asset].add(amount);
+    }
+
+    function transferOut(
+        Store.State storage state,
+        address asset,
+        Types.BalancePath memory path,
+        uint256 amount
+    )
+        internal
+    {
+        mapping(address => uint256) storage balances = path.getBalances(state);
+        balances[asset] = balances[asset].sub(amount);
+        state.cash[asset] = state.cash[asset].sub(amount);
     }
 }
