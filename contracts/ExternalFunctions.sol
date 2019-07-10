@@ -25,13 +25,13 @@ import "./exchange/Exchange.sol";
 import "./exchange/Relayer.sol";
 
 import "./funding/LendingPool.sol";
-
 import "./funding/CollateralAccounts.sol";
 import "./funding/BatchActions.sol";
 import "./funding/Auctions.sol";
 
 import "./lib/Transfer.sol";
 import "./lib/Types.sol";
+import "./lib/Consts.sol";
 import "./lib/Requires.sol";
 import "./lib/SafeMath.sol";
 

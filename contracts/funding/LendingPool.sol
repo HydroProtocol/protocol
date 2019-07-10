@@ -51,6 +51,8 @@ library LendingPool {
     using SafeMath for uint256;
     using SafeMath for int256;
 
+    uint256 private constant SECONDS_OF_YEAR = 31536000;
+
     // create new pool
     function initializeAssetLendingPool(
         Store.State storage state,
@@ -455,13 +457,12 @@ library LendingPool {
         returns (uint256 currentSupplyIndex, uint256 currentBorrowIndex)
     {
         uint256 timeDelta = block.timestamp.sub(state.pool.indexStartTime[asset]);
-        uint256 secondsOfYear = Consts.SECONDS_OF_YEAR();
 
         uint256 borrowInterestRate = state.pool.borrowAnnualInterestRate[asset]
-            .mul(timeDelta).divCeil(secondsOfYear); // Ceil Ensure asset greater than liability
+            .mul(timeDelta).divCeil(SECONDS_OF_YEAR); // Ceil Ensure asset greater than liability
 
         uint256 supplyInterestRate = state.pool.supplyAnnualInterestRate[asset]
-            .mul(timeDelta).div(secondsOfYear);
+            .mul(timeDelta).div(SECONDS_OF_YEAR);
 
         currentBorrowIndex = Decimal.mulCeil(state.pool.borrowIndex[asset], Decimal.onePlus(borrowInterestRate));
         currentSupplyIndex = Decimal.mulFloor(state.pool.supplyIndex[asset], Decimal.onePlus(supplyInterestRate));

@@ -29,10 +29,15 @@ import "../lib/Types.sol";
 import "../lib/Transfer.sol";
 import "../lib/Events.sol";
 
+ * Library to handle asset exchanges
+ */
 library Exchange {
     using SafeMath for uint256;
     using Order for Types.Order;
     using OrderParam for Types.OrderParam;
+
+    uint256 private constant EXCHANGE_FEE_RATE_BASE = 100000;
+    uint256 private constant SUPPORTED_ORDER_VERSION = 2;
 
     /**
      * Calculated data about an order object.
@@ -134,7 +139,7 @@ library Exchange {
         view
         returns (OrderInfo memory orderInfo)
     {
-        require(orderParam.getOrderVersion() == Consts.SUPPORTED_ORDER_VERSION(), "ORDER_VERSION_NOT_SUPPORTED");
+        require(orderParam.getOrderVersion() == SUPPORTED_ORDER_VERSION, "ORDER_VERSION_NOT_SUPPORTED");
 
         Types.Order memory order = getOrderFromOrderParam(orderParam, orderAddressSet);
         orderInfo.orderHash = order.getHash();
@@ -301,7 +306,7 @@ library Exchange {
 
             // RebateRate will never exceed REBATE_RATE_BASE, so rebateFee will never exceed the fees paid by the taker.
             result.makerRebate = result.quoteAssetFilledAmount.mul(takerFeeRate).mul(rebateRate).div(
-                Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE()).mul(Consts.REBATE_RATE_BASE())
+                EXCHANGE_FEE_RATE_BASE.mul(Consts.DISCOUNT_RATE_BASE()).mul(Consts.REBATE_RATE_BASE())
             );
         } else {
             uint256 makerRawFeeRate = makerOrderParam.getAsMakerFeeRateFromOrderData();
@@ -316,12 +321,12 @@ library Exchange {
             );
 
             result.makerFee = result.quoteAssetFilledAmount.mul(makerFeeRate).div(
-                Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE())
+                EXCHANGE_FEE_RATE_BASE.mul(Consts.DISCOUNT_RATE_BASE())
             );
         }
 
         result.takerFee = result.quoteAssetFilledAmount.mul(takerFeeRate).div(
-            Consts.EXCHANGE_FEE_RATE_BASE().mul(Consts.DISCOUNT_RATE_BASE())
+            EXCHANGE_FEE_RATE_BASE.mul(Consts.DISCOUNT_RATE_BASE())
         );
     }
 
