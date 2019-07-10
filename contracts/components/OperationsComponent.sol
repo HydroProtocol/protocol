@@ -22,13 +22,15 @@ pragma experimental ABIEncoderV2;
 import "../lib/Requires.sol";
 import "../lib/Events.sol";
 import "../lib/Types.sol";
+
 import "../funding/LendingPool.sol";
+import "../funding/LendingPoolToken.sol";
+
 import "../interfaces/IPriceOracle.sol";
 import "../interfaces/ILendingPoolToken.sol";
-import "../Funding/LendingPoolToken.sol";
 
 /**
- * Only owner can use this contract functions
+ * Independently deployment library of admin operations.
  */
 library OperationsComponent {
 
