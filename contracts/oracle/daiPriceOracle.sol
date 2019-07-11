@@ -49,7 +49,7 @@ contract DaiPriceOracle {
     function getPrice(
         address asset
     )
-        public
+        external
         view
         returns (uint256)
     {
@@ -58,7 +58,7 @@ contract DaiPriceOracle {
     }
 
     function updatePrice()
-        public
+        external
         returns (uint256)
     {
         uint256 ethUsdPrice = getMakerDaoPrice();
@@ -103,7 +103,7 @@ contract DaiPriceOracle {
     }
 
     function getUniswapPrice()
-        internal
+        public
         view
         returns (uint256)
     {
@@ -119,7 +119,7 @@ contract DaiPriceOracle {
     }
 
     function getMakerDaoPrice()
-        internal
+        public
         view
         returns (uint256)
     {

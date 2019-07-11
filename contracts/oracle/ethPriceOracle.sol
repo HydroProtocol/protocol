@@ -30,7 +30,7 @@ contract EthPriceOracle {
     function getPrice(
         address _asset
     )
-        public
+        external
         view
         returns (uint256)
     {

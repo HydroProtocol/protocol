@@ -78,7 +78,7 @@ contract FeedPriceOracle is Ownable {
         uint256 newPrice,
         uint256 blockNumber
     )
-        public
+        external
         onlyOwner
     {
         require(newPrice > 0, "PRICE_MUST_GREATER_THAN_0");
@@ -105,7 +105,7 @@ contract FeedPriceOracle is Ownable {
     function getPrice(
         address _asset
     )
-        public
+        external
         view
         returns (uint256)
     {
