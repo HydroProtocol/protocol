@@ -142,10 +142,7 @@ library Auctions {
         // get remaining collateral
         uint256 leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
-        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = SafeMath.add(
-            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
-            repayAmount
-        );
+        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = repayAmount;
 
         // borrower pays back to the lending pool
         uint256 actualRepayAmount = LendingPool.repay(
@@ -155,6 +152,7 @@ library Auctions {
             auction.debtAsset,
             repayAmount
         );
+
         state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0;
 
         // compute how much collateral is divided up amongst the bidder, auction initiator, and borrower
@@ -221,10 +219,7 @@ library Auctions {
 
         uint256 repayAmount = Decimal.mulFloor(bidderRepayAmount, ratio);
 
-        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = SafeMath.add(
-            state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset],
-            repayAmount
-        );
+        state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = repayAmount;
 
         uint256 actualRepayAmount = LendingPool.repay(
             state,
@@ -233,24 +228,22 @@ library Auctions {
             auction.debtAsset,
             repayAmount
         );
+
         state.accounts[auction.borrower][auction.marketID].balances[auction.debtAsset] = 0; // recover unused principal
 
         uint256 actualBidderRepay = bidderRepayAmount;
+
         if (actualRepayAmount < repayAmount) {
             actualBidderRepay = Decimal.divCeil(actualRepayAmount, ratio);
         }
 
         // gather repay capital
         LendingPool.claimInsurance(state, auction.debtAsset, actualRepayAmount.sub(actualBidderRepay));
+
         state.balances[msg.sender][auction.debtAsset] = SafeMath.sub(
             state.balances[msg.sender][auction.debtAsset],
             actualBidderRepay
         );
-
-        // auction when ratio>1 cash -= actualBidderRepay
-        // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].add(actualRepayAmount);
-        // state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(actualBidderRepay);
-        state.cash[auction.debtAsset] = state.cash[auction.debtAsset].sub(actualBidderRepay).add(actualRepayAmount);
 
         // update collateralAmount
         uint256 collateralForBidder = leftCollateralAmount.mul(actualRepayAmount).div(leftDebtAmount);
@@ -297,7 +290,7 @@ library Auctions {
             auction.marketID
         );
 
-        Events.logFillAuction(auction.id, actualRepayAmount, collateralForBidder, leftDebtAmount);
+        Events.logFillAuction(auction.id, msg.sender, actualRepayAmount, collateralForBidder, leftDebtAmount);
 
         if (leftDebtAmount == 0) {
             endAuction(state, auction);
@@ -324,8 +317,6 @@ library Auctions {
                 state.auction.currentAuctions.length--;
             }
         }
-
-        Events.logAuctionFinished(auction.id);
     }
 
     /**

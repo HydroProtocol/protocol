@@ -385,6 +385,7 @@ library Events {
     // a user filled an acution
     event FillAuction(
         uint256 indexed auctionID,
+        address bidder,
         uint256 repayDebt,
         uint256 bidderCollateral,
         uint256 leftDebt
@@ -392,6 +393,7 @@ library Events {
 
     function logFillAuction(
         uint256 auctionID,
+        address bidder,
         uint256 repayDebt,
         uint256 bidderCollateral,
         uint256 leftDebt
@@ -400,23 +402,11 @@ library Events {
     {
         emit FillAuction(
             auctionID,
+            bidder,
             repayDebt,
             bidderCollateral,
             leftDebt
         );
-    }
-
-    // an auction is finished
-    event AuctionFinished(
-        uint256 indexed auctionID
-    );
-
-    function logAuctionFinished(
-        uint256 auctionID
-    )
-        internal
-    {
-        emit AuctionFinished(auctionID);
     }
 
     /////////////

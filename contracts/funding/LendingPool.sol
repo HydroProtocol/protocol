@@ -272,6 +272,8 @@ library LendingPool {
 
         uint256 compensationAmount = SafeMath.min(amount, insuranceBalance);
 
+        state.cash[asset] = state.cash[asset].add(amount);
+
         // remove compensationAmount from insurance balances
         state.pool.insuranceBalances[asset] = SafeMath.sub(
             state.pool.insuranceBalances[asset],
