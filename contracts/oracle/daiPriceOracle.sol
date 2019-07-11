@@ -19,67 +19,41 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "../lib/Ownable.sol";
 import "../lib/SafeMath.sol";
 import "../interfaces/IStandardToken.sol";
 import "../interfaces/IEth2Dai.sol";
 import "../interfaces/IMakerDaoOracle.sol";
 
 /**
- * Dai USD price oracle
+ * Dai USD price oracle for mainnet
  */
-contract DaiPriceOracle is Ownable {
+contract DaiPriceOracle {
     using SafeMath for uint256;
 
     uint256 public price;
 
-    IStandardToken public WETH;
-    IStandardToken public DAI;
-    IMakerDaoOracle public makerDaoOracle;
-    IEth2Dai public OASIS;
-    address public UNISWAP;
-
-    uint256 public oasisETHAmount;
-    uint256 public oasisMaxSpread;
-    uint256 public uniswapMinETHAmount;
-
     uint256 constant ONE = 10**18;
 
+    IMakerDaoOracle public constant makerDaoOracle = IMakerDaoOracle(0x729D19f657BD0614b4985Cf1D82531c67569197B);
+    IStandardToken public constant DAI = IStandardToken(0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359);
+    IEth2Dai public constant Eth2Dai = IEth2Dai(0x39755357759cE0d7f32dC8dC45414CCa409AE24e);
+
+    address public constant UNISWAP = 0x09cabEC1eAd1c0Ba254B09efb3EE13841712bE14;
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    uint256 public constant eth2daiETHAmount = 10 ether;
+    uint256 public constant eth2daiMaxSpread = 2 * ONE / 100; // 2.00%
+    uint256 public constant uniswapMinETHAmount = 2000 ether;
+
     event UpdatePrice(uint256 newPrice);
-    event UpdatePriceMannually(uint256 newPrice);
-
-    constructor(
-        address _weth,
-        address _dai,
-        address _makerDaoOracle,
-        address _oasis,
-        address _uniswap,
-        uint256 _oasisETHAmount,
-        uint256 _oasisMaxSpread,
-        uint256 _uniswapMinETHAmount
-    )
-        public
-    {
-        WETH = IStandardToken(_weth);
-        DAI = IStandardToken(_dai);
-        makerDaoOracle = IMakerDaoOracle(_makerDaoOracle);
-
-        OASIS = IEth2Dai(_oasis);
-        UNISWAP = _uniswap;
-
-        oasisETHAmount = _oasisETHAmount;
-        oasisMaxSpread = _oasisMaxSpread;
-        uniswapMinETHAmount = _uniswapMinETHAmount;
-    }
 
     function getPrice(
-        address _asset
+        address asset
     )
         public
         view
         returns (uint256)
     {
-        require(_asset == 0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359, "ASSET_NOT_MATCH");
+        require(asset == address(DAI), "ASSET_NOT_MATCH");
         return price;
     }
 
@@ -88,60 +62,40 @@ contract DaiPriceOracle is Ownable {
         returns (uint256)
     {
         uint256 ethUsdPrice = getMakerDaoPrice();
-        uint256 oasisPrice = getOasisPrice();
-        if (oasisPrice > 0) {
-            price = ethUsdPrice.mul(ONE).div(oasisPrice);
+        uint256 eth2daiPrice = getEth2DaiPrice();
+
+        if (eth2daiPrice > 0) {
+            price = ethUsdPrice.mul(ONE).div(eth2daiPrice);
         } else {
             uint256 uniswapPrice = getUniswapPrice();
             if (uniswapPrice > 0) {
                 price = ethUsdPrice.mul(ONE).div(uniswapPrice);
             } else {
-                return 0;
+                revert("UPDATE_DAI_PRICE_FAILED");
             }
         }
+
         emit UpdatePrice(price);
     }
 
-    // only enabled when oasis and uniswap both failed
-    function updatePriceMannually(
-        uint256 newPrice
-    )
-        public
-        onlyOwner
-        returns (uint256)
-    {
-        uint256 autoUpdatedPrice = updatePrice();
-        if (autoUpdatedPrice == 0) {
-            price = newPrice;
-            emit UpdatePriceMannually(newPrice);
-        }
-        return price;
-    }
-
-    function getOasisPrice()
+    function getEth2DaiPrice()
         public
         view
         returns (uint256)
     {
-
-        if (
-            OASIS.isClosed()
-            || !OASIS.buyEnabled()
-            || !OASIS.matchingEnabled()
-        ) {
+        if (Eth2Dai.isClosed() || !Eth2Dai.buyEnabled() || !Eth2Dai.matchingEnabled()) {
             return 0;
         }
 
-        // TODO use call to catch revert
-        // https://blog.polymath.network/try-catch-in-solidity-handling-the-revert-exception-f53718f76047
-        uint256 bidDai = OASIS.getBuyAmount(address(DAI), address(WETH), oasisETHAmount); // bid
-        uint256 askDai = OASIS.getPayAmount(address(DAI), address(WETH), oasisETHAmount); // ask
+        uint256 bidDai = Eth2Dai.getBuyAmount(address(DAI), WETH, eth2daiETHAmount);
+        uint256 askDai = Eth2Dai.getPayAmount(address(DAI), WETH, eth2daiETHAmount);
 
-        uint256 bidPrice = bidDai.mul(ONE).div(oasisETHAmount);
-        uint256 askPrice = askDai.mul(ONE).div(oasisETHAmount);
+        uint256 bidPrice = bidDai.mul(ONE).div(eth2daiETHAmount);
+        uint256 askPrice = askDai.mul(ONE).div(eth2daiETHAmount);
 
         uint256 spread = askPrice.mul(ONE).div(bidPrice).sub(ONE);
-        if (spread > oasisMaxSpread) {
+
+        if (spread > eth2daiMaxSpread) {
             return 0;
         } else {
             return bidPrice.add(askPrice).div(2);
@@ -156,6 +110,7 @@ contract DaiPriceOracle is Ownable {
         uint256 ethAmount = UNISWAP.balance;
         uint256 daiAmount = DAI.balanceOf(UNISWAP);
         uint256 uniswapPrice = daiAmount.mul(10**18).div(ethAmount);
+
         if (ethAmount < uniswapMinETHAmount) {
             return 0;
         } else {

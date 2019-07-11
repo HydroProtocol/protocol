@@ -48,12 +48,14 @@ contract FeedPriceOracle is Ownable {
     )
         public
     {
-        require(_minPrice <= _maxPrice, "MIN_PRICE_MUST_LESS_OR_EQUAL_THAN_MAX_PRICE");
         asset = _asset;
-        validBlockNumber = _validBlockNumber;
-        maxChangeRate = _maxChangeRate;
-        minPrice = _minPrice;
-        maxPrice = _maxPrice;
+
+        setParams(
+            _validBlockNumber,
+            _maxChangeRate,
+            _minPrice,
+            _maxPrice
+        );
     }
 
     function setParams(
@@ -96,6 +98,7 @@ contract FeedPriceOracle is Ownable {
 
         price = newPrice;
         lastBlockNumber = blockNumber;
+
         emit PriceFeed(price, lastBlockNumber);
     }
 
