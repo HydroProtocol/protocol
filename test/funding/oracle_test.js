@@ -3,7 +3,7 @@ require('../utils/hooks');
 const assert = require('assert');
 const { toWei, logGas } = require('../utils');
 const { getBlockNumber, mine } = require('../utils/evm');
-const FeedPriceOracle = artifacts.require('./oracle/feedPriceOracle.sol');
+const FeedPriceOracle = artifacts.require('./oracle/FeedPriceOracle.sol');
 
 contract('FeedPriceOracle', accounts => {
     let oracle;
@@ -24,7 +24,7 @@ contract('FeedPriceOracle', accounts => {
     it('feed price', async () => {
         let currentBlockNumber = await web3.eth.getBlockNumber();
         res = await oracle.feed(toWei('2.02'), currentBlockNumber + 1);
-        logGas(res, 'feedPriceOracle.feed');
+        logGas(res, 'FeedPriceOracle.feed');
 
         assert.equal((await oracle.getPrice(ethTokenAddress)).toString(), toWei('2.02'));
     });
