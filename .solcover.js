@@ -8,7 +8,7 @@ module.exports = {
 
         // staticcall doesn't allow to emit events
         // have to skip the files below
-        'PriceOracle.sol',
+        'helper/PriceOracle.sol',
         'HydroToken.sol',
         'DefaultInterestModel.sol',
         'oracle/DaiPriceOracle.sol',
