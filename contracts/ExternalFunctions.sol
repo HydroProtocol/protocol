@@ -140,6 +140,14 @@ contract ExternalFunctions is GlobalStore {
         count = state.auction.auctionsCount;
     }
 
+    function getCurrentAuctions()
+        external
+        view
+        returns (uint32[] memory)
+    {
+        return state.auction.currentAuctions;
+    }
+
     function getAuctionDetails(uint32 auctionID)
         external
         view
