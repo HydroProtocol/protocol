@@ -43,15 +43,24 @@ library Transfer {
         uint256 amount
     )
         internal
+        returns (uint256)
     {
-        if (asset != Consts.ETHEREUM_TOKEN_ADDRESS()) {
-            SafeERC20.safeTransferFrom(asset, msg.sender, address(this), amount);
+        uint256 depositedEtherAmount = 0;
+
+        if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
+            // Since this method is able to be called in batch,
+            // there is a chance that a batch contains multi deposit ether calls.
+            // To make sure the the msg.value is equal to the total deposit ethers,
+            // each ether deposit function needs to return the actual deposited ether amount.
+            depositedEtherAmount = amount;
         } else {
-            require(amount == msg.value, "MSG_VALUE_AND_AMOUNT_MISMATCH");
+            SafeERC20.safeTransferFrom(asset, msg.sender, address(this), amount);
         }
 
         transferIn(state, asset, BalancePath.getCommonPath(msg.sender), amount);
         Events.logDeposit(msg.sender, asset, amount);
+
+        return depositedEtherAmount;
     }
 
     // Transfer asset out of current contract

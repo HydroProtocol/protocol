@@ -50,7 +50,7 @@ contract ExternalFunctions is GlobalStore {
         public
         payable
     {
-        BatchActions.batch(state, actions);
+        BatchActions.batch(state, actions, msg.value);
     }
 
     ////////////////////////

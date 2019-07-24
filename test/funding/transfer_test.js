@@ -3,7 +3,8 @@ const assert = require('assert');
 const Hydro = artifacts.require('./Hydro.sol');
 const { toWei, logGas } = require('../utils');
 const { newMarket, createAsset } = require('../utils/assets');
-const { deposit, withdraw, transfer } = require('../../sdk/sdk.js');
+const { deposit, withdraw, transfer, ActionType, batch } = require('../../sdk/sdk.js');
+const Ethers = require('ethers');
 
 contract('Transfer', accounts => {
     let hydro, res;
@@ -33,6 +34,48 @@ contract('Transfer', accounts => {
 
     before(async () => {
         hydro = await Hydro.deployed();
+    });
+
+    it('multiple deposit ether unsuccessfully', async () => {
+        const balanceBefore = await hydro.balanceOf(etherAsset, user);
+        const amount = toWei('1');
+        const encoder = new Ethers.utils.AbiCoder();
+        // try to hack batch deposit logic
+        const actions = [
+            {
+                actionType: ActionType.Deposit,
+                encodedParams: encoder.encode(['address', 'uint256'], [etherAsset, amount])
+            },
+            {
+                actionType: ActionType.Deposit,
+                encodedParams: encoder.encode(['address', 'uint256'], [etherAsset, amount])
+            }
+        ];
+
+        await assert.rejects(batch(actions, { value: amount }), /MSG_VALUE_AND_AMOUNT_MISMATCH/);
+        const balanceAfter = await hydro.balanceOf(etherAsset, user);
+        assert.equal(balanceAfter.sub(balanceBefore).toString(), toWei('0'));
+    });
+
+    it('multiple deposit ether successfully', async () => {
+        const balanceBefore = await hydro.balanceOf(etherAsset, user);
+        const amount = toWei('1');
+        const encoder = new Ethers.utils.AbiCoder();
+
+        const actions = [
+            {
+                actionType: ActionType.Deposit,
+                encodedParams: encoder.encode(['address', 'uint256'], [etherAsset, amount])
+            },
+            {
+                actionType: ActionType.Deposit,
+                encodedParams: encoder.encode(['address', 'uint256'], [etherAsset, amount])
+            }
+        ];
+
+        await batch(actions, { value: toWei(2) });
+        const balanceAfter = await hydro.balanceOf(etherAsset, user);
+        assert.equal(balanceAfter.sub(balanceBefore).toString(), toWei('2'));
     });
 
     it('deposit ether successfully', async () => {

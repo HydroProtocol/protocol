@@ -22,6 +22,7 @@ pragma experimental ABIEncoderV2;
 import "./LendingPool.sol";
 
 import "../lib/Store.sol";
+import "../lib/SafeMath.sol";
 import "../lib/Requires.sol";
 import "../lib/Transfer.sol";
 import "../lib/Events.sol";
@@ -30,7 +31,7 @@ import "../lib/Events.sol";
  * Library to allow executing multiple actions at once in a single transaction.
  */
 library BatchActions {
-
+    using SafeMath for uint256;
     /**
      * All allowed actions types
      */
@@ -58,16 +59,20 @@ library BatchActions {
      */
     function batch(
         Store.State storage state,
-        Action[] memory actions
+        Action[] memory actions,
+        uint256 msgValue
     )
         public
     {
+        uint256 totalDepositedEtherAmount = 0;
+
         for (uint256 i = 0; i < actions.length; i++) {
             Action memory action = actions[i];
             ActionType actionType = action.actionType;
 
             if (actionType == ActionType.Deposit) {
-                deposit(state, action);
+                uint256 depositedEtherAmount = deposit(state, action);
+                totalDepositedEtherAmount = totalDepositedEtherAmount.add(depositedEtherAmount);
             } else if (actionType == ActionType.Withdraw) {
                 withdraw(state, action);
             } else if (actionType == ActionType.Transfer) {
@@ -82,6 +87,8 @@ library BatchActions {
                 unsupply(state, action);
             }
         }
+
+        require(totalDepositedEtherAmount == msgValue, "MSG_VALUE_AND_AMOUNT_MISMATCH");
     }
 
     function deposit(
@@ -89,6 +96,7 @@ library BatchActions {
         Action memory action
     )
         private
+        returns (uint256)
     {
         (
             address asset,
@@ -101,7 +109,7 @@ library BatchActions {
             )
         );
 
-        Transfer.deposit(
+        return Transfer.deposit(
             state,
             asset,
             amount

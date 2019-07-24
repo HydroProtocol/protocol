@@ -221,6 +221,7 @@ module.exports = {
     generateOrderData,
     EIP712_DOMAIN_TYPEHASH,
     EIP712_ORDER_TYPE,
+    ActionType,
     getOrderHash,
     getDomainSeparator,
     getEIP712MessageHash,
@@ -230,5 +231,6 @@ module.exports = {
     unsupply,
     transfer,
     borrow,
-    repay
+    repay,
+    batch
 };
