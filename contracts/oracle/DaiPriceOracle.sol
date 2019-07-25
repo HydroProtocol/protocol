@@ -61,21 +61,36 @@ contract DaiPriceOracle {
         external
         returns (uint256)
     {
-        uint256 ethUsdPrice = getMakerDaoPrice();
-        uint256 eth2daiPrice = getEth2DaiPrice();
+        uint256 _price = peek();
 
-        if (eth2daiPrice > 0) {
-            price = ethUsdPrice.mul(ONE).div(eth2daiPrice);
+        if (price != 0) {
+            price = _price;
         } else {
-            uint256 uniswapPrice = getUniswapPrice();
-            if (uniswapPrice > 0) {
-                price = ethUsdPrice.mul(ONE).div(uniswapPrice);
-            } else {
-                revert("UPDATE_DAI_PRICE_FAILED");
-            }
+            revert("UPDATE_DAI_PRICE_FAILED");
         }
 
         emit UpdatePrice(price);
+    }
+
+    function peek()
+        public
+        view
+        returns (uint256 _price)
+    {
+        uint256 eth2daiPrice = getEth2DaiPrice();
+
+        if (eth2daiPrice > 0) {
+            _price = getMakerDaoPrice().mul(ONE).div(eth2daiPrice);
+            return _price;
+        }
+
+        uint256 uniswapPrice = getUniswapPrice();
+
+        if (uniswapPrice > 0) {
+            _price = getMakerDaoPrice().mul(ONE).div(uniswapPrice);
+        }
+
+        return _price;
     }
 
     function getEth2DaiPrice()
@@ -126,5 +141,4 @@ contract DaiPriceOracle {
         (bytes32 value, ) = makerDaoOracle.peek();
         return uint256(value);
     }
-
 }
