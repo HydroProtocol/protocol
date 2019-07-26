@@ -5,7 +5,7 @@ pragma solidity 0.5.8;
  * The return value is the USD value of the 10**18 lowest units of the asset.
  *
  * For example, Ether has a 18 decimals, so the price is for each Ether.
- * But for a token has 10 decimals, the price is for 10*8 tokens.
+ * But for a token has 10 decimals, the price is for 10**8 tokens.
  */
 interface IPriceOracle {
     /** return USD price of token */
