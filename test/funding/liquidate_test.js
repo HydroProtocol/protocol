@@ -181,6 +181,8 @@ contract('Liquidate', accounts => {
         );
 
         assert.equal(await hydro.getAuctionsCount(), '1');
+        var currentAuctionIds = await hydro.getCurrentAuctions();
+        assert.equal(currentAuctionIds[0].toString(), '0');
 
         // u2 account is liquidated, status is Liqudate
         accountDetails = await hydro.getAccountDetails(u2, marketID);
