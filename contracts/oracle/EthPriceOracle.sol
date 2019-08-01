@@ -34,7 +34,7 @@ contract EthPriceOracle {
         view
         returns (uint256)
     {
-        require(_asset == address(0), "ASSET_NOT_MATCH");
+        require(_asset == 0x000000000000000000000000000000000000000E, "ASSET_NOT_MATCH");
         (bytes32 value, bool has) = makerDaoOracle.peek();
         require(has, "MAKER_ORACLE_OFFLINE");
         return uint256(value);
