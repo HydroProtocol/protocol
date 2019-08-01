@@ -315,6 +315,7 @@ library Auctions {
             if (state.auction.currentAuctions[i] == auction.id) {
                 state.auction.currentAuctions[i] = state.auction.currentAuctions[state.auction.currentAuctions.length-1];
                 state.auction.currentAuctions.length--;
+                return;
             }
         }
     }
