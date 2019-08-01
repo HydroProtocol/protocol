@@ -254,6 +254,8 @@ library LendingPool {
             totalnormalizedSupply
         );
 
+        updateIndex(state, asset);
+
         Events.logLoss(asset, amount);
     }
 
