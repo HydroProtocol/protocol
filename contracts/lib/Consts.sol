@@ -27,7 +27,7 @@ library Consts {
         pure
         returns (address)
     {
-        return address(0);
+        return 0x000000000000000000000000000000000000000E;
     }
 
     // The base discounted rate is 100% of the current rate, or no discount.
