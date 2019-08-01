@@ -39,7 +39,7 @@ contract('Transfer', accounts => {
                 toWei('1'),
                 { from: user }
             ),
-            /MARKET_ID_NOT_EXIST/
+            /MARKET_NOT_EXIST/
         );
     });
 });

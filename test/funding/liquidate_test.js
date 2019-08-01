@@ -41,7 +41,8 @@ contract('Liquidate', accounts => {
                     oraclePrice: toWei('100'),
                     collateralRate: 15000,
                     initBalances: {
-                        [u1]: toWei('30')
+                        [u1]: toWei('30'),
+                        [u2]: toWei('30')
                     }
                 },
                 {
@@ -672,5 +673,17 @@ contract('Liquidate', accounts => {
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal);
         assert.equal(accountDetails.debtsTotalUSDValue, toWei('0'));
         assert.equal(accountDetails.balancesTotalUSDValue, toWei('0'));
+    });
+
+    it('Auction could not be filled twice', async () => {
+        await createLiquidatingAccount();
+        await hydro.fillAuctionWithAmount(0, toWei('101'), { from: u1 }); // u1 fill the auction
+        u2BorrowAmount = await hydro.getAmountBorrowed(usdAsset.address, u2, marketID);
+        assert.equal(u2BorrowAmount.toString(), '0');
+
+        await assert.rejects(
+            hydro.fillAuctionWithAmount(0, toWei('101'), { from: u1 }),
+            /AUCTION_ALREADY_FINISHED/
+        );
     });
 });

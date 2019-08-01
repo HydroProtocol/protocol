@@ -17,11 +17,11 @@ contract('Markets', accounts => {
         defaultInterestModel = await DefaultInterestModel.deployed();
     });
 
-    it('should return empty struct when try to get empty asset', async () => {
-        const asset = await hydro.getAsset('0x0000000000000000000000000000000000000000');
-        assert.equal(asset.lendingPoolToken, '0x0000000000000000000000000000000000000000');
-        assert.equal(asset.priceOracle, '0x0000000000000000000000000000000000000000');
-        assert.equal(asset.interestModel, '0x0000000000000000000000000000000000000000');
+    it('should revert when try to get unexist asset', async () => {
+        assert.rejects(
+            hydro.getAsset('0x0000000000000000000000000000000000000000'),
+            /ASSET_NOT_EXIST/
+        );
     });
 
     it('can create asset', async () => {
