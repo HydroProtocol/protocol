@@ -49,5 +49,12 @@ module.exports = async (deployer, network) => {
 
         await deployer.deploy(FeedPriceOracle);
         await deployer.deploy(ConstPriceOracle);
+    } else {
+        // for development & test
+        await deployer.deploy(HydroToken);
+        hot = await HydroToken.deployed();
+        await deployHydroMainContract(hot.address);
+        await deployer.deploy(DefaultInterestModel);
+        await deployer.deploy(PriceOracle);
     }
 };

@@ -22,7 +22,7 @@ contract('Batch', accounts => {
         Unsupply: 6
     };
 
-    const ethAddress = '0x0000000000000000000000000000000000000000';
+    const ethAddress = '0x000000000000000000000000000000000000000E';
     const u1 = accounts[0];
     const u2 = accounts[1];
 

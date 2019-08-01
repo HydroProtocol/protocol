@@ -7,7 +7,7 @@ const FeedPriceOracle = artifacts.require('./oracle/FeedPriceOracle.sol');
 
 contract('FeedPriceOracle', accounts => {
     let oracle;
-    let ethTokenAddress = '0x0000000000000000000000000000000000000000';
+    let ethTokenAddress = '0x000000000000000000000000000000000000000E';
 
     beforeEach(async () => {
         oracle = await FeedPriceOracle.new(

@@ -118,7 +118,7 @@ const createAsset = async assetConfig => {
     // prepare token contract
     if (assetConfig.symbol == 'ETH') {
         token = {
-            address: '0x0000000000000000000000000000000000000000',
+            address: '0x000000000000000000000000000000000000000E',
             symbol: 'ETH'
         };
     } else {

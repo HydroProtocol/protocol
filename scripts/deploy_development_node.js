@@ -35,7 +35,7 @@ module.exports = async () => {
         const defaultInterestModel = await DefaultInterestModel.new();
         console.log('defaultInterestModel', defaultInterestModel.address);
 
-        const etherAddress = '0x0000000000000000000000000000000000000000';
+        const etherAddress = '0x000000000000000000000000000000000000000E';
         await hydro.createAsset(
             etherAddress,
             oracle.address,

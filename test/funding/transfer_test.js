@@ -9,7 +9,7 @@ const Ethers = require('ethers');
 contract('Transfer', accounts => {
     let hydro, res;
 
-    const etherAsset = '0x0000000000000000000000000000000000000000';
+    const etherAsset = '0x000000000000000000000000000000000000000E';
     const hugeAmount = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
     const user = accounts[0];
 
