@@ -374,9 +374,17 @@ library LendingPool {
         state.pool.insuranceBalances[asset] = state.pool.insuranceBalances[asset].add(recentBorrowInterest.sub(recentSupplyInterest));
 
         // update the indexes
+        Events.logUpdateIndex(
+            asset,
+            state.pool.borrowIndex[asset],
+            currentBorrowIndex,
+            state.pool.supplyIndex[asset],
+            currentSupplyIndex
+        );
         state.pool.supplyIndex[asset] = currentSupplyIndex;
         state.pool.borrowIndex[asset] = currentBorrowIndex;
         state.pool.indexStartTime[asset] = block.timestamp;
+
     }
 
     function getAmountSupplied(

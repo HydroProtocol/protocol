@@ -126,6 +126,32 @@ library Events {
     // Lending Pool //
     //////////////////
 
+    event UpdateIndex(
+        address indexed asset,
+        uint256 oldBorrowIndex,
+        uint256 newBorrowIndex,
+        uint256 oldSupplyIndex,
+        uint256 newSupplyIndex
+    );
+
+    function logUpdateIndex(
+        address asset,
+        uint256 oldBorrowIndex,
+        uint256 newBorrowIndex,
+        uint256 oldSupplyIndex,
+        uint256 newSupplyIndex
+    )
+        internal
+    {
+        emit UpdateIndex(
+            asset,
+            oldBorrowIndex,
+            newBorrowIndex,
+            oldSupplyIndex,
+            newSupplyIndex
+        );
+    }
+
     event Borrow(
         address indexed user,
         uint16 indexed marketID,
