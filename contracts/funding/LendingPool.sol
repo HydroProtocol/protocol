@@ -373,6 +373,7 @@ library LendingPool {
             state.pool.supplyIndex[asset],
             currentSupplyIndex
         );
+
         state.pool.supplyIndex[asset] = currentSupplyIndex;
         state.pool.borrowIndex[asset] = currentBorrowIndex;
         state.pool.indexStartTime[asset] = block.timestamp;

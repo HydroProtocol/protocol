@@ -107,6 +107,10 @@ library Transfer {
     )
         internal
     {
+
+        Requires.requirePathMarketIDAssetMatch(state, fromBalancePath, asset);
+        Requires.requirePathMarketIDAssetMatch(state, toBalancePath, asset);
+
         mapping(address => uint256) storage fromBalances = fromBalancePath.getBalances(state);
         mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
 

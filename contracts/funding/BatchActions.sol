@@ -161,14 +161,15 @@ library BatchActions {
             )
         );
 
-        Requires.requirePathMarketIDAssetMatch(state, fromBalancePath, asset);
-        Requires.requirePathMarketIDAssetMatch(state, toBalancePath, asset);
+        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHER_USER_ASSET");
+        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER_USER");
 
         Requires.requirePathNormalStatus(state, fromBalancePath);
         Requires.requirePathNormalStatus(state, toBalancePath);
 
-        require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHER_USER_ASSET");
-        require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER_USER");
+        // The below two requires will be checked in Transfer.transfer
+        // Requires.requirePathMarketIDAssetMatch(state, fromBalancePath, asset);
+        // Requires.requirePathMarketIDAssetMatch(state, toBalancePath, asset);
 
         if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
             require(
