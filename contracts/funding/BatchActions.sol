@@ -109,6 +109,7 @@ library BatchActions {
             )
         );
 
+        Requires.requireAssetExist(state, asset);
         return Transfer.deposit(
             state,
             asset,
@@ -133,6 +134,7 @@ library BatchActions {
             )
         );
 
+        Requires.requireAssetExist(state, asset);
         Transfer.withdraw(
             state,
             asset,
@@ -160,6 +162,10 @@ library BatchActions {
                 uint256
             )
         );
+
+        Requires.requireAssetExist(state, asset);
+        Requires.requireCollateralAccountMarketIDAssetMatch(state, fromBalancePath, asset);
+        Requires.requireCollateralAccountMarketIDAssetMatch(state, toBalancePath, asset);
 
         require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHER_USER_ASSET");
         require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER_USER");
@@ -209,6 +215,8 @@ library BatchActions {
             )
         );
 
+        Requires.requireMarketIDExist(state, marketID);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
         LendingPool.borrow(
             state,
             msg.sender,
@@ -237,6 +245,8 @@ library BatchActions {
             )
         );
 
+        Requires.requireMarketIDExist(state, marketID);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
         LendingPool.repay(
             state,
             msg.sender,
@@ -263,6 +273,7 @@ library BatchActions {
             )
         );
 
+        Requires.requireAssetExist(state, asset);
         LendingPool.supply(
             state,
             asset,
@@ -288,6 +299,7 @@ library BatchActions {
             )
         );
 
+        Requires.requireAssetExist(state, asset);
         LendingPool.unsupply(
             state,
             asset,

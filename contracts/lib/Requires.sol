@@ -57,7 +57,6 @@ library Requires {
         internal
         view
     {
-        require(marketID < state.marketsCount, "MARKET_ID_NOT_EXIST");
         require(
             asset == state.markets[marketID].baseAsset || asset == state.markets[marketID].quoteAsset,
             "ASSET_NOT_BELONGS_TO_MARKET"
@@ -156,6 +155,19 @@ library Requires {
         }
     }
 
+    function requireCollateralAccountMarketIDAssetMatch(
+        Store.State storage state,
+        Types.BalancePath memory path,
+        address asset
+    )
+        internal
+        view
+    {
+        if (path.category == Types.BalanceCategory.CollateralAccount) {
+            requireMarketIDAndAssetMatch(state, path.marketID, asset);
+        }
+    }
+
     function requireCollateralAccountNotLiquidatable(
         Store.State storage state,
         Types.BalancePath memory path
@@ -179,6 +191,32 @@ library Requires {
         require(
             !CollateralAccounts.getDetails(state, user, marketID).liquidatable,
             "COLLATERAL_ACCOUNT_LIQUIDATABLE"
+        );
+    }
+
+    function requireAuctionNotFinished(
+        Store.State storage state,
+        uint32 auctionID
+    )
+        internal
+        view
+    {
+        require(
+            state.auction.auctions[auctionID].status == Types.AuctionStatus.InProgress,
+            "AUCTION_ALREADY_FINISHED"
+        );
+    }
+
+    function requireAuctionExist(
+        Store.State storage state,
+        uint32 auctionID
+    )
+        internal
+        view
+    {
+        require(
+            auctionID < state.auction.auctionsCount,
+            "AUCTION_NOT_EXIST"
         );
     }
 

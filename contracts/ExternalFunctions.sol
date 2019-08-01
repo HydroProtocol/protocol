@@ -85,6 +85,7 @@ contract ExternalFunctions is GlobalStore {
         external
         view returns (Types.Asset memory asset)
     {
+        Requires.requireAssetExist(state, assetAddress);
         asset = state.assets[assetAddress];
     }
 
@@ -93,6 +94,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 price)
     {
+        Requires.requireAssetExist(state, assetAddress);
         price = AssemblyCall.getAssetPriceFromPriceOracle(
             address(state.assets[assetAddress].priceOracle),
             assetAddress
@@ -101,8 +103,10 @@ contract ExternalFunctions is GlobalStore {
 
     function getMarket(uint16 marketID)
         external
-        view returns (Types.Market memory market)
+        view
+        returns (Types.Market memory market)
     {
+        Requires.requireMarketIDExist(state, marketID);
         market = state.markets[marketID];
     }
 
@@ -118,6 +122,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (bool isLiquidatable)
     {
+        Requires.requireMarketIDExist(state, marketID);
         isLiquidatable = CollateralAccounts.getDetails(state, user, marketID).liquidatable;
     }
 
@@ -129,6 +134,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (Types.CollateralAccountDetails memory details)
     {
+        Requires.requireMarketIDExist(state, marketID);
         details = CollateralAccounts.getDetails(state, user, marketID);
     }
 
@@ -153,6 +159,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (Types.AuctionDetails memory details)
     {
+        Requires.requireAuctionExist(state, auctionID);
         details = Auctions.getAuctionDetails(state, auctionID);
     }
 
@@ -162,6 +169,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
     {
+        Requires.requireAuctionNotFinished(state, auctionID);
         Auctions.fillAuctionWithAmount(state, auctionID, amount);
     }
 
@@ -172,6 +180,7 @@ contract ExternalFunctions is GlobalStore {
         external
         returns (bool isLiquidatable, uint32 auctionID)
     {
+        Requires.requireMarketIDExist(state, marketID);
         (isLiquidatable, auctionID) = Auctions.liquidate(state, user, marketID);
     }
 
@@ -184,6 +193,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
+        Requires.requireAssetExist(state, asset);
         amount = LendingPool.getTotalBorrow(state, asset);
     }
 
@@ -192,6 +202,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
+        Requires.requireAssetExist(state, asset);
         amount = LendingPool.getTotalSupply(state, asset);
     }
 
@@ -204,6 +215,8 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
+        Requires.requireMarketIDExist(state, marketID);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
         amount = LendingPool.getAmountBorrowed(state, asset, user, marketID);
     }
 
@@ -215,6 +228,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
+        Requires.requireAssetExist(state, asset);
         amount = LendingPool.getAmountSupplied(state, asset, user);
     }
 
@@ -226,6 +240,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
+        Requires.requireAssetExist(state, asset);
         (borrowInterestRate, supplyInterestRate) = LendingPool.getInterestRates(state, asset, extraBorrowAmount);
     }
 
@@ -234,6 +249,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
+        Requires.requireAssetExist(state, asset);
         amount = state.pool.insuranceBalances[asset];
     }
 
@@ -293,6 +309,7 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 balance)
     {
+        Requires.requireAssetExist(state, asset);
         balance = Transfer.balanceOf(state,  BalancePath.getCommonPath(user), asset);
     }
 
@@ -305,6 +322,8 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 balance)
     {
+        Requires.requireMarketIDExist(state, marketID);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
         balance = Transfer.balanceOf(state,  BalancePath.getMarketPath(user, marketID), asset);
     }
 
@@ -317,6 +336,8 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 amount)
     {
+        Requires.requireMarketIDExist(state, marketID);
+        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
         amount = CollateralAccounts.getTransferableAmount(state, marketID, user, asset);
     }
 
