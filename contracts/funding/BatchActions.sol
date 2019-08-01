@@ -109,7 +109,6 @@ library BatchActions {
             )
         );
 
-        Requires.requireAssetExist(state, asset);
         return Transfer.deposit(
             state,
             asset,
@@ -134,7 +133,6 @@ library BatchActions {
             )
         );
 
-        Requires.requireAssetExist(state, asset);
         Transfer.withdraw(
             state,
             asset,
@@ -163,15 +161,14 @@ library BatchActions {
             )
         );
 
-        Requires.requireAssetExist(state, asset);
-        Requires.requireCollateralAccountMarketIDAssetMatch(state, fromBalancePath, asset);
-        Requires.requireCollateralAccountMarketIDAssetMatch(state, toBalancePath, asset);
+        Requires.requirePathMarketIDAssetMatch(state, fromBalancePath, asset);
+        Requires.requirePathMarketIDAssetMatch(state, toBalancePath, asset);
+
+        Requires.requirePathNormalStatus(state, fromBalancePath);
+        Requires.requirePathNormalStatus(state, toBalancePath);
 
         require(fromBalancePath.user == msg.sender, "CAN_NOT_MOVE_OTHER_USER_ASSET");
         require(toBalancePath.user == msg.sender, "CAN_NOT_MOVE_ASSET_TO_OTHER_USER");
-
-        Requires.requireCollateralAccountNormalStatus(state, fromBalancePath);
-        Requires.requireCollateralAccountNormalStatus(state, toBalancePath);
 
         if (fromBalancePath.category == Types.BalanceCategory.CollateralAccount) {
             require(

@@ -140,7 +140,7 @@ library Requires {
         require(marketID < state.marketsCount, "MARKET_NOT_EXIST");
     }
 
-    function requireCollateralAccountNormalStatus(
+    function requirePathNormalStatus(
         Store.State storage state,
         Types.BalancePath memory path
     )
@@ -155,7 +155,7 @@ library Requires {
         }
     }
 
-    function requireCollateralAccountMarketIDAssetMatch(
+    function requirePathMarketIDAssetMatch(
         Store.State storage state,
         Types.BalancePath memory path,
         address asset
@@ -164,6 +164,7 @@ library Requires {
         view
     {
         if (path.category == Types.BalanceCategory.CollateralAccount) {
+            requireMarketIDExist(state, path.marketID);
             requireMarketIDAndAssetMatch(state, path.marketID, asset);
         }
     }

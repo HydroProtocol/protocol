@@ -108,10 +108,6 @@ library Transfer {
     )
         internal
     {
-        if (toBalancePath.category == Types.BalanceCategory.CollateralAccount) {
-            Requires.requireMarketIDAndAssetMatch(state, toBalancePath.marketID, asset);
-        }
-
         mapping(address => uint256) storage fromBalances = fromBalancePath.getBalances(state);
         mapping(address => uint256) storage toBalances = toBalancePath.getBalances(state);
 

@@ -169,7 +169,7 @@ library Exchange {
         );
 
         orderInfo.balancePath = orderParam.getBalancePathFromOrderData();
-        Requires.requireCollateralAccountNormalStatus(state, orderInfo.balancePath);
+        Requires.requirePathNormalStatus(state, orderInfo.balancePath);
 
         return orderInfo;
     }

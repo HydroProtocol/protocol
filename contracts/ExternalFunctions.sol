@@ -309,7 +309,6 @@ contract ExternalFunctions is GlobalStore {
         view
         returns (uint256 balance)
     {
-        Requires.requireAssetExist(state, asset);
         balance = Transfer.balanceOf(state,  BalancePath.getCommonPath(user), asset);
     }
 

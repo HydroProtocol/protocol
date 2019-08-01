@@ -78,8 +78,6 @@ library LendingPool {
     )
         internal
     {
-        Requires.requireAssetExist(state, asset);
-
         // update value of index at this moment in time
         updateIndex(state, asset);
 
@@ -153,8 +151,6 @@ library LendingPool {
     )
         internal
     {
-        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
-
         // update value of index at this moment in time
         updateIndex(state, asset);
 
@@ -192,8 +188,6 @@ library LendingPool {
         internal
         returns (uint256)
     {
-        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
-
         // update value of index at this moment in time
         updateIndex(state, asset);
 
@@ -319,8 +313,6 @@ library LendingPool {
         view
         returns (uint256 borrowInterestRate, uint256 supplyInterestRate)
     {
-        Requires.requireAssetExist(state, asset);
-
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
 
         uint256 _supply = getTotalSupplyWithIndex(state, asset, currentSupplyIndex);
@@ -396,8 +388,6 @@ library LendingPool {
         view
         returns (uint256)
     {
-        Requires.requireAssetExist(state, asset);
-
         (uint256 currentSupplyIndex, ) = getCurrentIndex(state, asset);
         return Decimal.mulFloor(getNormalizedSupplyOf(state, asset, user), currentSupplyIndex);
     }
@@ -412,12 +402,9 @@ library LendingPool {
         view
         returns (uint256)
     {
-        Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
-
         // the actual amount borrowed = normalizedAmount * poolIndex
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
         return Decimal.mulCeil(state.pool.normalizedBorrow[user][marketID][asset], currentBorrowIndex);
-
     }
 
     function getTotalSupply(
@@ -428,8 +415,6 @@ library LendingPool {
         view
         returns (uint256)
     {
-        Requires.requireAssetExist(state, asset);
-
         (uint256 currentSupplyIndex, ) = getCurrentIndex(state, asset);
         return getTotalSupplyWithIndex(state, asset, currentSupplyIndex);
     }
@@ -442,8 +427,6 @@ library LendingPool {
         view
         returns (uint256)
     {
-        Requires.requireAssetExist(state, asset);
-
         (, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
         return getTotalBorrowWithIndex(state, asset, currentBorrowIndex);
     }
