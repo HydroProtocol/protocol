@@ -484,6 +484,7 @@ contract('Liquidate', accounts => {
         for (let i = 0; i < 48; i++) await mine(time);
 
         let auctionDetails = await hydro.getAuctionDetails('0');
+        assert.equal(auctionDetails.finished, false);
 
         // the next block number ratio will be 50%
         assert.equal(auctionDetails.ratio, toWei('0.49'));
@@ -569,9 +570,10 @@ contract('Liquidate', accounts => {
 
         // all debt are paid, the auction should be finished
         auctionDetails = await hydro.getAuctionDetails('0');
+        assert.equal(auctionDetails.finished, true);
         assert.equal(auctionDetails.leftCollateralAmount, toWei('0'));
         assert.equal(auctionDetails.leftDebtAmount, toWei('0'));
-        assert.equal(auctionDetails.ratio, toWei('0.8'));
+        assert.equal(auctionDetails.ratio, toWei('0'));
 
         accountDetails = await hydro.getAccountDetails(u2, marketID);
         assert.equal(accountDetails.status, CollateralAccountStatus.Normal); // <- return to normal

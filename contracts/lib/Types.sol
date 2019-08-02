@@ -141,6 +141,7 @@ library Types {
         uint256 leftCollateralAmount;
         uint256 ratio;
         uint256 price;
+        bool    finished;
     }
 
     struct Order {

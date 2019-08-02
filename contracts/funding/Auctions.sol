@@ -369,20 +369,24 @@ library Auctions {
         details.debtAsset = auction.debtAsset;
         details.collateralAsset = auction.collateralAsset;
 
-        details.leftDebtAmount = LendingPool.getAmountBorrowed(
-            state,
-            auction.debtAsset,
-            auction.borrower,
-            auction.marketID
-        );
+        if (state.auction.auctions[auctionID].status == Types.AuctionStatus.Finished){
+            details.finished = true;
+        } else {
+            details.finished = false;
+            details.leftDebtAmount = LendingPool.getAmountBorrowed(
+                state,
+                auction.debtAsset,
+                auction.borrower,
+                auction.marketID
+            );
+            details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
 
-        details.leftCollateralAmount = state.accounts[auction.borrower][auction.marketID].balances[auction.collateralAsset];
+            details.ratio = auction.ratio(state);
 
-        details.ratio = auction.ratio(state);
-
-        if (details.leftCollateralAmount != 0 && details.ratio != 0) {
-            // price = debt/collateral/ratio
-            details.price = Decimal.divFloor(Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount), details.ratio);
+            if (details.leftCollateralAmount != 0 && details.ratio != 0) {
+                // price = debt/collateral/ratio
+                details.price = Decimal.divFloor(Decimal.divFloor(details.leftDebtAmount, details.leftCollateralAmount), details.ratio);
+            }
         }
     }
 }
