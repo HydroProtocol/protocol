@@ -272,7 +272,7 @@ contract('Liquidate', accounts => {
         // can't transfer funds in
         await assert.rejects(
             depositMarket(marketID, usdAsset, u2, toWei('100')),
-            /CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT/
+            /CAN_NOT_OPERATE_LIQUIDATING_COLLATERAL_ACCOUNT/
         );
 
         // can't transfer funds out

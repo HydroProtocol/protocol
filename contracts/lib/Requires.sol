@@ -137,7 +137,7 @@ library Requires {
         internal
         pure
     {
-        require(market.withdrawRate > market.liquidateRate, "WITHDARW_RATE_LESS_OR_EQUAL_THAN_LIQUIDATE_RATE");
+        require(withdrawRate > liquidateRate, "WITHDARW_RATE_LESS_OR_EQUAL_THAN_LIQUIDATE_RATE");
     }
 
     function requireMarketIDExist(
