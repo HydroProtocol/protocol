@@ -294,7 +294,7 @@ contract('Liquidate', accounts => {
                     from: u2
                 }
             ),
-            /CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT/
+            /CAN_NOT_OPERATE_LIQUIDATING_COLLATERAL_ACCOUNT/
         );
     });
 
