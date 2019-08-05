@@ -148,11 +148,22 @@ library Requires {
         view
     {
         if (path.category == Types.BalanceCategory.CollateralAccount) {
-            require(
-                state.accounts[path.user][path.marketID].status == Types.CollateralAccountStatus.Normal,
-                "CAN_NOT_OPERATOR_LIQUIDATING_COLLATERAL_ACCOUNT"
-            );
+            requireAccountNormal(state, path.marketID, path.user);
         }
+    }
+
+    function requireAccountNormal(
+        Store.State storage state,
+        uint16 marketID,
+        address user
+    )
+        internal
+        view
+    {
+        require(
+            state.accounts[user][marketID].status == Types.CollateralAccountStatus.Normal,
+            "CAN_NOT_OPERATE_LIQUIDATING_COLLATERAL_ACCOUNT"
+        );
     }
 
     function requirePathMarketIDAssetMatch(
