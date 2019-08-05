@@ -296,6 +296,15 @@ contract('Liquidate', accounts => {
             ),
             /CAN_NOT_OPERATE_LIQUIDATING_COLLATERAL_ACCOUNT/
         );
+
+        // can't borrow funds
+        await assert.rejects(
+            mineAt(
+                () => borrow(marketID, usdAsset.address, toWei('100'), { from: u2 }),
+                time + 86400
+            ),
+            /CAN_NOT_OPERATE_LIQUIDATING_COLLATERAL_ACCOUNT/
+        );
     });
 
     it('should return correct transferable amount #1', async () => {
