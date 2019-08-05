@@ -130,16 +130,6 @@ library Requires {
         require(decimal > Decimal.one(), "DECIMAL_LESS_OR_EQUAL_THAN_ONE");
     }
 
-    function requireWithdrawRateGreaterThanLiquidateRate(
-        uint256 withdrawRate,
-        uint256 liquidateRate
-    )
-        internal
-        pure
-    {
-        require(withdrawRate > liquidateRate, "WITHDARW_RATE_LESS_OR_EQUAL_THAN_LIQUIDATE_RATE");
-    }
-
     function requireMarketIDExist(
         Store.State storage state,
         uint16 marketID
