@@ -46,6 +46,7 @@ library OperationsComponent {
         Requires.requireDecimalLessOrEquanThanOne(market.auctionRatioPerBlock);
         Requires.requireDecimalGreaterThanOne(market.liquidateRate);
         Requires.requireDecimalGreaterThanOne(market.withdrawRate);
+        Requires.requireWithdrawRateGreaterThanLiquidateRate(market.withdrawRate, market.liquidateRate);
 
         state.markets[state.marketsCount++] = market;
         Events.logCreateMarket(market);
@@ -66,6 +67,7 @@ library OperationsComponent {
         Requires.requireDecimalLessOrEquanThanOne(newAuctionRatioPerBlock);
         Requires.requireDecimalGreaterThanOne(newLiquidateRate);
         Requires.requireDecimalGreaterThanOne(newWithdrawRate);
+        Requires.requireWithdrawRateGreaterThanLiquidateRate(newWithdrawRate, newLiquidateRate);
 
         state.markets[marketID].auctionRatioStart = newAuctionRatioStart;
         state.markets[marketID].auctionRatioPerBlock = newAuctionRatioPerBlock;
