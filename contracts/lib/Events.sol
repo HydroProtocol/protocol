@@ -312,6 +312,34 @@ library Events {
         );
     }
 
+    event MarketClose(
+        uint16 marketID
+    );
+
+    function logMarketClose(
+        uint16 marketID
+    )
+        internal
+    {
+        emit MarketClose(
+            marketID
+        );
+    }
+
+    event MarketReopen(
+        uint16 marketID
+    );
+
+    function logMarketReopen(
+        uint16 marketID
+    )
+        internal
+    {
+        emit MarketReopen(
+            marketID
+        );
+    }
+
     event UpdateDiscountConfig(bytes32 newConfig);
 
     function logUpdateDiscountConfig(

@@ -58,6 +58,20 @@ contract Operations is Ownable, GlobalStore {
         );
     }
 
+    function closeOrReopenMarket(
+        uint16 marketID,
+        bool   close
+    )
+        external
+        onlyOwner
+    {
+        OperationsComponent.closeOrReopenMarket(
+            state,
+            marketID,
+            close
+        );
+    }
+
     function createAsset(
         address asset,
         address oracleAddress,

@@ -83,6 +83,26 @@ library OperationsComponent {
         );
     }
 
+    function closeOrReopenMarket(
+        Store.State storage state,
+        uint16 marketID,
+        bool   close
+    )
+        external
+    {
+        Requires.requireMarketIDExist(state, marketID);
+        state.markets[marketID].close = close;
+        if (close) {
+            Events.logMarketClose(
+                marketID
+            );
+        } else {
+            Events.logMarketReopen(
+                marketID
+            );
+        }
+    }
+
     function createAsset(
         Store.State storage state,
         address asset,

@@ -140,6 +140,16 @@ library Requires {
         require(marketID < state.marketsCount, "MARKET_NOT_EXIST");
     }
 
+    function requireMarketOpen(
+        Store.State storage state,
+        uint16 marketID
+    )
+        internal
+        view
+    {
+        require(!state.markets[marketID].close, "MARKET_CLOSE");
+    }
+
     function requirePathNormalStatus(
         Store.State storage state,
         Types.BalancePath memory path

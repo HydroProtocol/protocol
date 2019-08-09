@@ -214,6 +214,7 @@ library BatchActions {
         );
 
         Requires.requireMarketIDExist(state, marketID);
+        Requires.requireMarketOpen(state, marketID);
         Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
         Requires.requireAccountNormal(state, marketID, msg.sender);
         LendingPool.borrow(
