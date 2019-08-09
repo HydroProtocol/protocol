@@ -147,7 +147,7 @@ library Requires {
         internal
         view
     {
-        require(!state.markets[marketID].borrowEnable, "MARKET_BORROW_DISABLED");
+        require(state.markets[marketID].borrowEnable, "MARKET_BORROW_DISABLED");
     }
 
     function requirePathNormalStatus(

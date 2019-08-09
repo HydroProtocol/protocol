@@ -235,7 +235,8 @@ contract('Transfer', accounts => {
             baseAsset: daiAddress,
             quoteAsset: etherAsset,
             auctionRatioStart: toWei('0.01'),
-            auctionRatioPerBlock: toWei('0.01')
+            auctionRatioPerBlock: toWei('0.01'),
+            borrowEnable: true
         });
 
         res = await transfer(
@@ -327,7 +328,8 @@ contract('Transfer', accounts => {
             baseAsset: daiAddress,
             quoteAsset: quoteAsset.address,
             auctionRatioStart: toWei('0.01'),
-            auctionRatioPerBlock: toWei('0.01')
+            auctionRatioPerBlock: toWei('0.01'),
+            borrowEnable: true
         });
 
         res = await transfer(

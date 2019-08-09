@@ -224,12 +224,12 @@ contract('LendingPool', accounts => {
     });
 
     it('can not borrow if market closed', async () => {
-        await hydro.setMarketBorrowUsability(0, true, { from: accounts[0] });
+        await hydro.setMarketBorrowUsability(0, false, { from: accounts[0] });
         await assert.rejects(
             borrow(0, USDAddr, toWei('100'), { from: u2 }),
             /MARKET_BORROW_DISABLED/
         );
-        await hydro.setMarketBorrowUsability(0, false, { from: accounts[0] });
+        await hydro.setMarketBorrowUsability(0, true, { from: accounts[0] });
         await borrow(0, USDAddr, toWei('100'), { from: u2 });
     });
 });

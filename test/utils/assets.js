@@ -71,7 +71,8 @@ const newMarket = async marketConfig => {
         baseAsset: baseAsset.address,
         quoteAsset: quoteAsset.address,
         auctionRatioStart: toWei('0.01'),
-        auctionRatioPerBlock: toWei('0.01')
+        auctionRatioPerBlock: toWei('0.01'),
+        borrowEnable: true
     });
 
     const marketID = (await hydro.getAllMarketsCount()).toNumber() - 1;
