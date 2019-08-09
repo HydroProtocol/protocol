@@ -20,6 +20,7 @@ pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
 import "../lib/SafeMath.sol";
+import "../lib/Ownable.sol";
 import "../interfaces/IStandardToken.sol";
 import "../interfaces/IEth2Dai.sol";
 import "../interfaces/IMakerDaoOracle.sol";
@@ -27,7 +28,7 @@ import "../interfaces/IMakerDaoOracle.sol";
 /**
  * Dai USD price oracle for mainnet
  */
-contract DaiPriceOracle {
+contract DaiPriceOracle is Ownable{
     using SafeMath for uint256;
 
     uint256 public price;
@@ -57,16 +58,30 @@ contract DaiPriceOracle {
         return price;
     }
 
+    function adminSetPrice(
+        uint256 _price
+    )
+        external
+        onlyOwner
+    {
+        if (!updatePrice()){
+            price = _price;
+        }
+
+        emit UpdatePrice(price);
+    }
+
     function updatePrice()
         external
-        returns (uint256)
+        returns (bool)
     {
         uint256 _price = peek();
 
         if (price != 0) {
             price = _price;
+            return true;
         } else {
-            revert("UPDATE_DAI_PRICE_FAILED");
+            return false;
         }
 
         emit UpdatePrice(price);
@@ -88,9 +103,8 @@ contract DaiPriceOracle {
 
         if (uniswapPrice > 0) {
             _price = getMakerDaoPrice().mul(ONE).div(uniswapPrice);
+            return _price;
         }
-
-        return _price;
     }
 
     function getEth2DaiPrice()
@@ -139,7 +153,10 @@ contract DaiPriceOracle {
         returns (uint256)
     {
         (bytes32 value, bool has) = makerDaoOracle.peek();
-        require(has, "MAKER_ORACLE_OFFLINE");
-        return uint256(value);
+        if (has) {
+            return uint256(value);
+        } else {
+            return 0;
+        }
     }
 }
