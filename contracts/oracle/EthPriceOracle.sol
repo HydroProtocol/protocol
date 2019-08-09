@@ -31,6 +31,11 @@ contract EthPriceOracle is Ownable {
 
     IMakerDaoOracle public constant makerDaoOracle = IMakerDaoOracle(0x729D19f657BD0614b4985Cf1D82531c67569197B);
 
+    event PriceFeed(
+        uint256 price,
+        uint256 blockNumber
+    );
+
     function getPrice(
         address _asset
     )
@@ -43,12 +48,12 @@ contract EthPriceOracle is Ownable {
         if (has) {
             return uint256(value);
         } else {
-            require(block.number - sparePriceBlockNumber <= 60, "ORACLE_OFFLINE");
+            require(block.number - sparePriceBlockNumber <= 500, "ORACLE_OFFLINE");
             return sparePrice;
         }
     }
 
-    function setSparePrice(
+    function feed(
         uint256 newSparePrice,
         uint256 blockNumber
     )
@@ -59,6 +64,8 @@ contract EthPriceOracle is Ownable {
         require(blockNumber <= block.number && blockNumber >= sparePriceBlockNumber, "BLOCKNUMBER_WRONG");
         sparePrice = newSparePrice;
         sparePriceBlockNumber = blockNumber;
+
+        emit PriceFeed(newSparePrice, blockNumber);
     }
 
 }

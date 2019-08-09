@@ -72,19 +72,18 @@ contract DaiPriceOracle is Ownable{
     }
 
     function updatePrice()
-        external
+        public
         returns (bool)
     {
         uint256 _price = peek();
 
-        if (price != 0) {
+        if (_price != 0) {
             price = _price;
+            emit UpdatePrice(price);
             return true;
         } else {
             return false;
         }
-
-        emit UpdatePrice(price);
     }
 
     function peek()
@@ -92,19 +91,27 @@ contract DaiPriceOracle is Ownable{
         view
         returns (uint256 _price)
     {
+        uint256 makerDaoPrice = getMakerDaoPrice();
+
+        if (makerDaoPrice == 0) {
+            return _price;
+        }
+
         uint256 eth2daiPrice = getEth2DaiPrice();
 
         if (eth2daiPrice > 0) {
-            _price = getMakerDaoPrice().mul(ONE).div(eth2daiPrice);
+            _price = makerDaoPrice.mul(ONE).div(eth2daiPrice);
             return _price;
         }
 
         uint256 uniswapPrice = getUniswapPrice();
 
         if (uniswapPrice > 0) {
-            _price = getMakerDaoPrice().mul(ONE).div(uniswapPrice);
+            _price = makerDaoPrice.mul(ONE).div(uniswapPrice);
             return _price;
         }
+
+        return _price;
     }
 
     function getEth2DaiPrice()
@@ -153,6 +160,7 @@ contract DaiPriceOracle is Ownable{
         returns (uint256)
     {
         (bytes32 value, bool has) = makerDaoOracle.peek();
+
         if (has) {
             return uint256(value);
         } else {
