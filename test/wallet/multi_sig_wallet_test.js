@@ -1,7 +1,10 @@
 require('../utils/hooks');
 const evm = require('../utils/evm');
+const { toWei } = require('../utils');
+const { newMarket } = require('../utils/assets');
 const assert = require('assert');
 const MultiSigWalletWithTimelock = artifacts.require('MultiSigWalletWithTimelock.sol');
+const Hydro = artifacts.require('Hydro.sol');
 
 contract('MultiSigWallet', accounts => {
     const defaultOwners = [accounts[0], accounts[1], accounts[2]];
@@ -194,7 +197,135 @@ contract('MultiSigWallet', accounts => {
         assert.equal(emergencyCall.paramsBytesCount, '64');
     });
 
-    it('emergency function call', async () => {
-        // TODO
+    it('hydro emergency function call', async () => {
+        const wallet = await newWallet();
+        const hydro = await Hydro.deployed();
+
+        await newMarket({
+            liquidateRate: toWei('1.2'),
+            withdrawRate: toWei('2'),
+            assetConfigs: [
+                {
+                    symbol: 'ETH',
+                    name: 'ETH',
+                    decimals: 18,
+                    oraclePrice: '100',
+                    collateralRate: 15000
+                },
+                {
+                    symbol: 'USD',
+                    name: 'USD',
+                    decimals: 18,
+                    oraclePrice: '1',
+                    collateralRate: 15000
+                }
+            ]
+        });
+
+        await hydro.transferOwnership(wallet.address);
+        assert.equal(await hydro.owner(), wallet.address);
+
+        assert.equal((await hydro.getMarket(0)).borrowEnable, true);
+
+        await wallet.submitTransaction(
+            hydro.address,
+            0,
+            hydro.contract.methods.setMarketBorrowUsability(0, false).encodeABI()
+        );
+
+        assert.equal(await wallet.transactionCount(), 1); // new tx 0
+        assert.equal(await wallet.getConfirmationCount(0), 1); // owner1 confirm
+        assert.equal(await wallet.isConfirmed(0), false);
+        assert.equal(await wallet.unlockTimes(0), 0);
+
+        await wallet.confirmTransaction(0, { from: defaultOwners[1] });
+
+        assert.equal(await wallet.transactionCount(), 1);
+        assert.equal((await wallet.transactions(0)).executed, false);
+        assert.equal(await wallet.getConfirmationCount(0), 2); // owner1 & owner2 confirm
+        assert.equal(await wallet.isConfirmed(0), true);
+
+        const unlockTime = (await wallet.unlockTimes(0)).toNumber();
+        assert.equal(unlockTime, 0);
+
+        await wallet.executeTransaction(0);
+        assert.equal((await wallet.transactions(0)).executed, true);
+
+        assert.equal((await hydro.getMarket(0)).borrowEnable, false);
+    });
+
+    it('hydro normal function call', async () => {
+        const wallet = await newWallet();
+        const hydro = await Hydro.deployed();
+
+        const oldWithdrawRate = toWei('2');
+        const newWithdrawRate = toWei('20');
+
+        await newMarket({
+            liquidateRate: toWei('1.2'),
+            withdrawRate: oldWithdrawRate,
+            assetConfigs: [
+                {
+                    symbol: 'ETH',
+                    name: 'ETH',
+                    decimals: 18,
+                    oraclePrice: '100',
+                    collateralRate: 15000
+                },
+                {
+                    symbol: 'USD',
+                    name: 'USD',
+                    decimals: 18,
+                    oraclePrice: '1',
+                    collateralRate: 15000
+                }
+            ]
+        });
+
+        await hydro.transferOwnership(wallet.address);
+        assert.equal(await hydro.owner(), wallet.address);
+
+        assert.equal((await hydro.getMarket(0)).withdrawRate, oldWithdrawRate);
+
+        // updateMarket require a time lock
+        await wallet.submitTransaction(
+            hydro.address,
+            0,
+            hydro.contract.methods
+                .updateMarket(
+                    0,
+                    toWei('0.01'),
+                    toWei('0.01'),
+                    toWei('1.2'),
+                    newWithdrawRate // <= change freom 2 to 20, withdrawRate
+                )
+                .encodeABI()
+        );
+
+        assert.equal(await wallet.transactionCount(), 1); // new tx 0
+        assert.equal(await wallet.getConfirmationCount(0), 1); // owner1 confirm
+        assert.equal(await wallet.isConfirmed(0), false);
+        assert.equal(await wallet.unlockTimes(0), 0);
+
+        await wallet.confirmTransaction(0, { from: defaultOwners[1] });
+
+        assert.equal(await wallet.transactionCount(), 1);
+        assert.equal((await wallet.transactions(0)).executed, false);
+        assert.equal(await wallet.getConfirmationCount(0), 2); // owner1 & owner2 confirm
+        assert.equal(await wallet.isConfirmed(0), true);
+
+        const unlockTime = (await wallet.unlockTimes(0)).toNumber();
+        assert.notEqual(unlockTime, 0);
+
+        await assert.rejects(
+            evm.mineAt(async () => await wallet.executeTransaction(0), unlockTime - 1),
+            /TRANSACTION_NEED_TO_UNLOCK/
+        );
+        assert.equal((await wallet.transactions(0)).executed, false);
+
+        await evm.mineAt(async () => await wallet.executeTransaction(0), unlockTime);
+        assert.equal((await wallet.transactions(0)).executed, true);
+
+        assert.equal((await hydro.getMarket(0)).withdrawRate, newWithdrawRate);
     });
 });
