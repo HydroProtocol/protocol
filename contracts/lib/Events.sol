@@ -312,30 +312,30 @@ library Events {
         );
     }
 
-    event MarketClose(
+    event MarketBorrowDisable(
         uint16 marketID
     );
 
-    function logMarketClose(
+    function logMarketBorrowDisable(
         uint16 marketID
     )
         internal
     {
-        emit MarketClose(
+        emit MarketBorrowDisable(
             marketID
         );
     }
 
-    event MarketReopen(
+    event MarketBorrowEnable(
         uint16 marketID
     );
 
-    function logMarketReopen(
+    function logMarketBorrowEnable(
         uint16 marketID
     )
         internal
     {
-        emit MarketReopen(
+        emit MarketBorrowEnable(
             marketID
         );
     }

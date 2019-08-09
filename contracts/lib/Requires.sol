@@ -140,14 +140,14 @@ library Requires {
         require(marketID < state.marketsCount, "MARKET_NOT_EXIST");
     }
 
-    function requireMarketOpen(
+    function requireMarketBorrowEnabled(
         Store.State storage state,
         uint16 marketID
     )
         internal
         view
     {
-        require(!state.markets[marketID].close, "MARKET_CLOSE");
+        require(!state.markets[marketID].borrowEnable, "MARKET_BORROW_DISABLED");
     }
 
     function requirePathNormalStatus(

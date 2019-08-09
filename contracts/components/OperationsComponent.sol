@@ -83,21 +83,21 @@ library OperationsComponent {
         );
     }
 
-    function closeOrReopenMarket(
+    function setMarketBorrowUsability(
         Store.State storage state,
         uint16 marketID,
-        bool   close
+        bool   usability
     )
         external
     {
         Requires.requireMarketIDExist(state, marketID);
-        state.markets[marketID].close = close;
-        if (close) {
-            Events.logMarketClose(
+        state.markets[marketID].borrowEnable = usability;
+        if (usability) {
+            Events.logMarketBorrowDisable(
                 marketID
             );
         } else {
-            Events.logMarketReopen(
+            Events.logMarketBorrowEnable(
                 marketID
             );
         }

@@ -58,17 +58,17 @@ contract Operations is Ownable, GlobalStore {
         );
     }
 
-    function closeOrReopenMarket(
+    function setMarketBorrowUsability(
         uint16 marketID,
-        bool   close
+        bool   usability
     )
         external
         onlyOwner
     {
-        OperationsComponent.closeOrReopenMarket(
+        OperationsComponent.setMarketBorrowUsability(
             state,
             marketID,
-            close
+            usability
         );
     }
 
