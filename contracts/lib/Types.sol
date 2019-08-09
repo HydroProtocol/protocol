@@ -99,6 +99,8 @@ library Types {
 
         uint256 auctionRatioStart;
         uint256 auctionRatioPerBlock;
+
+        bool borrowEnable;
     }
 
     struct CollateralAccount {

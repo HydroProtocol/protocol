@@ -312,6 +312,34 @@ library Events {
         );
     }
 
+    event MarketBorrowDisable(
+        uint16 marketID
+    );
+
+    function logMarketBorrowDisable(
+        uint16 marketID
+    )
+        internal
+    {
+        emit MarketBorrowDisable(
+            marketID
+        );
+    }
+
+    event MarketBorrowEnable(
+        uint16 marketID
+    );
+
+    function logMarketBorrowEnable(
+        uint16 marketID
+    )
+        internal
+    {
+        emit MarketBorrowEnable(
+            marketID
+        );
+    }
+
     event UpdateDiscountConfig(bytes32 newConfig);
 
     function logUpdateDiscountConfig(

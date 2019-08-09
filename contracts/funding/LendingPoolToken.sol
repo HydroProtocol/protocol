@@ -46,7 +46,6 @@ contract LendingPoolToken is StandardToken, Ownable {
         name = tokenName;
         symbol = tokenSymbol;
         decimals = tokenDecimals;
-        balances[msg.sender] = totalSupply;
     }
 
     function mint(

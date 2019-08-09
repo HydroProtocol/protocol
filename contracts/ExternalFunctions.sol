@@ -169,6 +169,7 @@ contract ExternalFunctions is GlobalStore {
     )
         external
     {
+        Requires.requireAuctionExist(state, auctionID);
         Requires.requireAuctionNotFinished(state, auctionID);
         Auctions.fillAuctionWithAmount(state, auctionID, amount);
     }
