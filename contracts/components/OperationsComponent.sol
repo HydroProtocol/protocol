@@ -83,6 +83,26 @@ library OperationsComponent {
         );
     }
 
+    function setMarketBorrowUsability(
+        Store.State storage state,
+        uint16 marketID,
+        bool   usability
+    )
+        external
+    {
+        Requires.requireMarketIDExist(state, marketID);
+        state.markets[marketID].borrowEnable = usability;
+        if (usability) {
+            Events.logMarketBorrowDisable(
+                marketID
+            );
+        } else {
+            Events.logMarketBorrowEnable(
+                marketID
+            );
+        }
+    }
+
     function createAsset(
         Store.State storage state,
         address asset,

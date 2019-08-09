@@ -58,6 +58,20 @@ contract Operations is Ownable, GlobalStore {
         );
     }
 
+    function setMarketBorrowUsability(
+        uint16 marketID,
+        bool   usability
+    )
+        external
+        onlyOwner
+    {
+        OperationsComponent.setMarketBorrowUsability(
+            state,
+            marketID,
+            usability
+        );
+    }
+
     function createAsset(
         address asset,
         address oracleAddress,

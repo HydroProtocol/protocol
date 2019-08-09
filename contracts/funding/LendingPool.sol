@@ -329,6 +329,7 @@ library LendingPool {
             address(state.assets[asset].interestModel),
             borrowRatio
         );
+        require(borrowInterestRate <= 3 * Decimal.one(), "BORROW_INTEREST_RATE_EXCEED_300%");
 
         uint256 borrowInterest = Decimal.mulCeil(_borrow, borrowInterestRate);
         uint256 supplyInterest = Decimal.mulFloor(borrowInterest, Decimal.one().sub(state.pool.insuranceRatio));

@@ -140,6 +140,16 @@ library Requires {
         require(marketID < state.marketsCount, "MARKET_NOT_EXIST");
     }
 
+    function requireMarketBorrowEnabled(
+        Store.State storage state,
+        uint16 marketID
+    )
+        internal
+        view
+    {
+        require(!state.markets[marketID].borrowEnable, "MARKET_BORROW_DISABLED");
+    }
+
     function requirePathNormalStatus(
         Store.State storage state,
         Types.BalancePath memory path
