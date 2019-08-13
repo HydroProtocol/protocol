@@ -80,6 +80,8 @@ contract('MultiSigWallet', accounts => {
 
             assert.equal(await wallet.transactionCount(), 1); // new tx 0
             assert.equal(await wallet.getConfirmationCount(0), 1); // owner1 confirm
+            assert.equal((await wallet.getConfirmations(0))[0], owners[0]);
+
             assert.equal(await wallet.isConfirmed(0), false);
             assert.equal(await wallet.unlockTimes(0), 0);
 
@@ -303,6 +305,8 @@ contract('MultiSigWallet', accounts => {
         );
 
         assert.equal(await wallet.transactionCount(), 1); // new tx 0
+        assert.equal(await wallet.getTransactionCount(true, false), 1);
+        assert.equal(await wallet.getTransactionCount(false, true), 0);
         assert.equal(await wallet.getConfirmationCount(0), 1); // owner1 confirm
         assert.equal(await wallet.isConfirmed(0), false);
         assert.equal(await wallet.unlockTimes(0), 0);
@@ -324,8 +328,73 @@ contract('MultiSigWallet', accounts => {
         assert.equal((await wallet.transactions(0)).executed, false);
 
         await evm.mineAt(async () => await wallet.executeTransaction(0), unlockTime);
+        assert.equal(await wallet.getTransactionCount(true, false), 0);
+        assert.equal(await wallet.getTransactionCount(false, true), 1);
         assert.equal((await wallet.transactions(0)).executed, true);
 
         assert.equal((await hydro.getMarket(0)).withdrawRate, newWithdrawRate);
+    });
+
+    it('revokeConfirmation', async () => {
+        const wallet = await newWallet();
+
+        // arbitrary tx
+        await wallet.submitTransaction(
+            wallet.address,
+            0,
+            wallet.contract.methods
+                .removeOwner('0x0000000000000000000000000000000000000000')
+                .encodeABI()
+        );
+
+        assert.equal(await wallet.getConfirmationCount(0), 1); // owner1 confirmed
+
+        await wallet.revokeConfirmation(0);
+
+        assert.equal(await wallet.getConfirmationCount(0), 0); // nobody confirmed
+    });
+
+    it('replace owner', async () => {
+        const wallet = await newWallet();
+        assertOwnersEqual(await wallet.getOwners(), defaultOwners);
+
+        const newOwner = accounts[5];
+        const oldOwner = defaultOwners[1];
+
+        assert.equal(await wallet.isOwner(oldOwner), true);
+        assert.equal(await wallet.isOwner(newOwner), false);
+
+        await wallet.submitTransaction(
+            wallet.address,
+            0,
+            wallet.contract.methods.replaceOwner(oldOwner, newOwner).encodeABI()
+        );
+
+        await wallet.confirmTransaction(0, { from: defaultOwners[1] });
+        const unlockTime = (await wallet.unlockTimes(0)).toNumber();
+
+        await evm.mineAt(async () => await wallet.executeTransaction(0), unlockTime);
+        assert.equal((await wallet.transactions(0)).executed, true);
+
+        assert.equal(await wallet.isOwner(oldOwner), false);
+        assert.equal(await wallet.isOwner(newOwner), true);
+    });
+
+    it('changeLockSeconds', async () => {
+        const wallet = await newWallet();
+        assert.equal(await wallet.lockSeconds(), 259200);
+
+        await wallet.submitTransaction(
+            wallet.address,
+            0,
+            wallet.contract.methods.changeLockSeconds(100).encodeABI()
+        );
+
+        await wallet.confirmTransaction(0, { from: defaultOwners[1] });
+        const unlockTime = (await wallet.unlockTimes(0)).toNumber();
+        await evm.mineAt(async () => await wallet.executeTransaction(0), unlockTime);
+        assert.equal((await wallet.transactions(0)).executed, true);
+
+        assert.equal(await wallet.lockSeconds(), 100);
     });
 });
