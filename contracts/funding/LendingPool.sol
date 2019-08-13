@@ -346,6 +346,10 @@ library LendingPool {
     )
         private
     {
+        if (state.pool.indexStartTime[asset] == block.timestamp) {
+            return;
+        }
+
         (uint256 currentSupplyIndex, uint256 currentBorrowIndex) = getCurrentIndex(state, asset);
 
         // get the total equity value
@@ -464,7 +468,7 @@ library LendingPool {
         Store.State storage state,
         address asset
     )
-        private
+        internal
         view
         returns (uint256 currentSupplyIndex, uint256 currentBorrowIndex)
     {
