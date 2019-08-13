@@ -205,7 +205,7 @@ library Auctions {
         uint256 bidderRepayAmount
     )
         private
-        returns (uint256, uint256) // bidderRepay collateral
+        returns (uint256, uint256, uint256) // totalRepay bidderRepay collateral
     {
 
         uint256 leftDebtAmount = LendingPool.getAmountBorrowed(
@@ -259,7 +259,7 @@ library Auctions {
             collateralForBidder
         );
 
-        return (actualRepayAmount, collateralForBidder);
+        return (actualRepayAmount, actualBidderRepay, collateralForBidder);
     }
 
     // ensure repay no more than repayAmount
@@ -274,12 +274,14 @@ library Auctions {
         uint256 ratio = auction.ratio(state);
 
         uint256 actualRepayAmount;
+        uint256 actualBidderRepayAmount;
         uint256 collateralForBidder;
 
         if (ratio <= Decimal.one()) {
             (actualRepayAmount, collateralForBidder) = fillHealthyAuction(state, auction, ratio, repayAmount);
+            actualBidderRepayAmount = actualRepayAmount;
         } else {
-            (actualRepayAmount, collateralForBidder) = fillBadAuction(state, auction, ratio, repayAmount);
+            (actualRepayAmount, actualBidderRepayAmount, collateralForBidder) = fillBadAuction(state, auction, ratio, repayAmount);
         }
 
         // reset account state if all debts are paid
@@ -290,7 +292,7 @@ library Auctions {
             auction.marketID
         );
 
-        Events.logFillAuction(auction.id, msg.sender, actualRepayAmount, collateralForBidder, leftDebtAmount);
+        Events.logFillAuction(auction.id, msg.sender, actualRepayAmount, actualBidderRepayAmount, collateralForBidder, leftDebtAmount);
 
         if (leftDebtAmount == 0) {
             endAuction(state, auction);

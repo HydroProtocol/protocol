@@ -441,6 +441,7 @@ library Events {
         uint256 indexed auctionID,
         address bidder,
         uint256 repayDebt,
+        uint256 bidderRepayDebt,
         uint256 bidderCollateral,
         uint256 leftDebt
     );
@@ -449,6 +450,7 @@ library Events {
         uint256 auctionID,
         address bidder,
         uint256 repayDebt,
+        uint256 bidderRepayDebt,
         uint256 bidderCollateral,
         uint256 leftDebt
     )
@@ -458,6 +460,7 @@ library Events {
             auctionID,
             bidder,
             repayDebt,
+            bidderRepayDebt,
             bidderCollateral,
             leftDebt
         );
