@@ -65,22 +65,24 @@ library Transfer {
     // Transfer asset out of current contract
     function withdraw(
         Store.State storage state,
+        address user,
         address asset,
         uint256 amount
     )
         internal
     {
-        require(state.balances[msg.sender][asset] >= amount, "BALANCE_NOT_ENOUGH");
+        require(state.balances[user][asset] >= amount, "BALANCE_NOT_ENOUGH");
 
         if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
-            msg.sender.transfer(amount);
+            address payable payableUser = address(uint160(user));
+            payableUser.transfer(amount);
         } else {
-            SafeERC20.safeTransfer(asset, msg.sender, amount);
+            SafeERC20.safeTransfer(asset, user, amount);
         }
 
-        transferOut(state, asset, BalancePath.getCommonPath(msg.sender), amount);
+        transferOut(state, asset, BalancePath.getCommonPath(user), amount);
 
-        Events.logWithdraw(msg.sender, asset, amount);
+        Events.logWithdraw(user, asset, amount);
     }
 
     // Get a user's asset balance
