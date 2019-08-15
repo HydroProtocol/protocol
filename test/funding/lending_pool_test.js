@@ -115,6 +115,9 @@ contract('LendingPool', accounts => {
             (await hydro.getAmountBorrowed(USDAddr, u2, 0)).toString(),
             '100616438356164383600'
         );
+        indexes = await hydro.getIndex(USDAddr);
+        assert.equal(indexes.supplyIndex.toString(), '1000616438356164383');
+        assert.equal(indexes.borrowIndex.toString(), '1006164383561643836');
     });
 
     it('borrow', async () => {
