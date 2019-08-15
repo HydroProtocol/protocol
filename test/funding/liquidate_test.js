@@ -502,7 +502,7 @@ contract('Liquidate', accounts => {
         const u1EthBalance1 = await hydro.balanceOf(ethAsset.address, u1);
 
         const u2USDBalance1 = await hydro.balanceOf(usdAsset.address, u2);
-        const u2EthBalance1 = await hydro.balanceOf(ethAsset.address, u2);
+        const u2EthBalance1 = web3.utils.toBN(await web3.eth.getBalance(u2));
 
         const initiaiorUSDBalance1 = await hydro.balanceOf(usdAsset.address, initiaior);
         const initiaiorEthBalance1 = await hydro.balanceOf(ethAsset.address, initiaior);
@@ -520,14 +520,13 @@ contract('Liquidate', accounts => {
         const u1EthBalance2 = await hydro.balanceOf(ethAsset.address, u1);
 
         const u2USDBalance2 = await hydro.balanceOf(usdAsset.address, u2);
-        const u2EthBalance2 = await hydro.balanceOf(ethAsset.address, u2);
+        const u2EthBalance2 = web3.utils.toBN(await web3.eth.getBalance(u2));
 
         const initiaiorUSDBalance2 = await hydro.balanceOf(usdAsset.address, initiaior);
         const initiaiorEthBalance2 = await hydro.balanceOf(ethAsset.address, initiaior);
 
         assert.equal(u1USDBalance2.sub(u1USDBalance1).toString(), toWei('-50'));
         assert.equal(u1EthBalance2.sub(u1EthBalance1).toString(), toWei('0.25')); // 0.5 * (50 / 100)
-
         assert.equal(u2USDBalance2.sub(u2USDBalance1).toString(), toWei('0'));
         assert.equal(u2EthBalance2.sub(u2EthBalance1).toString(), toWei('0.2375')); // (1 - 0.5) * (50 / 100) * (1 - 0.05)
 
@@ -563,7 +562,7 @@ contract('Liquidate', accounts => {
         const u1EthBalance3 = await hydro.balanceOf(ethAsset.address, u1);
 
         const u2USDBalance3 = await hydro.balanceOf(usdAsset.address, u2);
-        const u2EthBalance3 = await hydro.balanceOf(ethAsset.address, u2);
+        const u2EthBalance3 = web3.utils.toBN(await web3.eth.getBalance(u2));
 
         const initiaiorUSDBalance3 = await hydro.balanceOf(usdAsset.address, initiaior);
         const initiaiorEthBalance3 = await hydro.balanceOf(ethAsset.address, initiaior);

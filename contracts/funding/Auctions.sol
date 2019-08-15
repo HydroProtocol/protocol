@@ -191,6 +191,14 @@ library Auctions {
             collateralForBorrower
         );
 
+        // withdraw collateralForBorrower to borrower's wallet account
+        Transfer.withdraw(
+            state,
+            auction.borrower,
+            auction.collateralAsset,
+            collateralForBorrower
+        );
+
         return (actualRepayAmount, collateralForBidder);
     }
 
