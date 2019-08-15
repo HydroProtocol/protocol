@@ -368,6 +368,8 @@ library Auctions {
     {
         Types.Auction memory auction = state.auction.auctions[auctionID];
 
+        details.borrower = auction.borrower;
+        details.marketID = auction.marketID;
         details.debtAsset = auction.debtAsset;
         details.collateralAsset = auction.collateralAsset;
 

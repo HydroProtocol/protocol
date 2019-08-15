@@ -137,6 +137,8 @@ library Types {
     }
 
     struct AuctionDetails {
+        address borrower;
+        uint16  marketID;
         address debtAsset;
         address collateralAsset;
         uint256 leftDebtAmount;
