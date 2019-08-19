@@ -29,9 +29,8 @@ contract CommonInterestModel {
         // 0.55 * r**4 + 0.45 * r**8
 
         // the valid range of borrowRatio is [0, 1]
-        require(borrowRatio >= 0 && borrowRatio <= BASE, "BORROW_RATIO_WRONG_VALUE");
-
-        uint256 r2 = borrowRatio * borrowRatio / BASE;
+        uint256 r = borrowRatio > BASE ? BASE : borrowRatio;
+        uint256 r2 = r * r / BASE;
         uint256 r4 = r2 * r2 / BASE;
         uint256 r8 = r4 * r4 / BASE;
 

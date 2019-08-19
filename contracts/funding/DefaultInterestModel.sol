@@ -30,7 +30,7 @@ contract DefaultInterestModel {
         // 0.2 * r + 0.5 * r**2
 
         // the valid range of borrowRatio is [0, 1]
-        require(borrowRatio >= 0 && borrowRatio <= BASE, "BORROW_RATIO_WRONG_VALUE");
-        return borrowRatio / 5 + borrowRatio * borrowRatio / BASE / 2;
+        uint256 r = borrowRatio > BASE ? BASE : borrowRatio;
+        return r / 5 + r * r / BASE / 2;
     }
 }

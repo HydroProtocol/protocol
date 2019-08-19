@@ -13,24 +13,11 @@ contract('StableCoinInterestModel', accounts => {
         model = await StableCoinInterestModel.new();
     });
 
-    it('should pass correct borrow rate', async () => {
-        // ok
-        await model.polynomialInterestModel(0);
-
-        // ok
-        await model.polynomialInterestModel(toWei('1'));
-
-        // wrong
-        await assert.rejects(
-            model.polynomialInterestModel(toWei('1.01')),
-            /BORROW_RATIO_WRONG_VALUE/
-        );
-    });
-
     it('should match', async () => {
         assert.equal(await model.polynomialInterestModel(0), toWei('0.05'));
 
         assert.equal(await model.polynomialInterestModel(toWei('1')), toWei('1'));
+        assert.equal(await model.polynomialInterestModel(toWei('1.1')), toWei('1'));
 
         assert.equal(await model.polynomialInterestModel(toWei('0.8')), toWei('0.306114688'));
 
@@ -98,24 +85,12 @@ contract('CommonInterestModel', accounts => {
         model = await CommonInterestModel.new();
     });
 
-    it('should pass correct borrow rate', async () => {
-        // ok
-        await model.polynomialInterestModel(0);
-
-        // ok
-        await model.polynomialInterestModel(toWei('1'));
-
-        // wrong
-        await assert.rejects(
-            model.polynomialInterestModel(toWei('1.01')),
-            /BORROW_RATIO_WRONG_VALUE/
-        );
-    });
-
     it('should match', async () => {
         assert.equal(await model.polynomialInterestModel(0), toWei('0'));
 
         assert.equal(await model.polynomialInterestModel(toWei('1')), toWei('1'));
+
+        assert.equal(await model.polynomialInterestModel(toWei('1.1')), toWei('1'));
 
         assert.equal(await model.polynomialInterestModel(toWei('0.8')), toWei('0.300777472'));
 
