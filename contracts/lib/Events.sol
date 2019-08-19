@@ -423,6 +423,26 @@ library Events {
     // Auction //
     /////////////
 
+    event Liquidate(
+        address indexed user,
+        uint16 indexed marketID,
+        bool indexed hasAuction
+    );
+
+    function logLiquidate(
+        address user,
+        uint16 marketID,
+        bool hasAuction
+    )
+        internal
+    {
+        emit Liquidate(
+            user,
+            marketID,
+            hasAuction
+        );
+    }
+
     // an auction is created
     event AuctionCreate(
         uint256 auctionID

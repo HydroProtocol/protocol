@@ -94,7 +94,15 @@ library Auctions {
             marketID
         );
 
-        if (leftBaseAssetDebt == 0 && leftQuoteAssetDebt == 0) {
+        bool hasAution = !(leftBaseAssetDebt == 0 && leftQuoteAssetDebt == 0);
+
+        Events.logLiquidate(
+            user,
+            marketID,
+            hasAution
+        );
+
+        if (!hasAution) {
             // no auction
             return (false, 0);
         }

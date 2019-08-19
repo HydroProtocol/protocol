@@ -248,6 +248,7 @@ library BatchActions {
 
         Requires.requireMarketIDExist(state, marketID);
         Requires.requireMarketIDAndAssetMatch(state, marketID, asset);
+
         LendingPool.repay(
             state,
             msg.sender,
