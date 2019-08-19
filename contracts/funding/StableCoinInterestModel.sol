@@ -19,17 +19,22 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-contract DefaultInterestModel {
+contract StableCoinInterestModel {
     uint256 constant BASE = 10**18;
 
     /**
      * @param borrowRatio a decimal with 18 decimals
      */
     function polynomialInterestModel(uint256 borrowRatio) external pure returns(uint256) {
-        // 0.2 * r + 0.5 * r**2
+        // 0.05 + 0.4 * r**2 + 0.55 * r**8
 
         // the valid range of borrowRatio is [0, 1]
         require(borrowRatio >= 0 && borrowRatio <= BASE, "BORROW_RATIO_WRONG_VALUE");
-        return borrowRatio / 5 + borrowRatio * borrowRatio / BASE / 2;
+
+        uint256 r2 = borrowRatio * borrowRatio / BASE;
+        uint256 r4 = r2 * r2 / BASE;
+        uint256 r8 = r4 * r4 / BASE;
+
+        return (5 * BASE / 100) + (4 * r2 / 10) + (55 * r8 / 100);
     }
 }
