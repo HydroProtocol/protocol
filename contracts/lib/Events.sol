@@ -287,7 +287,7 @@ library Events {
     }
 
     event UpdateMarket(
-        uint16 marketID,
+        uint16 indexed marketID,
         uint256 newAuctionRatioStart,
         uint256 newAuctionRatioPerBlock,
         uint256 newLiquidateRate,
@@ -313,7 +313,7 @@ library Events {
     }
 
     event MarketBorrowDisable(
-        uint16 marketID
+        uint16 indexed marketID
     );
 
     function logMarketBorrowDisable(
@@ -327,7 +327,7 @@ library Events {
     }
 
     event MarketBorrowEnable(
-        uint16 marketID
+        uint16 indexed marketID
     );
 
     function logMarketBorrowEnable(
@@ -374,7 +374,7 @@ library Events {
     }
 
     event UpdateAsset(
-        address asset,
+        address indexed asset,
         address oracleAddress,
         address interestMoealAddress
     );
