@@ -4,7 +4,7 @@ const { newMarket } = require('../utils/assets');
 const { toWei, etherAsset, logGas } = require('../utils');
 const Hydro = artifacts.require('./Hydro.sol');
 const LendingPoolToken = artifacts.require('./LendingPoolToken.sol');
-const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
+const DefaultInterestModel = artifacts.require('DefaultInterestModel.sol');
 const assert = require('assert');
 
 contract('Markets', accounts => {

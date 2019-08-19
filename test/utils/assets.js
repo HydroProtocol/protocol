@@ -1,6 +1,6 @@
 const PriceOracle = artifacts.require('./helper/PriceOracle.sol');
 const Hydro = artifacts.require('./Hydro.sol');
-const DefaultInterestModel = artifacts.require('./DefaultInterestModel.sol');
+const DefaultInterestModel = artifacts.require('DefaultInterestModel.sol');
 const TestToken = artifacts.require('./helpers/TestToken.sol');
 const BigNumber = require('bignumber.js');
 const { toWei, logGas } = require('./index');
