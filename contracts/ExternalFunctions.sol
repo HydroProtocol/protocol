@@ -179,10 +179,10 @@ contract ExternalFunctions is GlobalStore {
         uint16 marketID
     )
         external
-        returns (bool isLiquidatable, uint32 auctionID)
+        returns (bool hasAuction, uint32 auctionID)
     {
         Requires.requireMarketIDExist(state, marketID);
-        (isLiquidatable, auctionID) = Auctions.liquidate(state, user, marketID);
+        (hasAuction, auctionID) = Auctions.liquidate(state, user, marketID);
     }
 
     ///////////////////////////
