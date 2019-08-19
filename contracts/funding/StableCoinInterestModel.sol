@@ -26,7 +26,7 @@ contract StableCoinInterestModel {
      * @param borrowRatio a decimal with 18 decimals
      */
     function polynomialInterestModel(uint256 borrowRatio) external pure returns(uint256) {
-        // 0.05 + 0.4 * r**2 + 0.55 * r**8
+        // 0.05 + 0.4 * r**4 + 0.55 * r**8
 
         // the valid range of borrowRatio is [0, 1]
         require(borrowRatio >= 0 && borrowRatio <= BASE, "BORROW_RATIO_WRONG_VALUE");
@@ -35,6 +35,6 @@ contract StableCoinInterestModel {
         uint256 r4 = r2 * r2 / BASE;
         uint256 r8 = r4 * r4 / BASE;
 
-        return (5 * BASE / 100) + (4 * r2 / 10) + (55 * r8 / 100);
+        return (5 * BASE / 100) + (4 * r4 / 10) + (55 * r8 / 100);
     }
 }
