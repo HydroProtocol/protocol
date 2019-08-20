@@ -107,7 +107,7 @@ library OperationsComponent {
         Store.State storage state,
         address asset,
         address oracleAddress,
-        address interestModalAddress,
+        address interestModelAddress,
         string calldata poolTokenName,
         string calldata poolTokenSymbol,
         uint8 poolTokenDecimals
@@ -120,7 +120,7 @@ library OperationsComponent {
         LendingPool.initializeAssetLendingPool(state, asset);
 
         state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
-        state.assets[asset].interestModel = IInterestModel(interestModalAddress);
+        state.assets[asset].interestModel = IInterestModel(interestModelAddress);
         state.assets[asset].lendingPoolToken = ILendingPoolToken(address(new LendingPoolToken(
             poolTokenName,
             poolTokenSymbol,
@@ -131,7 +131,7 @@ library OperationsComponent {
             asset,
             oracleAddress,
             address(state.assets[asset].lendingPoolToken),
-            interestModalAddress
+            interestModelAddress
         );
     }
 
@@ -139,7 +139,7 @@ library OperationsComponent {
         Store.State storage state,
         address asset,
         address oracleAddress,
-        address interestModalAddress
+        address interestModelAddress
     )
         external
     {
@@ -147,12 +147,12 @@ library OperationsComponent {
         Requires.requireAssetExist(state, asset);
 
         state.assets[asset].priceOracle = IPriceOracle(oracleAddress);
-        state.assets[asset].interestModel = IInterestModel(interestModalAddress);
+        state.assets[asset].interestModel = IInterestModel(interestModelAddress);
 
         Events.logUpdateAsset(
             asset,
             oracleAddress,
-            interestModalAddress
+            interestModelAddress
         );
     }
 

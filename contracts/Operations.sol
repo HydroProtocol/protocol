@@ -75,7 +75,7 @@ contract Operations is Ownable, GlobalStore {
     function createAsset(
         address asset,
         address oracleAddress,
-        address interestModalAddress,
+        address interestModelAddress,
         string calldata poolTokenName,
         string calldata poolTokenSymbol,
         uint8 poolTokenDecimals
@@ -87,7 +87,7 @@ contract Operations is Ownable, GlobalStore {
             state,
             asset,
             oracleAddress,
-            interestModalAddress,
+            interestModelAddress,
             poolTokenName,
             poolTokenSymbol,
             poolTokenDecimals
@@ -97,7 +97,7 @@ contract Operations is Ownable, GlobalStore {
     function updateAsset(
         address asset,
         address oracleAddress,
-        address interestModalAddress
+        address interestModelAddress
     )
         external
         onlyOwner
@@ -106,7 +106,7 @@ contract Operations is Ownable, GlobalStore {
             state,
             asset,
             oracleAddress,
-            interestModalAddress
+            interestModelAddress
         );
     }
 

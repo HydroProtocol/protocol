@@ -354,14 +354,14 @@ library Events {
         address asset,
         address oracleAddress,
         address poolTokenAddress,
-        address interestMoealAddress
+        address interestModelAddress
     );
 
     function logCreateAsset(
         address asset,
         address oracleAddress,
         address poolTokenAddress,
-        address interestMoealAddress
+        address interestModelAddress
     )
         internal
     {
@@ -369,27 +369,27 @@ library Events {
             asset,
             oracleAddress,
             poolTokenAddress,
-            interestMoealAddress
+            interestModelAddress
         );
     }
 
     event UpdateAsset(
         address indexed asset,
         address oracleAddress,
-        address interestMoealAddress
+        address interestModelAddress
     );
 
     function logUpdateAsset(
         address asset,
         address oracleAddress,
-        address interestMoealAddress
+        address interestModelAddress
     )
         internal
     {
         emit UpdateAsset(
             asset,
             oracleAddress,
-            interestMoealAddress
+            interestModelAddress
         );
     }
 
