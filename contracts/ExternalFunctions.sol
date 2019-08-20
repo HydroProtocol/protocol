@@ -35,6 +35,8 @@ import "./lib/Consts.sol";
 import "./lib/Requires.sol";
 import "./lib/SafeMath.sol";
 
+import "./interfaces/IStandardToken.sol";
+
 /**
  * A collection of wrappers for all external methods in the protocol
  */
@@ -188,6 +190,18 @@ contract ExternalFunctions is GlobalStore {
     ///////////////////////////
     // LendingPool Functions //
     ///////////////////////////
+
+    function getPoolCashableAmount(address asset)
+        external
+        view
+        returns (uint256 cashableAmount)
+    {
+        if (asset == Consts.ETHEREUM_TOKEN_ADDRESS()) {
+            cashableAmount = address(this).balance - uint256(state.cash[asset]);
+        } else {
+            cashableAmount = IStandardToken(asset).balanceOf(address(this)) - uint256(state.cash[asset]);
+        }
+    }
 
     function getIndex(address asset)
         external
