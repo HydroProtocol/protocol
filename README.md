@@ -12,7 +12,15 @@ Hydro is designed for developers looking to build decentralized exchanges withou
 
 ## Features
 
-Hydro 1.0 contains a single exchange contract called `HybridExchange.sol` with the following attributes:
+Hydro v2 has a lot of new features compared with v1. It supports lending, borrowing, margin trading, spot trading features.
+
+* All great trading features in v1 version.
+* A standalone funding pool to support margin trading, lending, borrowing.
+* Built-in Funding insurance.
+* Contract-deposit mode. Supports both ERC20 and Ether.
+* Even less gas usage
+
+Hydro v1 contains a single exchange contract called `HybridExchange.sol` with the following attributes:
 
 * No order collision
 * No possibility of front-running
