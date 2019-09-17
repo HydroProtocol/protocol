@@ -40,7 +40,7 @@ import "./CollateralAccounts.sol";
  * The benefit of lining it this way is that its easier to aggregate and less book-keeping is needed.
  *
  * There are four primary operations for the lending pool:
- * supply, unsupply, borrow, repay. The order of operation is consistent for all of them:
+ * supply, unsupply, borrow, repay. The order of operation needs to be consistent:
  * 1. update index first, then compute the normalizedAmount
  * 2. transfer asset
  * 3. change normalizedAmount for supply and borrow

@@ -131,6 +131,11 @@ library Auctions {
         return (true, newAuctionID);
     }
 
+    /**
+     * The overwhelming of auctions in practice falls into this case.
+     * Given the constrant that collateral > debt, once the debt is paid of, the remaining collateral is divided
+     * between the borrower and the initiator.
+     */
     function fillHealthyAuction(
         Store.State storage state,
         Types.Auction storage auction,
@@ -211,8 +216,9 @@ library Auctions {
     }
 
     /**
-     * Msg.sender only need to afford bidderRepayAmount and get collateralAmount
-     * insurance and suppliers will cover the badDebtAmount
+     * In the case where the collateral is no longer valuable enough to cover the debt,
+     * subsidies kicks in. Participant can bid for the entire collateral
+     * for only paying part of the debt. The remaining debt is subsidized by the insurance pool
      */
     function fillBadAuction(
         Store.State storage state,
