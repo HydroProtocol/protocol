@@ -75,14 +75,13 @@ contract FeedPriceOracle is Ownable {
     }
 
     function feed(
-        uint256 newPrice,
-        uint256 blockNumber
+        uint256 newPrice
     )
         external
         onlyOwner
     {
         require(newPrice > 0, "PRICE_MUST_GREATER_THAN_0");
-        require(blockNumber <= block.number && blockNumber >= lastBlockNumber, "BLOCKNUMBER_WRONG");
+        require(lastBlockNumber < block.number, "BLOCKNUMBER_WRONG");
         require(newPrice <= maxPrice, "PRICE_EXCEED_MAX_LIMIT");
         require(newPrice >= minPrice, "PRICE_EXCEED_MIN_LIMIT");
 
@@ -97,7 +96,7 @@ contract FeedPriceOracle is Ownable {
         }
 
         price = newPrice;
-        lastBlockNumber = blockNumber;
+        lastBlockNumber = block.number;
 
         emit PriceFeed(price, lastBlockNumber);
     }

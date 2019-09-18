@@ -47,6 +47,20 @@ contract DaiPriceOracle is Ownable{
 
     event UpdatePrice(uint256 newPrice);
 
+    uint256 public minPrice;
+    uint256 public maxPrice;
+
+    constructor (
+        uint256 _minPrice,
+        uint256 _maxPrice
+    )
+        public
+    {
+        require(_minPrice <= _maxPrice, "WRONG_PARAMS");
+        minPrice = _minPrice;
+        maxPrice = _maxPrice;
+    }
+
     function getPrice(
         address asset
     )
@@ -71,19 +85,42 @@ contract DaiPriceOracle is Ownable{
         emit UpdatePrice(price);
     }
 
+    function adminSetParams(
+        uint256 _minPrice,
+        uint256 _maxPrice
+    )
+        external
+        onlyOwner
+    {
+        require(_minPrice <= _maxPrice, "WRONG_PARAMS");
+        minPrice = _minPrice;
+        maxPrice = _maxPrice;
+    }
+
     function updatePrice()
         public
         returns (bool)
     {
         uint256 _price = peek();
 
-        if (_price != 0) {
-            price = _price;
-            emit UpdatePrice(price);
-            return true;
-        } else {
+        if (_price == 0) {
             return false;
         }
+
+        if (_price == price) {
+            return true;
+        }
+
+        if (_price > maxPrice) {
+            _price = maxPrice;
+        } else if (_price < minPrice) {
+            _price = minPrice;
+        }
+
+        price = _price;
+        emit UpdatePrice(price);
+
+        return true;
     }
 
     function peek()
