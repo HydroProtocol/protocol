@@ -99,6 +99,7 @@ contract DaiPriceOracle is Ownable{
 
     function updatePrice()
         public
+        onlyOwner
         returns (bool)
     {
         uint256 _price = peek();
