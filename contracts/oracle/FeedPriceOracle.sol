@@ -26,7 +26,7 @@ import "../lib/Decimal.sol";
 contract FeedPriceOracle is Ownable {
     using SafeMath for uint256;
 
-    address public asset;
+    address[] public assets;
     uint256 public price;
     uint256 public lastBlockNumber;
     uint256 public validBlockNumber;
@@ -40,7 +40,7 @@ contract FeedPriceOracle is Ownable {
     );
 
     constructor (
-        address _asset,
+        address[] memory _assets,
         uint256 _validBlockNumber,
         uint256 _maxChangeRate,
         uint256 _minPrice,
@@ -48,7 +48,7 @@ contract FeedPriceOracle is Ownable {
     )
         public
     {
-        asset = _asset;
+        assets = _assets;
 
         setParams(
             _validBlockNumber,
@@ -101,6 +101,21 @@ contract FeedPriceOracle is Ownable {
         emit PriceFeed(price, lastBlockNumber);
     }
 
+    function isValidAsset(
+        address asset
+    )
+        private
+        view
+        returns (bool)
+    {
+        for (uint256 i = 0; i < assets.length; i++ ) {
+            if (assets[i] == asset) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function getPrice(
         address _asset
     )
@@ -108,7 +123,7 @@ contract FeedPriceOracle is Ownable {
         view
         returns (uint256)
     {
-        require(asset == _asset, "ASSET_NOT_MATCH");
+        require(isValidAsset(_asset), "ASSET_NOT_MATCH");
         require(block.number.sub(lastBlockNumber) <= validBlockNumber, "PRICE_EXPIRED");
         return price;
     }

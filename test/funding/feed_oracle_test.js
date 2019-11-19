@@ -8,10 +8,11 @@ const FeedPriceOracle = artifacts.require('./oracle/FeedPriceOracle.sol');
 contract('FeedPriceOracle', accounts => {
     let oracle;
     let ethTokenAddress = '0x000000000000000000000000000000000000000E';
+    let anotherAddressForTest = '0xEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE';
 
     beforeEach(async () => {
         oracle = await FeedPriceOracle.new(
-            ethTokenAddress,
+            [ethTokenAddress, anotherAddressForTest],
             10,
             toWei('0.1'), // 10%
             toWei('1'), // 1
@@ -26,6 +27,10 @@ contract('FeedPriceOracle', accounts => {
         logGas(res, 'FeedPriceOracle.feed');
 
         assert.equal((await oracle.getPrice(ethTokenAddress)).toString(), toWei('2.02'));
+        assert.equal((await oracle.getPrice(anotherAddressForTest)).toString(), toWei('2.02'));
+
+        const invalidAddress = '0x0000000000000000000000000000000000000000';
+        await assert.rejects(oracle.getPrice(invalidAddress), /ASSET_NOT_MATCH/);
     });
 
     // failed feed

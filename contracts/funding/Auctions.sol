@@ -19,12 +19,11 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-
 import "../lib/Store.sol";
-import "../lib/SafeMath.sol";
 import "../lib/Types.sol";
 import "../lib/Events.sol";
 import "../lib/Decimal.sol";
+import "../lib/SafeMath.sol";
 import "../lib/Transfer.sol";
 
 import "./LendingPool.sol";
