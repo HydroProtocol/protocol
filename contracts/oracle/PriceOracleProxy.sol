@@ -19,7 +19,7 @@
 pragma solidity ^0.5.8;
 pragma experimental ABIEncoderV2;
 
-import "./FeedPriceOracle.sol";
+import "../interfaces/IPriceOracle.sol";
 import "../lib/SafeMath.sol";
 
 contract PriceOracleProxy {
@@ -52,7 +52,7 @@ contract PriceOracleProxy {
         view
         returns (uint256)
     {
-        uint256 price = FeedPriceOracle(sourceOracleAddress).getPrice(sourceAssetAddress);
+        uint256 price = IPriceOracle(sourceOracleAddress).getPrice(sourceAssetAddress);
 
         if (decimal >= sourceAssetDecimal) {
             price = price.div(10 ** (decimal - sourceAssetDecimal));
